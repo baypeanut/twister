@@ -1,0 +1,22 @@
+name: Twister release configuration
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  configuration:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+      - name: Refuse unconfigured release updates
+        run: |
+          python3 - <<'PYCODE'
+          import plistlib
+          from pathlib import Path
+          info = plistlib.loads(Path('Configuration/Updates.public.plist').read_bytes())
+          if info.get('Enabled', True) is False:
+              raise SystemExit('Twister updates are disabled until an independent signing key and feed are configured.')
+          assert info.get('PublicRepository') == 'baypeanut/twister'
+          PYCODE

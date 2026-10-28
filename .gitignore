@@ -1,0 +1,31 @@
+.build/
+build/
+Tools/
+Downloads/
+.swiftpm/
+.DS_Store
+local/
+Configuration/Signing.plist
+Configuration/CredentialBroker.json
+.env
+.env.*
+!.env.example
+*.key
+*.p12
+*.pfx
+*.mobileprovision
+**/bin/
+**/obj/
+
+# Local verification outputs
+__pycache__/
+*.pyc
+
+# Generated dependency resources
+/Resources/PagesInterop.js
+/Resources/PDFLib.js
+/Resources/licenses/
+
+/Reference/archive-fixtures/
+
+/Tests/TwisterCoreTests/Fixtures/astronaut.png

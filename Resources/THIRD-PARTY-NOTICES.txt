@@ -1,0 +1,3 @@
+Twister runtime dependencies
+
+Conversion libraries and optional runtimes are acquired from their official, pinned sources. Complete component notices are generated during setup and included with the application package. See docs/dependencies.md for versions and setup instructions.

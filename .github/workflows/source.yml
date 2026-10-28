@@ -1,0 +1,77 @@
+name: Source checks
+on:
+  push:
+    branches: [main]
+  pull_request:
+permissions:
+  contents: read
+concurrency:
+  group: source-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  security:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Check generated language tables
+        run: python3 scripts/generate-localizations.py --check
+      - name: Twister update configuration regressions
+        run: python3 scripts/test-update-configuration.py
+      - name: Packaged source identity scan regressions
+        run: python3 scripts/test-release-audit.py
+      - name: Public source boundary
+        run: python3 scripts/audit-public-tree.py
+      - name: Scan full public history for secrets
+        run: python3 scripts/scan-secrets.py
+  mac-source:
+    runs-on: macos-15
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Public source boundary
+        run: python3 scripts/audit-public-tree.py
+      - name: Build native macOS app
+        run: |
+          python3 scripts/setup-resources.py
+          python3 scripts/setup-test-fixtures.py
+          swift build --product Twister
+      - name: Confirm separate macOS app and CLI products
+        run: python3 scripts/test-product-identity.py
+      - name: Isolated native UI, accessibility and artwork checks
+        run: python3 scripts/test-native-ui.py
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        if: always()
+        with:
+          name: mac-native-ui
+          path: build/native-ui
+          retention-days: 7
+          if-no-files-found: warn
+      - name: Prepare media workflow dependencies
+        run: |
+          if ! command -v ffmpeg >/dev/null || ! command -v ffprobe >/dev/null; then
+            HOMEBREW_NO_AUTO_UPDATE=1 brew install ffmpeg
+          fi
+      - name: Application export, recovery and editor lifecycle workflows
+        run: python3 scripts/test-workflows.py
+      - name: Security, file operations, update trust and native regressions
+        run: swift test --filter 'TwisterUpdatesTests|ArchiveSymlinkBoundaryTests|ArchiveResourceLimitsTests|ProcessDiagnosticLimitTests|FileMoveBatchTests|PDFPageEditorStateTests|ImageAnnotationEditorStateTests|HTMLResourceBoundaryTests|WebMediaDragPayloadTests|InstagramPhotosTests|YouTubeThumbnailTests|WindowPlacementTests|AppLocalizationTests|ToolSetupTests'
+      - name: Build local macOS package
+        run: |
+          scripts/setup-exiftool.sh
+          scripts/build-app.sh release
+          python3 scripts/audit-release.py build/Twister.app
+          python3 scripts/test-native-ui.py --app build/Twister.app/Contents/MacOS/Twister --output build/packaged-native-ui
+          python3 scripts/test-workflows.py --app build/Twister.app/Contents/MacOS/Twister --output build/packaged-workflows
+          python3 scripts/archive-app.py build/Twister.app build/Twister-macOS-arm64.zip
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: Twister-macOS-arm64
+          path: build/Twister-macOS-arm64.zip
+          retention-days: 7
