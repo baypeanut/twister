@@ -25,3 +25,7 @@ Remove unwanted segments from the split selection before exporting. At least one
 ## Export retained clips together
 
 The joined split export produces one video from the retained intervals, in source order. Twister renders the selected segments and joins them with consistent encoding settings. Use separate clips when you need individual files for later editing.
+
+## Treat metadata separately
+
+The media **Metadata** tool can update fields or remove metadata from an exported copy. Trimming, muting and visible redaction serve different purposes. Inspect the finished file and confirm both its streams and its metadata when preparing a file for sharing.
