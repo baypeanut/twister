@@ -60,3 +60,15 @@ Run the regression nearest to a code change before broadening the test run. For 
 ## Prepare test fixtures
 
 Run `python3 scripts/setup-test-fixtures.py` before the full Swift suite in a fresh checkout. The helper fetches the archive and image fixtures with pinned content hashes. Generated fixtures stay outside version control, so a successful local test run should leave `git status --short` clean.
+
+## Verify the packaged app
+
+After building, run the checks against the packaged executable as well as the development binary. This catches resource lookup and bundle configuration problems that a checkout can hide.
+
+```sh
+python3 scripts/audit-release.py build/Twister.app
+python3 scripts/test-native-ui.py --app build/Twister.app/Contents/MacOS/Twister --output build/packaged-native-ui
+python3 scripts/test-workflows.py --app build/Twister.app/Contents/MacOS/Twister --output build/packaged-workflows
+```
+
+These outputs belong under the ignored `build` directory. Keep generated app bundles, captures and personal fixtures out of commits.
