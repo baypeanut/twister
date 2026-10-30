@@ -56,3 +56,7 @@ Retain required third-party notices. Describe the user-facing change and the ver
 ## Choose a focused check
 
 Run the regression nearest to a code change before broadening the test run. For example, `swift test --filter PDFPageEditorStateTests` checks page history, while `swift test --filter ImageAnnotationEditorStateTests` checks annotation transactions. Documentation-only changes need valid links, accurate examples and `git diff --check`; they do not require rewriting application tests.
+
+## Prepare test fixtures
+
+Run `python3 scripts/setup-test-fixtures.py` before the full Swift suite in a fresh checkout. The helper fetches the archive and image fixtures with pinned content hashes. Generated fixtures stay outside version control, so a successful local test run should leave `git status --short` clean.
