@@ -38,7 +38,7 @@ Local builds use an ad-hoc signature. There is no notarized installer or configu
 
 ## Daily use
 
-Choose files, drop them into the workspace or paste supported clipboard content. Pick a quick conversion or open the tools menu. The output folder appears above the file actions and in editor footers.
+Choose files, drop them into the workspace or paste supported clipboard content. Pick a quick conversion or open the tools menu. Available formats must support every selected file, and tools can differ between single-file and batch selections. The output folder appears above the file actions and in editor footers.
 
 Click the menu-bar icon to open Twister. Click it again, press Escape or switch to another app to dismiss the workspace. Background operations continue when the interface is hidden.
 
