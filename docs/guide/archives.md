@@ -13,3 +13,7 @@ A GZIP input can contain a compressed TAR archive or one ordinary file. Archive 
 ## Allow for extraction limits
 
 Extraction stops after 100,000 entries or more than 20 GiB of expanded file data. The compressed download size can be much smaller than the expanded data. An archive that exceeds a limit is rejected rather than partially published as a successful extraction.
+
+## Handle a rejected archive
+
+Twister rejects paths outside its extraction area, unsafe links, duplicate file paths and unsupported special files. A rejection can therefore indicate an unsafe or ambiguous archive even when its extension looks correct. Use a trusted source to obtain a fresh archive instead of assuming renaming the file will repair it.
