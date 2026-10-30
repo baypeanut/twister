@@ -17,3 +17,7 @@ Routes that use the Office converter require LibreOffice. Twister can detect a u
 ## Choose a PDF export layout
 
 For PDF-to-DOCX or PDF-to-Pages conversion, Settings offers **Editable paragraphs and tables** and **Preserve original pages**. Choose the first when editing reconstructed content matters most, or the second when retaining the page appearance matters most. Review the output because a PDF does not necessarily contain the original document structure.
+
+## Choose an EPUB layout
+
+EPUB output can use reflowable text or preserve original pages. Reflowable content adapts to the reader layout; fixed pages keep a page-based presentation. Pick the layout before export and check the book in your intended reader, including images and page navigation.
