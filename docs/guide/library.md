@@ -13,3 +13,7 @@ Press ⌘F in Library to search operation titles and output filenames. Use the a
 ## Use a result again
 
 Press Return or use the reuse button to bring available output files back into Twister. Missing files cannot be reused, and reuse is unavailable while a task is running. If every file in a record is gone, Twister leaves the current selection intact and reports the missing result.
+
+## Carry files with Float
+
+Float is an explicitly opened shelf for carrying files between apps. In the shelf, Space opens Quick Look, Return opens the selection, ⌘R reveals it in Finder, ⌘C copies files and ⌥⌘C copies paths. Delete removes the selected shelf references rather than deleting those files from disk.
