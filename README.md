@@ -72,6 +72,10 @@ The CLI supports `convert`, `tool`, `inspect`, `dependencies`, `catalog` and JSO
 .build/debug/twister-cli convert png photo.jpg --json
 ```
 
+## Guides
+
+- [Getting started](docs/guide/getting-started.md)
+
 ## Development and verification
 
 ```sh
