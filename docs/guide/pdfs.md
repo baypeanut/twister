@@ -25,3 +25,7 @@ Convert a PDF to PNG or JPEG to render its pages into a separate output folder. 
 ## Choose compression carefully
 
 **Compress** writes a separate PDF. The compression path depends on document content and on features that must be preserved, so the size reduction varies between files. Compare the result with the original for text readability, page appearance and any interactive features you rely on.
+
+## Open protected documents
+
+Supply the password when a PDF is locked. Some combinations of encryption, form fields, attachments or links cannot be safely preserved by a page operation; Twister rejects those exports. Uniform page width also refuses documents with unsupported preservation requirements, so try leaving that option off.
