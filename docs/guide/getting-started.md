@@ -21,3 +21,7 @@ Conversions and editing tools write separate results. Twister stages an export b
 ## Choose where results go
 
 The default destination is **Beside originals**. Use the output-folder chooser in the workspace or editor footer to save results elsewhere; Twister remembers that folder. A running export keeps the destination it captured when it started, even if you change the preference afterward.
+
+## Reconnect a saved folder
+
+A saved folder may become unavailable after it is moved, removed or loses its access grant. Choose the folder again when Twister asks for renewed access, or restore **Beside originals**. An invalid saved destination stops the export instead of silently sending results to another folder.
