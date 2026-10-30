@@ -13,3 +13,7 @@ Twister parses supported modern Pages documents locally and builds Pages output 
 ## Prepare Office conversions
 
 Routes that use the Office converter require LibreOffice. Twister can detect a usable installation or install the optional Office tool group. Each conversion uses an isolated working profile, allowing conversion work to stay separate from documents open in your regular LibreOffice session.
+
+## Choose a PDF export layout
+
+For PDF-to-DOCX or PDF-to-Pages conversion, Settings offers **Editable paragraphs and tables** and **Preserve original pages**. Choose the first when editing reconstructed content matters most, or the second when retaining the page appearance matters most. Review the output because a PDF does not necessarily contain the original document structure.
