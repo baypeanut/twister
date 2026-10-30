@@ -25,3 +25,7 @@ The annotation editor supports ⌘Z and ⇧⌘Z for Undo and Redo. A complete dr
 ## Build a collage
 
 Select several supported images and choose **Create Collage**. Layouts include grid, row, column and featured. Fit keeps the whole source inside a cell; Fill fills the cell and may crop its edges. Check image order, canvas dimensions, spacing and padding before exporting.
+
+## Inspect or remove metadata
+
+Use **Metadata** to inspect supported fields, update values or remove metadata from a new copy. Metadata handling can require ExifTool. Check the exported file separately when removing location or descriptive fields; editing annotations or redacting visible content is a different operation.
