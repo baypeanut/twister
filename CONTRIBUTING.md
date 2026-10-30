@@ -52,3 +52,7 @@ Preserve originals and existing destinations. Keep resource loading local and re
 Default update configuration is intentionally disabled. Enabling it requires a Twister-owned repository or feed and a new signing key. Do not reuse another application's feed, keychain identity or signing trust.
 
 Retain required third-party notices. Describe the user-facing change and the verification actually performed in pull requests.
+
+## Choose a focused check
+
+Run the regression nearest to a code change before broadening the test run. For example, `swift test --filter PDFPageEditorStateTests` checks page history, while `swift test --filter ImageAnnotationEditorStateTests` checks annotation transactions. Documentation-only changes need valid links, accurate examples and `git diff --check`; they do not require rewriting application tests.
