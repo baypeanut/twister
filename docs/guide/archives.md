@@ -9,3 +9,7 @@ Twister exposes ZIP, TAR, GZIP and RAR inputs for extraction, with ZIP, TAR and 
 ## Understand GZIP output
 
 A GZIP input can contain a compressed TAR archive or one ordinary file. Archive conversion to GZIP writes a TAR stream with GZIP compression, allowing it to hold several entries. Use ZIP when you need a familiar multi-file archive without the TAR layer.
+
+## Allow for extraction limits
+
+Extraction stops after 100,000 entries or more than 20 GiB of expanded file data. The compressed download size can be much smaller than the expanded data. An archive that exceeds a limit is rejected rather than partially published as a successful extraction.
