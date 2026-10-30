@@ -21,3 +21,7 @@ The annotation editor supports ⌘Z and ⇧⌘Z for Undo and Redo. A complete dr
 ## Review redacted regions
 
 **Redact Photo** offers solid, blur and pixelate styles, with optional face and text detection. Review the selected regions and the exported image before sharing it. Detection can miss content, and changing pixels does not by itself remove metadata stored in the file.
+
+## Build a collage
+
+Select several supported images and choose **Create Collage**. Layouts include grid, row, column and featured. Fit keeps the whole source inside a cell; Fill fills the cell and may crop its edges. Check image order, canvas dimensions, spacing and padding before exporting.
