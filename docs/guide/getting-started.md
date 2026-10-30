@@ -13,3 +13,7 @@ Press ⌘V in the workspace to import supported files, an image, text or a media
 ## Use Finder gestures
 
 While dragging files in Finder, hold Shift for conversions, Command for tools or Control for file actions. The modifier choices can be changed in Settings. These optional gestures use macOS permissions; choosing and dropping files in the workspace remains available separately.
+
+## Understand exports
+
+Conversions and editing tools write separate results. Twister stages an export before publishing it and chooses a new name when the destination already contains that name. Explicit file actions such as **Move** act on the selected files themselves, so distinguish those actions from exporting an edited copy.
