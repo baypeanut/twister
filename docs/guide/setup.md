@@ -17,3 +17,7 @@ Optional tool packages come from pinned HTTPS sources and are checked against SH
 ## Cancel or retry setup
 
 Cancel stops the current setup work and keeps tools that were already usable. If one tool group completed before another failed, its installation remains available. Return to setup to retry the missing group; an interrupted download does not require deleting a working installation.
+
+## Use an explicit executable
+
+For development or troubleshooting, set the relevant environment variable before launching the CLI or app from that environment. Supported overrides include `TWISTER_FFMPEG`, `TWISTER_FFPROBE`, `TWISTER_EXIFTOOL` and `TWISTER_SOFFICE`. Point each value at the executable file, and check CLI resolution with `twister-cli dependencies` once the conversion dependencies are available.
