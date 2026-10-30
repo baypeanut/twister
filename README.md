@@ -66,7 +66,7 @@ swift build --product twister-cli
 .build/debug/twister-cli inspect photo.png
 ```
 
-The CLI supports `convert`, `tool`, `inspect`, `catalog` and JSON options. The app and CLI have separate executable names so both can be built on the default macOS filesystem.
+The CLI supports `convert`, `tool`, `inspect`, `dependencies`, `catalog` and JSON options. With the optional runtimes installed, `twister-cli dependencies` prints the resolved conversion-tool paths; a missing dependency returns an error. The app and CLI have separate executable names so both can be built on the default macOS filesystem.
 
 ## Development and verification
 
