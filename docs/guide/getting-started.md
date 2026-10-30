@@ -17,3 +17,7 @@ While dragging files in Finder, hold Shift for conversions, Command for tools or
 ## Understand exports
 
 Conversions and editing tools write separate results. Twister stages an export before publishing it and chooses a new name when the destination already contains that name. Explicit file actions such as **Move** act on the selected files themselves, so distinguish those actions from exporting an edited copy.
+
+## Choose where results go
+
+The default destination is **Beside originals**. Use the output-folder chooser in the workspace or editor footer to save results elsewhere; Twister remembers that folder. A running export keeps the destination it captured when it started, even if you change the preference afterward.
