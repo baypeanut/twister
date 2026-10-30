@@ -82,6 +82,7 @@ The CLI supports `convert`, `tool`, `inspect`, `dependencies`, `catalog` and JSO
 - [Working with archives](docs/guide/archives.md)
 - [Library and Float](docs/guide/library.md)
 - [Optional tools](docs/guide/setup.md)
+- [Troubleshooting](docs/guide/troubleshooting.md)
 
 ## Development and verification
 
