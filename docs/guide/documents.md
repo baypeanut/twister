@@ -9,3 +9,7 @@ Document routes include text, Markdown, HTML, rich text, DOCX and Pages, with se
 ## Convert Pages files locally
 
 Twister parses supported modern Pages documents locally and builds Pages output through its bundled conversion resources. Apple Pages does not need to be launched for those routes. Complex documents can still differ after conversion, so inspect tables, images and paragraph flow in the exported copy.
+
+## Prepare Office conversions
+
+Routes that use the Office converter require LibreOffice. Twister can detect a usable installation or install the optional Office tool group. Each conversion uses an isolated working profile, allowing conversion work to stay separate from documents open in your regular LibreOffice session.
