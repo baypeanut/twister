@@ -21,7 +21,7 @@ File conversion and editing run on your Mac. Original files are preserved, outpu
 
 ## Build and run
 
-Install Xcode with Swift 6 and Node.js 22 or later. Then run:
+Install Xcode with Swift 6, Python 3 and Node.js 22 or later. Run the setup commands from the repository folder:
 
 ```sh
 git clone https://github.com/baypeanut/twister.git
