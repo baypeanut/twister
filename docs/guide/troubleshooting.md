@@ -13,3 +13,7 @@ Reopen the output-folder chooser and select an existing writable folder, or rest
 ## A media link will not download
 
 Check the network connection and whether Media setup is complete. A supported provider may still reject a link because content is unavailable or access is restricted. Keep the error text when reporting a failure, but remove private links, cookies, credentials and personal file paths from a public report.
+
+## Updates are not connected
+
+Automatic updates are disabled in the default local build. A release feed and update-signing key must be configured before update checks are available. Reinstalling optional media or Office tools does not configure an application update channel; see the [dependency guide](../dependencies.md) for the distribution status.
