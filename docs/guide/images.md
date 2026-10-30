@@ -17,3 +17,7 @@ Cropping selects an area; resizing controls the dimensions of the exported image
 ## Undo an annotation edit
 
 The annotation editor supports ⌘Z and ⇧⌘Z for Undo and Redo. A complete drag is one edit, even if the pointer moves many times. History keeps up to 50 edits; a new edit clears Redo, and replacing the annotation state starts a new history.
+
+## Review redacted regions
+
+**Redact Photo** offers solid, blur and pixelate styles, with optional face and text detection. Review the selected regions and the exported image before sharing it. Detection can miss content, and changing pixels does not by itself remove metadata stored in the file.
