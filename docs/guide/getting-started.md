@@ -25,3 +25,7 @@ The default destination is **Beside originals**. Use the output-folder chooser i
 ## Reconnect a saved folder
 
 A saved folder may become unavailable after it is moved, removed or loses its access grant. Choose the folder again when Twister asks for renewed access, or restore **Beside originals**. An invalid saved destination stops the export instead of silently sending results to another folder.
+
+## Dismiss the workspace
+
+Click the menu-bar icon again, switch to another app or press Escape when a text field is not editing. Dismissing the workspace preserves the selection and leaves an active export running. Open Twister again to check progress or return to an editor; media previews pause when the app loses focus.
