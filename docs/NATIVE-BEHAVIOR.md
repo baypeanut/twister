@@ -26,7 +26,7 @@ Window arrangement is off by default. Enabling it starts its observer; disabling
 
 `--window-lifecycle-smoke OUTPUT` uses isolated preferences and generated files in its own process. Its 28 assertions cover window levels and controls, native titlebar close-button duplication, app/Space/session notifications, view and source preservation, an uncancelled background token, Library persistence, minimize/reopen, Escape, observer cleanup and opt-in monitoring. It does not claim to synthesize external-application clicks.
 
-The fixture is part of `scripts/test-native-ui.py`, alongside the 40-scene gallery, media accessibility, artwork, setup and Float checks. Both development and packaged builds run this suite. On 27 October 2026 the user confirmed that clicking another application (Safari) dismisses the installed 0.1.1 workspace. The Computer Use bridge had intermittent target-app errors, so this external-click confirmation is attributed to the user rather than to automated input.
+The fixture is part of `scripts/test-native-ui.py`, alongside 48 gallery captures, media accessibility, artwork, setup and Float checks. Both development and packaged builds run this suite. On 27 October 2026 the user confirmed that clicking another application (Safari) dismisses the installed 0.1.1 workspace. The Computer Use bridge had intermittent target-app errors, so this external-click confirmation is attributed to the user rather than to automated input.
 
 ## Distribution status
 
