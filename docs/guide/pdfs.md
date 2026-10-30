@@ -13,3 +13,7 @@ Use the organizer controls, the native Edit menu or ⌘Z and ⇧⌘Z. Undo resto
 ## Enter page ranges
 
 Page ranges use visible page numbers starting at 1. A value such as `1,3-5` selects pages 1, 3, 4 and 5; `5-3` selects pages in reverse order. Empty ranges select all pages. In **Split PDF**, the pages-per-file value groups the selected sequence into separate outputs.
+
+## Merge several PDFs
+
+Select multiple PDFs to make **Merge PDFs** available. The merge uses the input sequence and adds every page from each selected document. Check the resulting page order, especially when filenames are similar; merging exports a new document rather than appending pages to an original file.
