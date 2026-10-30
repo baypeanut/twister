@@ -62,7 +62,7 @@ While dragging files in Finder, Shift opens conversions, Command opens tools and
 ```sh
 swift build --product twister-cli
 .build/debug/twister-cli catalog
-.build/debug/twister-cli convert png photo.jpg
+.build/debug/twister-cli convert png "holiday photo.jpg"
 .build/debug/twister-cli inspect photo.png
 ```
 
