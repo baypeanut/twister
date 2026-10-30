@@ -75,6 +75,7 @@ The CLI supports `convert`, `tool`, `inspect`, `dependencies`, `catalog` and JSO
 ## Guides
 
 - [Getting started](docs/guide/getting-started.md)
+- [Working with images](docs/guide/images.md)
 
 ## Development and verification
 
