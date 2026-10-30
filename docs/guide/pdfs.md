@@ -21,3 +21,7 @@ Select multiple PDFs to make **Merge PDFs** available. The merge uses the input 
 ## Export pages as images
 
 Convert a PDF to PNG or JPEG to render its pages into a separate output folder. The renderer includes page rotation and annotations. Higher DPI produces larger images and uses more memory; if a page is too large to render, reduce the requested DPI and try again.
+
+## Choose compression carefully
+
+**Compress** writes a separate PDF. The compression path depends on document content and on features that must be preserved, so the size reduction varies between files. Compare the result with the original for text readability, page appearance and any interactive features you rely on.
