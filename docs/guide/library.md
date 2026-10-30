@@ -17,3 +17,7 @@ Press Return or use the reuse button to bring available output files back into T
 ## Carry files with Float
 
 Float is an explicitly opened shelf for carrying files between apps. In the shelf, Space opens Quick Look, Return opens the selection, ⌘R reveals it in Finder, ⌘C copies files and ⌥⌘C copies paths. Delete removes the selected shelf references rather than deleting those files from disk.
+
+## Control Finder reveal
+
+Automatic Finder reveal is off for a fresh profile. Enable **Reveal finished files in Finder while Twister is active** in Settings if you want it. An export that finishes while another app is active keeps its result available in Twister without switching focus to Finder.
