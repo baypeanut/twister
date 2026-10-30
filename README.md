@@ -79,6 +79,7 @@ The CLI supports `convert`, `tool`, `inspect`, `dependencies`, `catalog` and JSO
 - [Working with PDFs](docs/guide/pdfs.md)
 - [Working with media](docs/guide/media.md)
 - [Working with documents](docs/guide/documents.md)
+- [Working with archives](docs/guide/archives.md)
 
 ## Development and verification
 
