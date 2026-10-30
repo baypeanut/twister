@@ -21,3 +21,7 @@ Seeking changes the preview position; dragging a range handle changes an export 
 ## Keep the clips you need
 
 Remove unwanted segments from the split selection before exporting. At least one segment must remain. Separate exports keep retained clips in their original timeline order and place them in a new clips folder; a failed export removes its unfinished folder.
+
+## Export retained clips together
+
+The joined split export produces one video from the retained intervals, in source order. Twister renders the selected segments and joins them with consistent encoding settings. Use separate clips when you need individual files for later editing.
