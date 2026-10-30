@@ -21,3 +21,7 @@ For PDF-to-DOCX or PDF-to-Pages conversion, Settings offers **Editable paragraph
 ## Choose an EPUB layout
 
 EPUB output can use reflowable text or preserve original pages. Reflowable content adapts to the reader layout; fixed pages keep a page-based presentation. Pick the layout before export and check the book in your intended reader, including images and page navigation.
+
+## Convert subtitle files
+
+SRT files can convert to VTT or plain text, and VTT files can convert to SRT or plain text. Timed subtitle output retains cue timing through the supported parser; plain text is for reading the words without subtitle timing. Keep a timed original when you need to synchronize subtitles later.
