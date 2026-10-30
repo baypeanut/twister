@@ -17,3 +17,7 @@ Seeking changes the preview position; dragging a range handle changes an export 
 ## Split a video
 
 **Split Video** can use chosen split points, an equal clip count or a fixed interval. Boundaries must fall within the video and leave at least 0.05 seconds between adjacent cuts and either end. Very short sources or dense cuts can therefore be rejected even when the requested count looks reasonable.
+
+## Keep the clips you need
+
+Remove unwanted segments from the split selection before exporting. At least one segment must remain. Separate exports keep retained clips in their original timeline order and place them in a new clips folder; a failed export removes its unfinished folder.
