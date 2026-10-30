@@ -13,3 +13,7 @@ Use **Crop Image** to choose the portion of an image to keep. The crop must fit 
 ## Set the export dimensions
 
 Cropping selects an area; resizing controls the dimensions of the exported image. Check both settings when an output has the right subject but the wrong size. An explicit resize remains part of a crop export, so reset dimensions you no longer want before saving.
+
+## Undo an annotation edit
+
+The annotation editor supports ⌘Z and ⇧⌘Z for Undo and Redo. A complete drag is one edit, even if the pointer moves many times. History keeps up to 50 edits; a new edit clears Redo, and replacing the annotation state starts a new history.
