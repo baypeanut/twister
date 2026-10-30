@@ -13,3 +13,7 @@ Twister checks supported existing tool locations before asking for an installati
 ## Know what setup downloads
 
 Optional tool packages come from pinned HTTPS sources and are checked against SHA-256 values. Downloads are prepared in staging before a complete installation is published. Installed tool storage is `~/Library/Application Support/Twister/Tools`; setup needs a network connection, while completed local conversions use the installed tools.
+
+## Cancel or retry setup
+
+Cancel stops the current setup work and keeps tools that were already usable. If one tool group completed before another failed, its installation remains available. Return to setup to retry the missing group; an interrupted download does not require deleting a working installation.
