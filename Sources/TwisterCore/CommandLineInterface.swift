@@ -1,8 +1,9 @@
 import Foundation
+import Darwin
 
 public enum TwisterCommandLine {
     static let usage="Usage: twister-cli convert FORMAT [--options JSON] [--json] [--] FILE...\n       twister-cli tool TOOL_ID [--options JSON] [--json] [--] FILE...\n       twister-cli catalog"
-    public static func run(arguments args:[String] = CommandLine.arguments) -> Int32 {
+    public static func run(arguments args:[String] = CommandLine.arguments,token:CancellationToken = .init()) -> Int32 {
 do {
     if args.count==2,args[1]=="catalog" {
         let data=try JSONSerialization.data(withJSONObject:["conversionMatrix":FeatureCatalog.conversionMatrix,"tools":ToolKind.allCases.map(\.rawValue)],options:[.prettyPrinted,.sortedKeys]);print(String(decoding:data,as:UTF8.self));return 0
@@ -13,7 +14,7 @@ do {
         switch category {
         case .image:let cg=try ImageEngine.load(input);result["width"]=cg.width;result["height"]=cg.height
         case .pdf:let pdf=try PDFEngine.open(input);result["pages"]=pdf.pageCount;result["text"]=pdf.string ?? ""
-        case .audio,.video:let info=try MediaEngine.inspect(input);result["duration"]=info.duration;result["hasAudio"]=info.hasAudio;result["hasVideo"]=info.hasVideo;result["width"]=info.video?.width;result["height"]=info.video?.height;result["channels"]=info.audio?.channels
+        case .audio,.video:let info=try MediaEngine.inspect(input,token:token);result["duration"]=info.duration;result["hasAudio"]=info.hasAudio;result["hasVideo"]=info.hasVideo;result["width"]=info.video?.width;result["height"]=info.video?.height;result["channels"]=info.audio?.channels
         default:break
         }
         print(String(decoding:try JSONSerialization.data(withJSONObject:result,options:.sortedKeys),as:UTF8.self));return 0
@@ -43,7 +44,7 @@ do {
     if args[1]=="convert" { operation = .convert(args[2]) }
     else if args[1]=="tool",let kind=ToolKind(rawValue:args[2]) { operation = .tool(kind) }
     else { throw TwisterError.invalidInput("Unknown operation.") }
-    let outputs=try ConversionEngine.run(ConversionRequest(inputs:paths.map{URL(fileURLWithPath:$0)},operation:operation,options:options))
+    let outputs=try ConversionEngine.run(ConversionRequest(inputs:paths.map{URL(fileURLWithPath:$0)},operation:operation,options:options),token:token)
     if jsonOutput { print(String(decoding:try JSONEncoder().encode(outputs.map(\.path)),as:UTF8.self)) }
     else { for url in outputs { print(url.path) } }
     return 0
@@ -83,4 +84,32 @@ do {
         for key in ["imageFrame","collage"] { if var settings=options[key] as? [String:Any],let value=settings["backgroundImage"] { settings["backgroundImage"]=fileURL(value);options[key]=settings } }
         if var annotations=options["imageAnnotations"] as? [[String:Any]] { for i in annotations.indices { if let value=annotations[i]["imageURL"] { annotations[i]["imageURL"]=fileURL(value) } };options["imageAnnotations"]=annotations }
     }
+}
+
+/// Routes termination signals to a CancellationToken, so an interrupted
+/// command stops its helpers and removes staged exports before it exits.
+public final class SignalCancellation {
+    private let lock=NSLock()
+    private var sources:[DispatchSourceSignal]=[],received:Int32?
+    private let signals:[Int32]
+    public init(token:CancellationToken,signals:[Int32]=[SIGINT,SIGTERM]) {
+        self.signals=signals
+        for number in signals {
+            // The default action would end the process before cleanup runs.
+            Darwin.signal(number,SIG_IGN)
+            let source=DispatchSource.makeSignalSource(signal:number,queue:.global())
+            source.setEventHandler { [weak self] in
+                guard let self else { return }
+                self.lock.lock();let repeated=self.received != nil;self.received=self.received ?? number;self.lock.unlock()
+                // A second signal means cleanup is not finishing; stop at once.
+                if repeated { _exit(128+number) }
+                token.cancel()
+            }
+            source.resume();sources.append(source)
+        }
+    }
+    deinit { for source in sources { source.cancel() };for number in signals { Darwin.signal(number,SIG_DFL) } }
+    public var receivedSignal:Int32? { lock.lock();defer{lock.unlock()};return received }
+    /// Shells expect 128 plus the signal number from an interrupted command.
+    public func exitCode(_ code:Int32)->Int32 { receivedSignal.map{128+$0} ?? code }
 }
