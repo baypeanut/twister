@@ -57,6 +57,48 @@ import TwisterUpdates
         try check(expectFailure ? state.error != nil:state.error == nil,expectFailure ? "Failed batch reports an application error":"Completed job has no stale application error")
     }
     private func contents(_ folder:URL)throws->Set<String> {Set(try FileManager.default.contentsOfDirectory(atPath:folder.path))}
+    private func verifyJPEGWheel(state: AppState, originals: URL, jpegBytes: Data) async throws {
+        let jpeg = originals.appendingPathComponent("First.JPEG")
+        let second = originals.appendingPathComponent("Second.jpg")
+        try jpegBytes.write(to: jpeg)
+        try jpegBytes.write(to: second)
+
+        let board = NSPasteboard.withUniqueName()
+        let wheel = WheelController(state: state)
+        defer {
+            wheel.hide()
+            board.releaseGlobally()
+        }
+        let cases: [(mode: WheelMode, files: [URL], title: String, pages: Int)] = [
+            (.tools, [jpeg], "Create PDF", 1),
+            (.convert, [jpeg], "PDF", 1),
+            (.tools, [jpeg, second], "Create PDF", 2),
+        ]
+        for test in cases {
+            board.clearContents()
+            guard board.writeObjects(test.files.map { $0 as NSURL }) else {
+                throw UIAuditError("Could not prepare the JPEG file drag")
+            }
+            let inputs = WebLinkPayload.urls(from: board)
+            try check(inputs == test.files, "File drag keeps all JPEG inputs in order")
+            wheel.show(inputs: inputs, mode: test.mode, at: NSEvent.mouseLocation)
+            guard let view = wheel.wheel,
+                  let firstItem = view.accessibilityChildren()?.first as? WheelAccessibilityItem else {
+                throw UIAuditError("The JPEG wheel has no selectable items")
+            }
+            try check(view.items.first?.title == test.title, "JPEG \(test.mode.rawValue) wheel starts with \(test.title)")
+            try check(firstItem.accessibilityPerformPress(), "The first JPEG wheel option starts an export")
+            try await finish(state)
+            guard let result = state.outputs.first, state.outputs.count == 1 else {
+                throw UIAuditError("JPEG wheel did not export exactly one PDF")
+            }
+            let pdf = try PDFEngine.open(result)
+            try check(result.pathExtension == "pdf" && pdf.pageCount == test.pages,
+                      "JPEG \(test.mode.rawValue) wheel exports a \(test.pages)-page PDF")
+        }
+        try check(try Data(contentsOf: jpeg) == jpegBytes && Data(contentsOf: second) == jpegBytes,
+                  "Wheel exports preserve the original JPEG files")
+    }
     private func editor(_ tool:ToolKind,state:AppState,defaults:UserDefaults)async throws {
         let recorder=UIAuditLayout()
         let window=NSWindow(contentRect:NSRect(x:0,y:0,width:1020,height:780),styleMask:[.titled,.closable,.miniaturizable,.resizable],backing:.buffered,defer:false)
@@ -132,6 +174,7 @@ import TwisterUpdates
         var pdfOptions=options;pdfOptions.pdfPageOrder=[1,0,1];pdfOptions.pdfPageRotations=[0:90,2:180]
         state.inputs=[pdfURL];state.execute(.tool(.organizePDF),options:pdfOptions);try await finish(state)
         let edited=try PDFEngine.open(state.outputs[0]);try check(edited.pageCount==3 && edited.page(at:0)?.rotation==90 && edited.page(at:2)?.rotation==180,"PDF export keeps duplicated pages and their independent rotations")
+        try await verifyJPEGWheel(state: state, originals: originals, jpegBytes: firstBytes)
         let audio=originals.appendingPathComponent("Tone.wav"),video=originals.appendingPathComponent("Clip.mp4")
         try await Task.detached {
             let ffmpeg=try Dependencies.executable("ffmpeg")

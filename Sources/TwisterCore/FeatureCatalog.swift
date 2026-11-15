@@ -2,8 +2,8 @@ import Foundation
 
 public enum FeatureCatalog {
     public static let conversionMatrix: [String: [String]] = [
-        "jpg": ["png", "webp", "heic", "tiff", "avif", "bmp", "pdf"],
-        "png": ["jpg", "webp", "heic", "tiff", "avif", "bmp", "pdf"],
+        "jpg": ["pdf", "png", "webp", "heic", "tiff", "avif", "bmp"],
+        "png": ["pdf", "jpg", "webp", "heic", "tiff", "avif", "bmp"],
         "webp": ["jpg", "png", "heic", "tiff", "avif", "bmp", "pdf"],
         "heic": ["jpg", "png", "webp", "tiff", "avif", "bmp", "pdf"],
         "tiff": ["jpg", "png", "webp", "heic", "avif", "bmp", "pdf"],
@@ -107,8 +107,8 @@ public enum FeatureCatalog {
         .readQRCode: "Read QR Codes",
     ]
     public static let singleTools: [String: [ToolKind]] = [
-        "jpg": [.compress, .removeMetadata, .editImage, .annotateImage, .frameImage, .cropImage, .redactImage],
-        "png": [.compress, .removeMetadata, .editImage, .annotateImage, .frameImage, .cropImage, .redactImage],
+        "jpg": [.createPDF, .compress, .removeMetadata, .editImage, .annotateImage, .frameImage, .cropImage, .redactImage],
+        "png": [.createPDF, .compress, .removeMetadata, .editImage, .annotateImage, .frameImage, .cropImage, .redactImage],
         "webp": [.compress, .removeMetadata, .editImage, .annotateImage, .frameImage, .cropImage, .redactImage],
         "heic": [.compress, .removeMetadata, .editImage, .annotateImage, .frameImage, .cropImage, .redactImage],
         "tiff": [.compress, .removeMetadata, .editImage, .annotateImage, .frameImage, .cropImage, .redactImage],
@@ -154,8 +154,8 @@ public enum FeatureCatalog {
         "rar": [.extractArchive],
     ]
     public static let multipleTools: [String: [ToolKind]] = [
-        "jpg": [.compress, .removeMetadata, .cropImage, .createPDF, .createCollage],
-        "png": [.compress, .removeMetadata, .cropImage, .createPDF, .createCollage],
+        "jpg": [.createPDF, .compress, .removeMetadata, .cropImage, .createCollage],
+        "png": [.createPDF, .compress, .removeMetadata, .cropImage, .createCollage],
         "webp": [.compress, .removeMetadata, .cropImage, .createPDF, .createCollage],
         "heic": [.compress, .removeMetadata, .cropImage, .createPDF, .createCollage],
         "tiff": [.compress, .removeMetadata, .cropImage, .createPDF, .createCollage],
