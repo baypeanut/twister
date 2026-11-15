@@ -11,11 +11,41 @@ public enum ProcessRunner {
     // Codec diagnostics are untrusted. Keep the useful tail while continuing to
     // drain the pipe, so a noisy input cannot consume unbounded memory or block.
     static let diagnosticByteLimit = 1_000_000
+    static let localProtocols = "file,pipe,crypto,data"
     /// Bounds for helpers that never run for long. Encodes stay unbounded:
     /// their duration follows the media, and Cancel remains available.
     static let probeTimeout: TimeInterval = 120
     static let metadataTimeout: TimeInterval = 300
     static let officeTimeout: TimeInterval = 900
+
+    /// Conversion inputs stay local even if a media container references an
+    /// external playlist segment. Local pipes/data/encrypted files still work.
+    /// ffmpeg applies an input option only to the next `-i`, so every input
+    /// receives its own restriction; an override path may have any file name.
+    static func localOnlyArguments(_ executable: URL, _ arguments: [String], environment: [String: String] = ProcessInfo.processInfo.environment) -> [String] {
+        func isTool(_ name: String) -> Bool {
+            if executable.lastPathComponent == name { return true }
+            guard let override = environment["TWISTER_" + name.uppercased()], !override.isEmpty else { return false }
+            return URL(fileURLWithPath: override).standardizedFileURL.path == executable.standardizedFileURL.path
+        }
+        let option = "-protocol_whitelist", restriction = [option, localProtocols]
+        let probe = isTool("ffprobe")
+        guard probe || isTool("ffmpeg") else { return arguments }
+        if probe || !arguments.contains("-i") { return arguments.contains(option) ? arguments : restriction + arguments }
+        var result: [String] = [], restricted = false, index = 0
+        while index < arguments.count {
+            let argument = arguments[index]
+            if argument == option { restricted = true }
+            if argument == "-i" {
+                if !restricted { result += restriction }
+                result.append(argument)
+                if index + 1 < arguments.count { index += 1; result.append(arguments[index]) }
+                restricted = false
+            } else { result.append(argument) }
+            index += 1
+        }
+        return result
+    }
 
     /// The child leads its own process group, so Cancel or an expired `timeout`
     /// also stops helpers it started. `timeout` is wall-clock seconds; nil waits
@@ -39,10 +69,7 @@ public enum ProcessRunner {
         posix_spawnattr_setsigdefault(&attributes, &defaults); posix_spawnattr_setsigmask(&attributes, &mask)
         posix_spawnattr_setflags(&attributes, Int16(POSIX_SPAWN_SETPGROUP | POSIX_SPAWN_CLOEXEC_DEFAULT | POSIX_SPAWN_SETSIGDEF | POSIX_SPAWN_SETSIGMASK))
         posix_spawnattr_setpgroup(&attributes, 0)
-        // Conversion inputs stay local even if a media container references an
-        // external playlist segment. Local pipes/data/encrypted files still work.
-        let local = ["ffmpeg","ffprobe"].contains(executable.lastPathComponent) && !arguments.contains("-protocol_whitelist") ? ["-protocol_whitelist","file,pipe,crypto,data"]+arguments:arguments
-        let argv = ([executable.path] + local).map { strdup($0) } + [nil]
+        let argv = ([executable.path] + localOnlyArguments(executable, arguments)).map { strdup($0) } + [nil]
         let variables = ProcessInfo.processInfo.environment.merging(environment) { _, new in new }.map { strdup("\($0.key)=\($0.value)") } + [nil]
         defer { for pointer in argv { free(pointer) }; for pointer in variables { free(pointer) } }
         var pid: pid_t = 0
