@@ -1,6 +1,7 @@
 import Foundation
 
 public enum TwisterCommandLine {
+    static let usage="Usage: twister-cli convert FORMAT [--options JSON] [--json] [--] FILE...\n       twister-cli tool TOOL_ID [--options JSON] [--json] [--] FILE...\n       twister-cli catalog"
     public static func run(arguments args:[String] = CommandLine.arguments) -> Int32 {
 do {
     if args.count==2,args[1]=="catalog" {
@@ -20,12 +21,13 @@ do {
     if args.count==2,args[1]=="dependencies" {
         var result:[String:String]=[:];for name in ["ffmpeg","ffprobe","soffice","exiftool"] { result[name]=try Dependencies.executable(name).path };print(String(decoding:try JSONSerialization.data(withJSONObject:result,options:.sortedKeys),as:UTF8.self));return 0
     }
-    guard args.count>=4 else { print("Usage: twister-cli convert FORMAT FILE... [--options JSON]\n       twister-cli tool TOOL_ID FILE... [--options JSON]\n       twister-cli catalog");return 64 }
-    var options=OperationOptions(), paths=Array(args.dropFirst(3))
-    let jsonOutput=paths.contains("--json");paths.removeAll{$0=="--json"}
-    if let i=paths.firstIndex(of:"--options"),i+1<paths.count {
+    guard args.count>=4 else { print(usage);return 64 }
+    guard let invocation=invocation(Array(args.dropFirst(3))) else { fputs("--options requires a JSON value.\n\(usage)\n",stderr);return 64 }
+    var options=OperationOptions()
+    let paths=invocation.paths,jsonOutput=invocation.json
+    if let suppliedOptions=invocation.options {
         // Missing keys keep defaults via a JSON overlay encoded from defaults.
-        guard var supplied=try JSONSerialization.jsonObject(with:Data(paths[i+1].utf8)) as? [String:Any] else { throw TwisterError.invalidInput("Options must be a JSON object.") }
+        guard var supplied=try JSONSerialization.jsonObject(with:Data(suppliedOptions.utf8)) as? [String:Any] else { throw TwisterError.invalidInput("Options must be a JSON object.") }
         normalizeFileURLs(&supplied)
         var defaults=try JSONSerialization.jsonObject(with:JSONEncoder().encode(options)) as! [String:Any]
         let optionalDefaults:[String:Data]=[
@@ -35,7 +37,7 @@ do {
             "collage":try JSONEncoder().encode(CollageOptions())
         ]
         for (key,data) in optionalDefaults where supplied[key] is [String:Any] { defaults[key]=try JSONSerialization.jsonObject(with:data) }
-        options=try JSONDecoder().decode(OperationOptions.self,from:JSONSerialization.data(withJSONObject:mergeDefaults(defaults,with:supplied)));paths.removeSubrange(i...i+1)
+        options=try JSONDecoder().decode(OperationOptions.self,from:JSONSerialization.data(withJSONObject:mergeDefaults(defaults,with:supplied)))
     }
     let operation:Operation
     if args[1]=="convert" { operation = .convert(args[2]) }
@@ -47,6 +49,23 @@ do {
     return 0
 } catch { fputs("\(error.localizedDescription)\n",stderr);return 1 }
 
+    }
+
+    struct Invocation:Equatable { var paths:[String]=[],json=false,options:String? }
+    /// Everything after "--" is a file, so names such as "--json" stay usable.
+    /// Returns nil when --options is the last word and has no value.
+    static func invocation(_ words:[String]) -> Invocation? {
+        var result=Invocation(),words=words[...],literal=false
+        while let word=words.popFirst() {
+            if literal { result.paths.append(word) }
+            else if word=="--" { literal=true }
+            else if word=="--json" { result.json=true }
+            else if word=="--options" {
+                guard let value=words.popFirst() else { return nil }
+                result.options=value
+            } else { result.paths.append(word) }
+        }
+        return result
     }
 
     private static func mergeDefaults(_ defaults:[String:Any],with supplied:[String:Any])->[String:Any] {

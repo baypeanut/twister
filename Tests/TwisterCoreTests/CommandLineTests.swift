@@ -50,4 +50,23 @@ final class CommandLineTests:XCTestCase {
         for output in outputs { let text=try String(contentsOf:output,encoding:.utf8);XCTAssertTrue(text.contains("00:00:00.125 --> 00:00:01.250"));XCTAssertTrue(text.contains("Merhaba dünya")) }
         XCTAssertEqual(try Data(contentsOf:input),source)
     }
+    func testOptionsWithoutAValueIsAUsageErrorInsteadOfAnInputPath() throws {
+        let root=try OutputFiles.temporaryDirectory();defer{try? FileManager.default.removeItem(at:root)}
+        let input=root.appendingPathComponent("source.srt")
+        try Data("1\n00:00:00,125 --> 00:00:01,250\nMerhaba\n".utf8).write(to:input)
+        XCTAssertNil(TwisterCommandLine.invocation([input.path,"--options"]))
+        XCTAssertEqual(TwisterCommandLine.run(arguments:["Twister","convert","vtt",input.path,"--options"]),64)
+        XCTAssertEqual(TwisterCommandLine.run(arguments:["Twister","convert","vtt","--options"]),64)
+        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath:root.path),["source.srt"])
+    }
+    func testDoubleDashEndsOptionsSoFilesNamedLikeFlagsCanBeConverted() throws {
+        XCTAssertEqual(TwisterCommandLine.invocation(["--json","--options","{}","--","--json","--options","--"]),
+                       .init(paths:["--json","--options","--"],json:true,options:"{}"))
+        XCTAssertEqual(TwisterCommandLine.invocation(["a.png","--json"]),.init(paths:["a.png"],json:true,options:nil))
+        let root=try OutputFiles.temporaryDirectory();defer{try? FileManager.default.removeItem(at:root)}
+        let input=root.appendingPathComponent("--json.srt")
+        try Data("1\n00:00:00,125 --> 00:00:01,250\nMerhaba\n".utf8).write(to:input)
+        XCTAssertEqual(TwisterCommandLine.run(arguments:["Twister","convert","vtt","--json","--",input.path]),0)
+        XCTAssertTrue(try String(contentsOf:root.appendingPathComponent("--json.vtt"),encoding:.utf8).contains("00:00:00.125 --> 00:00:01.250"))
+    }
 }
