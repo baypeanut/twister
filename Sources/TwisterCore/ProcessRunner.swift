@@ -1,4 +1,5 @@
 import Foundation
+import Darwin
 
 public struct ProcessResult: Sendable {
     public let output: Data
@@ -10,21 +11,51 @@ public enum ProcessRunner {
     // Codec diagnostics are untrusted. Keep the useful tail while continuing to
     // drain the pipe, so a noisy input cannot consume unbounded memory or block.
     static let diagnosticByteLimit = 1_000_000
+    /// Bounds for helpers that never run for long. Encodes stay unbounded:
+    /// their duration follows the media, and Cancel remains available.
+    static let probeTimeout: TimeInterval = 120
+    static let metadataTimeout: TimeInterval = 300
+    static let officeTimeout: TimeInterval = 900
+
+    /// The child leads its own process group, so Cancel or an expired `timeout`
+    /// also stops helpers it started. `timeout` is wall-clock seconds; nil waits
+    /// for as long as the work takes.
     @discardableResult
-    public static func run(_ executable: URL, _ arguments: [String], directory: URL? = nil, token: CancellationToken = .init(), environment: [String: String] = [:], onOutput: (@Sendable (Data) -> Void)? = nil) throws -> ProcessResult {
+    public static func run(_ executable: URL, _ arguments: [String], directory: URL? = nil, token: CancellationToken = .init(), environment: [String: String] = [:], timeout: TimeInterval? = nil, onOutput: (@Sendable (Data) -> Void)? = nil) throws -> ProcessResult {
         try token.check()
-        let process = Process()
-        process.executableURL = executable
+        let output = Pipe(), errors = Pipe()
+        var actions: posix_spawn_file_actions_t?, attributes: posix_spawnattr_t?
+        posix_spawn_file_actions_init(&actions); posix_spawnattr_init(&attributes)
+        defer { posix_spawn_file_actions_destroy(&actions); posix_spawnattr_destroy(&attributes) }
+        // A background process group must not read the terminal.
+        posix_spawn_file_actions_addopen(&actions, STDIN_FILENO, "/dev/null", O_RDONLY, 0)
+        posix_spawn_file_actions_adddup2(&actions, output.fileHandleForWriting.fileDescriptor, STDOUT_FILENO)
+        posix_spawn_file_actions_adddup2(&actions, errors.fileHandleForWriting.fileDescriptor, STDERR_FILENO)
+        if let directory { posix_spawn_file_actions_addchdir_np(&actions, directory.path) }
+        // Only the three standard streams are inherited, and the child starts
+        // with default signal handling even when the caller ignores a signal.
+        var defaults = sigset_t(), mask = sigset_t()
+        sigfillset(&defaults); sigemptyset(&mask)
+        posix_spawnattr_setsigdefault(&attributes, &defaults); posix_spawnattr_setsigmask(&attributes, &mask)
+        posix_spawnattr_setflags(&attributes, Int16(POSIX_SPAWN_SETPGROUP | POSIX_SPAWN_CLOEXEC_DEFAULT | POSIX_SPAWN_SETSIGDEF | POSIX_SPAWN_SETSIGMASK))
+        posix_spawnattr_setpgroup(&attributes, 0)
         // Conversion inputs stay local even if a media container references an
         // external playlist segment. Local pipes/data/encrypted files still work.
-        process.arguments = ["ffmpeg","ffprobe"].contains(executable.lastPathComponent) && !arguments.contains("-protocol_whitelist") ? ["-protocol_whitelist","file,pipe,crypto,data"]+arguments:arguments
-        process.currentDirectoryURL = directory
-        process.environment = ProcessInfo.processInfo.environment.merging(environment) { _, new in new }
-        let output = Pipe(), errors = Pipe()
-        process.standardOutput = output; process.standardError = errors
+        let local = ["ffmpeg","ffprobe"].contains(executable.lastPathComponent) && !arguments.contains("-protocol_whitelist") ? ["-protocol_whitelist","file,pipe,crypto,data"]+arguments:arguments
+        let argv = ([executable.path] + local).map { strdup($0) } + [nil]
+        let variables = ProcessInfo.processInfo.environment.merging(environment) { _, new in new }.map { strdup("\($0.key)=\($0.value)") } + [nil]
+        defer { for pointer in argv { free(pointer) }; for pointer in variables { free(pointer) } }
+        var pid: pid_t = 0
+        let started = argv.withUnsafeBufferPointer { argv in variables.withUnsafeBufferPointer { variables in
+            posix_spawn(&pid, executable.path, &actions, &attributes, UnsafeMutablePointer(mutating: argv.baseAddress!), UnsafeMutablePointer(mutating: variables.baseAddress!))
+        } }
+        try? output.fileHandleForWriting.close(); try? errors.fileHandleForWriting.close()
+        guard started == 0 else {
+            throw TwisterError.failed("\(executable.lastPathComponent) could not be started: \(String(cString: strerror(started))).")
+        }
         // Drain both streams concurrently: codec diagnostics can exceed a pipe buffer.
         let group = DispatchGroup()
-        let captured = Capture()
+        let captured = Capture(trimsOutput: onOutput != nil)
         group.enter()
         DispatchQueue.global().async {
             defer { group.leave() }
@@ -33,10 +64,7 @@ public enum ProcessRunner {
             while true {
                 let chunk = output.fileHandleForReading.availableData
                 guard !chunk.isEmpty else { break }
-                captured.output.append(chunk)
-                if onOutput != nil && captured.output.count>2_000_000 {
-                    captured.output.removeFirst(captured.output.count-2_000_000)
-                }
+                captured.appendOutput(chunk)
                 onOutput?(chunk)
             }
         }
@@ -46,36 +74,60 @@ public enum ProcessRunner {
             while true {
                 let chunk = errors.fileHandleForReading.availableData
                 guard !chunk.isEmpty else { break }
-                captured.errors.append(chunk)
-                if captured.errors.count > diagnosticByteLimit {
-                    captured.errors.removeFirst(captured.errors.count - diagnosticByteLimit)
-                }
+                captured.appendErrors(chunk)
             }
         }
-        do { try process.run() } catch {
-            try? output.fileHandleForWriting.close(); try? errors.fileHandleForWriting.close()
-            group.wait()
-            throw error
-        }
-        while process.isRunning {
-            if token.isCancelled {
-                process.terminate()
-                let deadline = Date().addingTimeInterval(2)
-                while process.isRunning && Date() < deadline { Thread.sleep(forTimeInterval: 0.02) }
-                if process.isRunning { kill(process.processIdentifier, SIGKILL) }
-                break
+        let deadline = timeout.map { Date().addingTimeInterval($0) }
+        var status: Int32 = 0, stoppingAt: Date?, timedOut = false, reaped = true
+        while true {
+            let waited = waitpid(pid, &status, WNOHANG)
+            if waited == pid { break }
+            if waited < 0 {
+                if errno == EINTR { continue }
+                reaped = false; kill(-pid, SIGKILL); break
+            }
+            if let stoppingAt {
+                if Date().timeIntervalSince(stoppingAt) > 2 { kill(-pid, SIGKILL) }
+            } else if token.isCancelled || deadline.map({ Date() > $0 }) == true {
+                timedOut = !token.isCancelled; stoppingAt = Date(); kill(-pid, SIGTERM)
             }
             Thread.sleep(forTimeInterval: 0.03)
         }
-        process.waitUntilExit(); group.wait()
-        try token.check()
-        guard process.terminationStatus == 0 else {
-            let diagnostic = String(decoding: captured.errors.suffix(6000), as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines)
-            throw TwisterError.failed(diagnostic.isEmpty ? "\(executable.lastPathComponent) exited with code \(process.terminationStatus)." : diagnostic)
+        // A helper must not keep the pipes, and with them this job, alive after
+        // its parent has exited.
+        if stoppingAt != nil { kill(-pid, SIGTERM) }
+        if group.wait(timeout: .now() + 2) == .timedOut {
+            kill(-pid, SIGTERM)
+            if group.wait(timeout: .now() + 2) == .timedOut { kill(-pid, SIGKILL); _ = group.wait(timeout: .now() + 2) }
         }
-        return ProcessResult(output: captured.output, errorOutput: captured.errors)
+        try token.check()
+        if timedOut { throw TwisterError.failed("\(executable.lastPathComponent) took too long to respond and was stopped.") }
+        guard reaped else { throw TwisterError.failed("\(executable.lastPathComponent) stopped unexpectedly.") }
+        let (text, diagnostics) = captured.snapshot()
+        // WIFEXITED ? WEXITSTATUS : WTERMSIG
+        let code = status & 0x7f == 0 ? (status >> 8) & 0xff : status & 0x7f
+        guard code == 0 else {
+            let diagnostic = String(decoding: diagnostics.suffix(6000), as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines)
+            throw TwisterError.failed(diagnostic.isEmpty ? "\(executable.lastPathComponent) exited with code \(code)." : diagnostic)
+        }
+        return ProcessResult(output: text, errorOutput: diagnostics)
     }
-    private final class Capture: @unchecked Sendable { var output=Data(); var errors=Data() }
+    private final class Capture: @unchecked Sendable {
+        private let lock = NSLock(), trimsOutput: Bool
+        private var output = Data(), errors = Data()
+        init(trimsOutput: Bool) { self.trimsOutput = trimsOutput }
+        func appendOutput(_ chunk: Data) {
+            lock.lock(); defer { lock.unlock() }
+            output.append(chunk)
+            if trimsOutput && output.count > 2_000_000 { output.removeFirst(output.count - 2_000_000) }
+        }
+        func appendErrors(_ chunk: Data) {
+            lock.lock(); defer { lock.unlock() }
+            errors.append(chunk)
+            if errors.count > diagnosticByteLimit { errors.removeFirst(errors.count - diagnosticByteLimit) }
+        }
+        func snapshot() -> (Data, Data) { lock.lock(); defer { lock.unlock() }; return (output, errors) }
+    }
 }
 
 public enum Dependencies {

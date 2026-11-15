@@ -201,7 +201,7 @@ public enum ImageMetadataEngine {
         guard let script=paths.first(where:{FileManager.default.fileExists(atPath:$0.path)}) else { throw TwisterError.missingDependency("ExifTool; run scripts/setup-exiftool.sh") }
         // Empty config disables executable user configuration. Values remain argv,
         // never shell code, and the source is only read or copied.
-        return try ProcessRunner.run(URL(fileURLWithPath:"/usr/bin/perl"),[script.path,"-config",""]+args,token:token)
+        return try ProcessRunner.run(URL(fileURLWithPath:"/usr/bin/perl"),[script.path,"-config",""]+args,token:token,timeout:ProcessRunner.metadataTimeout)
     }
     private static func displayKey(_ tag:String)->String {
         guard let colon=tag.firstIndex(of:":") else { return tag }
