@@ -113,43 +113,30 @@ struct OutputDestinationControl:View {
         } else { LText("Beside originals") }
     }
     @ViewBuilder private var menuItems:some View {
-        Button(action:chooseFolder) { LText("Choose folder…") }
+        Button(action:chooseFolder) { LText("Choose Folder…") }
         if destination.usesCustomFolder {
             Button { guard !state.working else{return};destination.useOriginalFolders();pickerError=nil } label:{LText("Beside originals")}
         }
     }
     var body:some View {
-        VStack(alignment:.leading,spacing:5) {
-            HStack(spacing:7) {
-                if compact {
-                    Menu { menuItems } label:{
-                        HStack(spacing:5) {
-                            Image(systemName:"folder").accessibilityHidden(true)
-                            destinationLabel
-                        }
-                    }
-                    .menuStyle(.borderlessButton)
-                    .accessibilityLabel(L10n.text("Change output folder"))
-                    .accessibilityIdentifier("OutputDestination")
-                    if let issue {
-                        Image(systemName:"exclamationmark.triangle.fill").foregroundStyle(.orange)
-                            .help(L10n.text(issue)).accessibilityLabel(L10n.text(issue))
-                    }
-                } else {
-                    Image(systemName:"folder").accessibilityHidden(true)
-                    LText("Save to")
-                    destinationLabel
-                    Spacer(minLength:8)
-                    Menu { menuItems } label:{LText("Change…")}
-                        .menuStyle(.borderlessButton).fixedSize()
-                        .accessibilityLabel(L10n.text("Change output folder"))
-                        .accessibilityIdentifier("OutputDestination")
+        VStack(alignment:.leading,spacing:4) {
+            HStack(spacing:8) {
+                if !compact { LText("Save to").foregroundStyle(.secondary) }
+                Menu { menuItems } label:{
+                    if compact { Label { destinationLabel } icon:{ Image(systemName:"folder") } } else { destinationLabel }
                 }
-            }.font(.system(size:10)).foregroundStyle(.secondary).disabled(state.working)
+                .fixedSize()
+                .accessibilityLabel(L10n.text("Change output folder"))
+                .accessibilityIdentifier("OutputDestination")
+                if compact,let issue {
+                    Image(systemName:"exclamationmark.triangle.fill").symbolRenderingMode(.multicolor)
+                        .help(L10n.text(issue)).accessibilityLabel(L10n.text(issue))
+                }
+            }.disabled(state.working)
             if !compact,let error=issue {
-                LText(error).font(.caption).foregroundStyle(.orange).fixedSize(horizontal:false,vertical:true)
+                LText(error).font(.subheadline).foregroundStyle(.secondary).fixedSize(horizontal:false,vertical:true)
             }
-        }.frame(maxWidth:compact ? 180:.infinity,alignment:.leading)
+        }.frame(maxWidth:compact ? 220:.infinity,alignment:.leading)
         .onChange(of:destination.folder) { _ in pickerError=nil }
         .onChange(of:destination.usesCustomFolder) { _ in pickerError=nil }
     }
