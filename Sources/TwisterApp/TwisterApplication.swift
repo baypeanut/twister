@@ -121,6 +121,7 @@ enum TwisterApplication {
     var home:NSWindow?
     private var homeKeyboardMonitor:Any?
     var settings:NSWindow?
+    private var settingsToolbar:SettingsToolbar?
     var updateConnection:NSWindow?
     var presetPicker:NSWindow?
     var finderServices:FinderServicesProvider?
@@ -230,7 +231,7 @@ enum TwisterApplication {
         state.onSettings = { [weak self] in self?.showSettings() }
         state.onPresetSettings = { [weak self] in self?.presentSettings(updates:false,presets:true) }
         state.onShowTool = { [weak self] tool in self?.showTool(tool) }
-        state.onEPUBOptions = { [weak self] in guard let self else { return };let window=self.makeWindow(title:"Convert to EPUB",size:NSSize(width:530,height:390),view:EPUBOptionsView(state:self.state,inputs:self.state.inputs));self.state.retainToolWindow(window);window.makeKeyAndOrderFront(nil);NSApp.activate(ignoringOtherApps:true) }
+        state.onEPUBOptions = { [weak self] in guard let self else { return };let window=self.makeWindow(title:"Convert to EPUB",size:NSSize(width:440,height:260),view:EPUBOptionsView(state:self.state,inputs:self.state.inputs));self.state.retainToolWindow(window);window.makeKeyAndOrderFront(nil);NSApp.activate(ignoringOtherApps:true) }
         state.onJobStarted = { [weak self] in self?.successToast.dismiss();self?.showProgress() }
         state.onSuccess = { [weak self] notice in self?.progressToast.dismiss();self?.successToast.show(notice) }
         state.onJobFinished = { [weak self] title,report in
@@ -268,7 +269,7 @@ enum TwisterApplication {
             let model=ToolSetupModel();toolSetupModel=model
             model.isBusy={ [weak self] in self?.state.working == true }
             model.onWorkingChange={ [weak self] working in guard let self else{return};self.toolSetupWorking=working;self.toolSetupWindow?.standardWindowButton(.closeButton)?.isEnabled = !working;self.updater.setBusy(working || self.state.working) }
-            toolSetupWindow=makeWindow(title:"Set up Twister tools",size:NSSize(width:646,height:690),view:ToolSetupView(model:model,onDone:{ [weak self] in
+            toolSetupWindow=makeWindow(title:"Set Up Twister Tools",size:NSSize(width:646,height:690),view:ToolSetupView(model:model,onDone:{ [weak self] in
                 guard ExternalToolSetup.status.ready else{return}
                 UserDefaults.standard.set(true,forKey:"hasCompletedWelcome");self?.toolSetupWindow?.close();self?.showHome()
             }))
@@ -280,7 +281,7 @@ enum TwisterApplication {
         guard AppFeatures.webDownloads else { state.error="Web downloads are not part of this copy of Twister.";return }
         if downloadWindow == nil {
             downloadModel.onInstallTools = { [weak self] groups in self?.showToolSetup();self?.toolSetupModel?.install(groups:groups) }
-            downloadWindow=makeToolWindow(title:"Download from the web",size:NSSize(width:660,height:680),view:WebDownloadView(model:downloadModel,state:state))
+            downloadWindow=makeToolWindow(title:"Download from the Web",size:NSSize(width:660,height:680),view:WebDownloadView(model:downloadModel,state:state))
             downloadWindow?.contentMinSize=NSSize(width:620,height:520)
             downloadModel.onUseFiles = { [weak self] in guard let self else { return };self.state.inputs=self.downloadModel.completed;self.downloadWindow?.close();self.showHome() }
         }
@@ -316,8 +317,12 @@ enum TwisterApplication {
         presentSettings(updates:false)
     }
     private func presentSettings(updates:Bool,presets:Bool=false) {
-        if settings == nil { settings=makeWindow(title:"Twister Settings",size:NSSize(width:860,height:700),view:SettingsView(updater:updater,state:state,showingUpdates:updates,initialSection:presets ? .presets:.general)) }
-        settings?.contentMinSize=NSSize(width:790,height:590)
+        if settings == nil {
+            let navigation=SettingsNavigation();navigation.section=updates ? .updates:presets ? .presets:.general
+            let window=makeWindow(title:"Twister Settings",size:NSSize(width:700,height:620),view:SettingsView(updater:updater,state:state,navigation:navigation,showingUpdates:updates,initialSection:navigation.section))
+            let toolbar=SettingsToolbar(navigation:navigation);toolbar.install(in:window);settingsToolbar=toolbar;settings=window
+        }
+        settings?.contentMinSize=NSSize(width:620,height:460)
         if let settings { NativeWindowBehavior.present(settings) }
         if updates { NotificationCenter.default.post(name:.showUpdateSettings,object:nil) }
         if presets { NotificationCenter.default.post(name:.showPresetSettings,object:nil) }
@@ -378,7 +383,7 @@ enum TwisterApplication {
     func makeWindow<V:View>(title:String,size:NSSize,view:V)->NSWindow {
         let window=NSWindow(contentRect:NSRect(origin:.zero,size:size),styleMask:[.titled,.closable,.miniaturizable,.resizable],backing:.buffered,defer:false)
         L10n.windowTitle(window,source:title);NativeWindowBehavior.configure(window,autosaveName:"Twister.Window."+title)
-        window.contentView=NSHostingView(rootView:view.tint(Color.twister).twisterLanguage().environment(\.nativeWindowChrome,true))
+        window.contentView=NSHostingView(rootView:view.twisterLanguage().environment(\.nativeWindowChrome,true))
         let restored=window.setFrameUsingName("Twister.Window."+title)
         if !restored { window.center() };fitToScreen(window,center:!restored);return window
     }

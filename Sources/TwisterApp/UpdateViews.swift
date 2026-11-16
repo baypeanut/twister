@@ -10,17 +10,16 @@ struct UpdateBanner:View {
     @ObservedObject var updater:AppUpdater
     let version:String
     var body:some View {
-        HStack(spacing:13) {
-            Image(systemName:"arrow.down.circle.fill").font(.system(size:27)).foregroundStyle(TwisterPalette.forest)
-            VStack(alignment:.leading,spacing:4) {
-                Text("An update is available.").font(.system(size:13,weight:.bold,design:.default))
-                Text(updater.waitingForCurrentTask ? "Your task will finish before Twister restarts.":"Version \(version) · Install when you’re ready.").font(.caption).foregroundStyle(.secondary)
+        HStack(spacing:10) {
+            Image(systemName:"arrow.down.circle.fill").font(.title2).foregroundStyle(Color.accentColor).accessibilityHidden(true)
+            VStack(alignment:.leading,spacing:2) {
+                Text("An update is available.").font(.headline)
+                LText(updater.waitingForCurrentTask ? "Your task will finish before Twister restarts.":"Version \(version) is ready to install.").font(.subheadline).foregroundStyle(.secondary)
             }
             Spacer(minLength:12)
             Button("Update…") { updater.checkForUpdates() }
-                .buttonStyle(TwisterButtonStyle(.secondary,compact:true))
                 .disabled(!updater.canCheckForUpdates || updater.isBusy || updater.waitingForCurrentTask)
-        }.padding(17).background(TwisterPalette.sage,in:RoundedRectangle(cornerRadius:18))
+        }.padding(12).twisterGroup()
         .accessibilityElement(children:.contain)
     }
 }
@@ -36,64 +35,50 @@ struct UpdateSettingsView:View {
     }
 
     var body:some View {
-        ScrollView {
-            VStack(alignment:.leading,spacing:22) {
-                TwisterPageHeading(eyebrow:"Updates",title:"App updates",subtitle:"Version information and update settings.")
-                HStack(spacing:17) {
-                    TwisterMark(size:62,happy:updater.availableVersion != nil)
-                    VStack(alignment:.leading,spacing:6) {
-                        Text("Twister \(version)").font(.system(size:21,weight:.bold,design:.default))
-                        Text("Build \(build)").font(.caption).foregroundStyle(.secondary)
-                    }
-                    Spacer()
-                    if updater.availableVersion != nil { TwisterPill(title:"Update ready",symbol:"sparkle",color:TwisterPalette.forest) }
-                }.padding(22).twisterCard()
-                if setupMessage == nil { HStack(spacing:12) {
-                    Image(systemName:"externaldrive.badge.person.crop").foregroundStyle(TwisterPalette.forest)
-                    VStack(alignment:.leading,spacing:4) {
-                        Text(updater.repository?.slug ?? updater.officialRepository?.slug ?? "GitHub release connection").font(.headline)
-                        Text(updater.repository == nil ? (updater.officialRepository == nil ? "Connect a private or public updates repository.":"Official public releases · No account or token needed"):updater.requiresToken ? "Private repository · Token saved in Keychain":"Public repository · No token needed")
-                            .font(.caption).foregroundStyle(.secondary)
-                    }
-                    Spacer()
-                    if let official=updater.officialRepository,updater.repository == nil {
-                        Link("View releases",destination:official.websiteURL.appendingPathComponent("releases"))
-                            .buttonStyle(TwisterButtonStyle(.secondary,compact:true))
-                    } else {
-                        Button(updater.repository == nil ? "Connect…":"Manage…") { NotificationCenter.default.post(name:.showUpdateConnection,object:nil) }
-                            .buttonStyle(TwisterButtonStyle(.secondary,compact:true))
-                    }
-                }.padding(18).twisterCard() }
-                if let error=setupMessage {
-                    GroupBox("Automatic updates are disabled") {
-                        LText(error).font(.system(size:13)).foregroundStyle(.secondary).frame(maxWidth:.infinity,alignment:.leading).padding(10)
-                    }
-                } else {
-                    GroupBox {
-                        VStack(alignment:.leading,spacing:17) {
-                            Toggle("Check for updates automatically",isOn:Binding(get:{updater.automaticallyChecksForUpdates},set:updater.setAutomaticChecks))
-                            Text("Twister checks once an hour while it’s running. You choose when to download and install.").font(.caption).foregroundStyle(.secondary)
-                            Divider()
-                            HStack {
-                                VStack(alignment:.leading,spacing:5) {
-                                    Text(statusTitle).font(.headline)
-                                    if let date=updater.lastCheckedAt { Text("Last checked \(date.formatted(date:.abbreviated,time:.shortened))").font(.caption).foregroundStyle(.secondary) }
-                                    else { Text("No update checks yet").font(.caption).foregroundStyle(.secondary) }
-                                }
-                                Spacer()
-                                Button(updater.availableVersion == nil ? "Check for Updates…":"Update…") { updater.checkForUpdates() }
-                                    .buttonStyle(TwisterButtonStyle(.primary))
-                                    .disabled(!updater.canCheckForUpdates || updater.isBusy || updater.waitingForCurrentTask)
-                            }
-                            if updater.isBusy { Label("Your current task will finish before an update restarts the app.",systemImage:"hourglass").font(.caption).foregroundStyle(.secondary) }
-                            if let error=updater.lastError { Label(error,systemImage:"exclamationmark.circle").font(.caption).foregroundStyle(.secondary).textSelection(.enabled) }
-                        }.padding(10)
+        Form {
+            Section {
+                LabeledContent {
+                    Text(verbatim:"\(version) (\(build))").textSelection(.enabled)
+                } label:{
+                    Text("Version")
+                    if updater.availableVersion != nil { Text("Update ready") }
+                }
+                if setupMessage == nil {
+                    LabeledContent {
+                        if let official=updater.officialRepository,updater.repository == nil { Link("View Releases",destination:official.websiteURL.appendingPathComponent("releases")) }
+                        else { Button { NotificationCenter.default.post(name:.showUpdateConnection,object:nil) } label:{ LText(updater.repository == nil ? "Connect…":"Manage…") } }
+                    } label:{
+                        LText(updater.repository?.slug ?? updater.officialRepository?.slug ?? "GitHub release connection")
+                        LText(updater.repository == nil ? (updater.officialRepository == nil ? "Connect a private or public updates repository.":"Official public releases · No account or token needed"):updater.requiresToken ? "Private repository · Token saved in Keychain":"Public repository · No token needed")
                     }
                 }
-                Label("Updates are verified before installation. Your settings and recent history stay with you.",systemImage:"checkmark.shield")
-                    .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal:false,vertical:true)
-            }.padding(27).frame(maxWidth:680)
-        }.frame(maxWidth:.infinity).twisterAnimation(value:updater.availableVersion)
+            }
+            if let error=setupMessage {
+                Section {
+                    LabeledContent { EmptyView() } label:{ Text("Automatic updates are disabled");LText(error) }
+                }
+            } else {
+                Section {
+                    Toggle(isOn:Binding(get:{updater.automaticallyChecksForUpdates},set:updater.setAutomaticChecks)) {
+                        Text("Check for updates automatically")
+                        Text("Twister checks once an hour while it’s running. You choose when to download and install.")
+                    }
+                    LabeledContent {
+                        Button { updater.checkForUpdates() } label:{ LText(updater.availableVersion == nil ? "Check for Updates…":"Update…") }
+                            .disabled(!updater.canCheckForUpdates || updater.isBusy || updater.waitingForCurrentTask)
+                    } label:{
+                        LText(statusTitle)
+                        if let date=updater.lastCheckedAt { Text("Last checked \(date.formatted(date:.abbreviated,time:.shortened))") }
+                        else { Text("No update checks yet") }
+                    }
+                    if updater.isBusy { Text("Your current task will finish before an update restarts the app.").font(.subheadline).foregroundStyle(.secondary) }
+                    if let error=updater.lastError { Label { Text(error) } icon:{ Image(systemName:"exclamationmark.triangle.fill").symbolRenderingMode(.multicolor) }.font(.subheadline).textSelection(.enabled) }
+                }
+            }
+            Section { } footer:{
+                Text("Updates are verified before installation. Your settings and recent history stay with you.").frame(maxWidth:.infinity,alignment:.leading)
+            }
+        }.formStyle(.grouped).twisterAnimation(value:updater.availableVersion)
     }
 
     private var statusTitle:String {
@@ -114,77 +99,64 @@ struct UpdateConnectionView:View {
     @State private var error:String?
 
     var body:some View {
-        ScrollView {
-            VStack(alignment:.leading,spacing:20) {
-                TwisterPageHeading(eyebrow:"Update connection",title:"Update repository",subtitle:"Use a repository with a trusted, signed update feed.")
-                Text("Twister \(Bundle.main.object(forInfoDictionaryKey:"CFBundleShortVersionString") as? String ?? "Development") · Build \(Bundle.main.object(forInfoDictionaryKey:"CFBundleVersion") as? String ?? "—")")
-                    .font(.caption).foregroundStyle(.secondary)
-                if let connected=updater.repository {
-                    Label("Connected to \(connected.slug)",systemImage:"checkmark.circle.fill")
-                        .font(.system(size:13,weight:.semibold)).foregroundStyle(TwisterPalette.forest)
-                }
-                VStack(alignment:.leading,spacing:14) {
-                    Text("GitHub repository").font(.headline)
-                    TextField("owner/repository or GitHub URL",text:$repository)
-                        .textFieldStyle(.roundedBorder).accessibilityLabel("GitHub repository")
+        VStack(spacing:0) {
+            Form {
+                Section {
+                    TextField("GitHub repository",text:$repository,prompt:Text("owner/repository or GitHub URL"))
                     Toggle("This repository is private",isOn:$privateRepository)
                     if privateRepository {
-                        Text("Fine-grained access token").font(.headline)
-                        SecureField(updater.hasSavedToken && repositoryMatches ? "Saved token · Leave blank to keep it":"Paste your GitHub token",text:$token)
-                            .textFieldStyle(.roundedBorder).accessibilityLabel("GitHub token").privacySensitive()
+                        SecureField("Fine-grained access token",text:$token,prompt:Text(L10n.text(updater.hasSavedToken && repositoryMatches ? "Saved token · Leave blank to keep it":"Paste your GitHub token"))).privacySensitive()
                         if updater.hasSavedToken && repositoryMatches {
-                            Button("Authorize Saved Token…") { token="";save() }
-                                .buttonStyle(TwisterButtonStyle(.quiet,compact:true))
-                            Text("Use once if macOS needs permission for your saved update connection.")
-                                .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal:false,vertical:true)
+                            LabeledContent {
+                                Button("Authorize Saved Token…") { token="";save() }
+                            } label:{ Text("Use once if macOS needs permission for your saved update connection.").font(.subheadline).foregroundStyle(.secondary) }
                         }
-                        Text("Select only this repository and give Contents read access. The token stays in this Mac’s Keychain.")
-                            .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal:false,vertical:true)
-                        Link("Create a fine-grained token on GitHub",destination:URL(string:"https://github.com/settings/personal-access-tokens/new")!)
-                            .font(.caption)
-                    } else {
-                        Label("Public updates work without a token.",systemImage:"lock.open").font(.caption).foregroundStyle(.secondary)
                     }
-                }.padding(20).twisterCard().disabled(!updater.canChangeConnection)
-                if let message {
-                    Label(message,systemImage:"checkmark.circle").font(.system(size:12)).foregroundStyle(TwisterPalette.forest).fixedSize(horizontal:false,vertical:true)
+                } header:{
+                    if let connected=updater.repository { Text("Connected to \(connected.slug)") }
+                } footer:{
+                    VStack(alignment:.leading,spacing:4) {
+                        if privateRepository {
+                            Text("Select only this repository and give Contents read access. The token stays in this Mac’s Keychain.")
+                            Link("Create a fine-grained token on GitHub",destination:URL(string:"https://github.com/settings/personal-access-tokens/new")!)
+                        } else { Text("Public updates work without a token.") }
+                    }.frame(maxWidth:.infinity,alignment:.leading)
+                }.disabled(!updater.canChangeConnection)
+                if updater.isConfigured {
+                    Section {
+                        LabeledContent {
+                            Button { updater.checkForUpdates() } label:{ LText(updater.availableVersion == nil ? "Check for Updates…":"Update…") }.disabled(!updater.canCheckForUpdates || updater.isBusy)
+                        } label:{
+                            LText(updater.isPreparingCheck ? "Checking releases…":"Software update")
+                            if let checked=updater.lastCheckedAt { Text("Last checked \(checked.formatted(date:.abbreviated,time:.shortened))") }
+                        }
+                        Toggle("Check automatically while Twister is running",isOn:Binding(get:{updater.automaticallyChecksForUpdates},set:updater.setAutomaticChecks))
+                        if let lastError=updater.lastError { Label { Text(lastError) } icon:{ Image(systemName:"exclamationmark.triangle.fill").symbolRenderingMode(.multicolor) }.font(.subheadline) }
+                    }
                 }
-                if let error {
-                    Label(error,systemImage:"exclamationmark.circle").font(.system(size:12)).foregroundStyle(.secondary).fixedSize(horizontal:false,vertical:true)
+                Section { } footer:{
+                    VStack(alignment:.leading,spacing:4) {
+                        Text("Twister \(Bundle.main.object(forInfoDictionaryKey:"CFBundleShortVersionString") as? String ?? "Development") · Build \(Bundle.main.object(forInfoDictionaryKey:"CFBundleVersion") as? String ?? "—")")
+                        Text("Updates are signed and verified before installation. Changing repositories keeps the same trusted signing key. Your settings and files stay with you.")
+                        if let configurationError=updater.configurationError { Text(configurationError) }
+                    }.frame(maxWidth:.infinity,alignment:.leading)
                 }
-                if let configurationError=updater.configurationError {
-                    Label(configurationError,systemImage:"wrench.and.screwdriver").font(.caption).foregroundStyle(.secondary).fixedSize(horizontal:false,vertical:true)
-                }
-                HStack(spacing:12) {
-                    if updater.isConnecting { ProgressView().controlSize(.small);Text("Checking the connection…").font(.caption) }
+            }.formStyle(.grouped)
+            Divider()
+            VStack(alignment:.leading,spacing:8) {
+                if let message { Label { Text(message) } icon:{ Image(systemName:"checkmark.circle.fill").foregroundStyle(.green) }.font(.subheadline).fixedSize(horizontal:false,vertical:true) }
+                if let error { Label { Text(error) } icon:{ Image(systemName:"exclamationmark.triangle.fill").symbolRenderingMode(.multicolor) }.font(.subheadline).fixedSize(horizontal:false,vertical:true) }
+                HStack(spacing:8) {
+                    if updater.isConnecting { ProgressView().controlSize(.small);Text("Checking the connection…").font(.subheadline).foregroundStyle(.secondary) }
                     else if updater.repository != nil {
-                        Button("Disconnect & Forget Token") { disconnect() }
-                            .buttonStyle(TwisterButtonStyle(.quiet,compact:true)).disabled(!updater.canChangeConnection)
+                        Button("Disconnect & Forget Token") { disconnect() }.disabled(!updater.canChangeConnection)
                     }
                     Spacer()
-                    Button("Save Connection") { save() }
-                        .buttonStyle(TwisterButtonStyle(.primary)).keyboardShortcut(.defaultAction)
+                    Button("Save Connection") { save() }.keyboardShortcut(.defaultAction)
                         .disabled(!updater.canChangeConnection || repository.trimmingCharacters(in:.whitespacesAndNewlines).isEmpty)
                 }
-                if updater.isConfigured {
-                    Divider()
-                    HStack {
-                        VStack(alignment:.leading,spacing:5) {
-                            Text(updater.isPreparingCheck ? "Checking releases…":"Ready for a fresh version?").font(.headline)
-                            if let checked=updater.lastCheckedAt { Text("Last checked \(checked.formatted(date:.abbreviated,time:.shortened))").font(.caption).foregroundStyle(.secondary) }
-                        }
-                        Spacer()
-                        Button(updater.availableVersion == nil ? "Check for Updates…":"Update…") { updater.checkForUpdates() }
-                            .buttonStyle(TwisterButtonStyle(.secondary,compact:true)).disabled(!updater.canCheckForUpdates || updater.isBusy)
-                    }
-                    Toggle("Check automatically while Twister is running",isOn:Binding(get:{updater.automaticallyChecksForUpdates},set:updater.setAutomaticChecks))
-                        .font(.system(size:12))
-                    if let lastError=updater.lastError { Label(lastError,systemImage:"exclamationmark.circle").font(.caption).foregroundStyle(.secondary).fixedSize(horizontal:false,vertical:true) }
-                }
-                Text("Updates are signed and verified before installation. Changing repositories keeps the same trusted signing key. Your settings and files stay with you.")
-                    .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal:false,vertical:true)
-            }.padding(28)
-        }.frame(minWidth:530,minHeight:570).background(TwisterPalette.canvas)
+            }.padding(.horizontal,20).padding(.vertical,12)
+        }.frame(minWidth:530,minHeight:570).background(Color(nsColor:.windowBackgroundColor))
         .onAppear {
             repository=updater.repository?.slug ?? updater.officialRepository?.slug ?? Bundle.main.object(forInfoDictionaryKey:"TwisterSuggestedGitHubRepository") as? String ?? ""
             privateRepository=updater.requiresToken

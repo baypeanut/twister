@@ -5,11 +5,14 @@ import UniformTypeIdentifiers
 import ServiceManagement
 import TwisterUpdates
 import ApplicationServices
+import Combine
 
 struct SettingsView:View {
     @ObservedObject var updater:AppUpdater
     /// The workspace whose presets and selection the Presets page uses.
     private let state:AppState?
+    /// The toolbar tabs of the Settings window; absent when the view is shown alone.
+    private let navigation:SettingsNavigation?
     @State private var section=SettingsSection.general
     @State private var selectedFormat="jpg"
     @State private var formatSearch=""
@@ -35,8 +38,8 @@ struct SettingsView:View {
     @State private var webDownloads=WebDownloadGate.preference(in:.standard)
     @State private var toolStatus=ExternalToolSetup.status
     @Environment(\.accessibilityReduceMotion) private var systemReducedMotion
-    init(updater:AppUpdater,state:AppState?=nil,showingUpdates:Bool=false,initialSection:SettingsSection = .general) {
-        self.updater=updater;self.state=state
+    init(updater:AppUpdater,state:AppState?=nil,navigation:SettingsNavigation?=nil,showingUpdates:Bool=false,initialSection:SettingsSection = .general) {
+        self.updater=updater;self.state=state;self.navigation=navigation
         _section=State(initialValue:showingUpdates ? .updates:initialSection)
     }
     private var terminalApplications:[(String,String)] {
@@ -46,24 +49,23 @@ struct SettingsView:View {
         return apps
     }
     var body:some View {
-        HStack(spacing:0) {
-            sidebar
-            Divider()
-            Group {
-                switch section {
-                case .general:general
-                case .formats:formats
-                case .presets:presetsPage
-                case .compatibility:CompatibilitySettingsView { format in selectedFormat=format;section = .formats }
-                case .folders:FolderSettingsView()
-                case .updates:UpdateSettingsView(updater:updater)
-                case .about:AboutSettingsView()
-                }
+        Group {
+            switch section {
+            case .general:general
+            case .formats:formats
+            case .presets:presetsPage
+            case .compatibility:CompatibilitySettingsView { format in selectedFormat=format;section = .formats }
+            case .folders:FolderSettingsView()
+            case .updates:UpdateSettingsView(updater:updater)
+            case .about:AboutSettingsView()
             }
-            .frame(maxWidth:.infinity,maxHeight:.infinity).id(section).transition(.opacity)
-        }.frame(minWidth:790,minHeight:590).background(TwisterPalette.canvas).tint(.twister)
-        .buttonStyle(TwisterButtonStyle()).toggleStyle(.switch).groupBoxStyle(TwisterGroupBoxStyle()).twisterAnimation(value:section)
+        }
+        .frame(maxWidth:.infinity,maxHeight:.infinity).id(section)
+        .frame(minWidth:620,minHeight:460).background(Color(nsColor:.windowBackgroundColor))
         .onAppear(perform:readLaunchStatus)
+        .onAppear { navigation?.section=section }
+        .onChange(of:section) { navigation?.section=$0 }
+        .onReceive(navigation?.$section.eraseToAnyPublisher() ?? Empty().eraseToAnyPublisher()) { if section != $0 { section=$0 } }
         .onReceive(NotificationCenter.default.publisher(for:.showUpdateSettings)) { _ in section = .updates }
         .onReceive(NotificationCenter.default.publisher(for:.showPresetSettings)) { _ in section = .presets }
         .onChange(of:feedback) { UserDefaults.standard.set($0,forKey:"sound") }
@@ -74,127 +76,106 @@ struct SettingsView:View {
         .onChange(of:terminalApplication) { UserDefaults.standard.set($0=="com.googlecode.iterm2" ? "iTerm2":"Terminal",forKey:"terminalApp") }
     }
     @ViewBuilder private var presetsPage:some View { if let state { PresetSettingsView(state:state) } }
-    private var sidebar:some View {
-            VStack(alignment:.leading,spacing:24) {
-                HStack(spacing:9) { TwisterMark(size:32);Text("Settings").font(.system(size:14,weight:.bold,design:.default)) }.padding(.top,20)
-                VStack(spacing:5) {
-                    ForEach(SettingsSection.allCases) { item in
-                        Button { section=item } label:{
-                            HStack(spacing:10) { Image(systemName:item.symbol).frame(width:19);LText(item.rawValue).lineLimit(1).minimumScaleFactor(0.8).layoutPriority(1);Spacer(minLength:0) }
-                                .font(.system(size:12,weight:section==item ? .semibold:.medium,design:.default))
-                                .foregroundStyle(section==item ? TwisterPalette.forest:Color.secondary)
-                                .padding(.horizontal,13).padding(.vertical,12)
-                                .background(section==item ? TwisterPalette.surface:Color.clear,in:RoundedRectangle(cornerRadius:6))
-                        }.buttonStyle(.plain).accessibilityAddTraits(section==item ? .isSelected:[])
-                    }
-                }
-                Spacer()
-                Label("Local by design",systemImage:"lock.shield").font(.system(size:10,weight:.medium,design:.default)).foregroundStyle(.secondary).padding(.bottom,17)
-            }.padding(.horizontal,16).frame(width:188).background(TwisterPalette.inset.opacity(0.6))
-    }
     private func refreshOptionalExtras() { toolStatus=ExternalToolSetup.status;webDownloads=WebDownloadGate.preference(in:.standard) }
     /// Instructions and the permission check appear only after the feature is turned on.
     @ViewBuilder private var windowArrangementDetails:some View {
-        Text("Drag a window by its title bar or resize border, then tap Shift or Command. Hover over a layout and release the mouse to place it. Escape cancels.")
-            .font(.caption).foregroundStyle(.secondary)
-        Text("1/3 left · middle · right   /   1/2 left · right   /   2/3 left · right")
-            .font(.caption).foregroundStyle(.secondary)
+        VStack(alignment:.leading,spacing:4) {
+            Text("Drag a window by its title bar or resize border, then tap Shift or Command. Hover over a layout and release the mouse to place it. Escape cancels.")
+            Text("1/3 left · middle · right   /   1/2 left · right   /   2/3 left · right")
+        }.font(.subheadline).foregroundStyle(.secondary)
         Group {
             if !windowAccessibility {
-                HStack {
-                    Text("Allow \(WindowManagementController.permissionName) once to move and resize other apps’ windows.").font(.caption).foregroundStyle(.secondary)
-                    Spacer()
-                    Button("Open permission settings…") { WindowManagementController.requestAccess() }
+                LabeledContent {
+                    Button("Open Permission Settings…") { WindowManagementController.requestAccess() }
+                } label:{
+                    Text("Allow \(WindowManagementController.permissionName) once to move and resize other apps’ windows.").font(.subheadline).foregroundStyle(.secondary)
                 }
                 if Bundle.main.bundleIdentifier == "app.twister.desktop" {
-                    Text("Choose this copy of Twister when adding it to \(WindowManagementController.permissionName).").font(.caption).foregroundStyle(.secondary)
-                    Button("Show Twister in Finder") { NSWorkspace.shared.activateFileViewerSelecting([Bundle.main.bundleURL]) }
+                    LabeledContent {
+                        Button("Show Twister in Finder") { NSWorkspace.shared.activateFileViewerSelecting([Bundle.main.bundleURL]) }
+                    } label:{
+                        Text("Choose this copy of Twister when adding it to \(WindowManagementController.permissionName).").font(.subheadline).foregroundStyle(.secondary)
+                    }
                 }
-            } else { Label("\(WindowManagementController.permissionName) is enabled",systemImage:"checkmark.circle").font(.caption).foregroundStyle(.secondary) }
+            } else { Label("\(WindowManagementController.permissionName) is enabled",systemImage:"checkmark.circle").font(.subheadline).foregroundStyle(.secondary) }
         }
         .onAppear { windowAccessibility=AXIsProcessTrusted() }
         .onReceive(Timer.publish(every:2,on:.main,in:.common).autoconnect()) { _ in windowAccessibility=AXIsProcessTrusted() }
     }
     private var general:some View {
-        ScrollView { VStack(alignment:.leading,spacing:20) {
-            TwisterPageHeading(eyebrow:"General",title:"Make yourself at home.",subtitle:"Appearance, shortcuts, and everyday defaults.").padding(.bottom,4)
-            GroupBox {
-                VStack(spacing:16) {
-                    HStack { Text("Language");Spacer();Picker("Language",selection:$appLanguage) { Text(verbatim:"English").tag("en");Text(verbatim:"Türkçe").tag("tr") }.labelsHidden().frame(width:230).accessibilityIdentifier("AppLanguage").uiAuditSelection("languagePicker",appLanguage=="tr" ? "Türkçe":"English") }
-                    HStack { Text("Appearance");Spacer();Picker("Appearance",selection:$appAppearance) { Text("System").tag("system");Text("Light").tag("light");Text("Dark").tag("dark") }.labelsHidden().pickerStyle(.segmented).frame(width:230).uiAuditSelection("appearancePicker",appAppearance) }
-                    HStack { Text("Wheel finish");Spacer();Picker("Wheel finish",selection:$fanTheme) { Text("Glass").tag("glass");Text("Solid").tag("metallic") }.labelsHidden().pickerStyle(.segmented).frame(width:230) }
-                    Divider()
-                    Toggle("Launch at login",isOn:Binding(get:{launch},set:updateLaunch)).disabled(launchUnavailable)
-                    if launchNeedsApproval { HStack { Text("Allow Twister in macOS Login Items.").font(.caption).foregroundStyle(.secondary);Spacer();Button("Open Login Items") { SMAppService.openSystemSettingsLoginItems() } } }
-                    if launchUnavailable { Text("Launch at login is unavailable for this copy.").font(.caption).foregroundStyle(.secondary) }
-                    if let launchError { Text(launchError).font(.caption).foregroundStyle(.secondary) }
-                    HStack {
-                        Toggle("Sound and haptic feedback",isOn:$feedback)
-                        Button("Try feedback") { _ = WheelFeedback.shared.testPreview() }
-                            .disabled(!feedback)
-                    }
-                    Text("Sound follows your Mac’s volume. Haptics need a compatible Force Touch trackpad.")
-                        .font(.caption).foregroundStyle(.secondary).frame(maxWidth:.infinity,alignment:.leading)
-                    Toggle("Notify when a task finishes in the background",isOn:$jobNotifications)
-                    Toggle("Subtle animations",isOn:Binding(get:{!reduceAnimations},set:{reduceAnimations = !$0}))
-                    if systemReducedMotion { Text("macOS Reduce Motion is on. Twister keeps motion off.").font(.caption).foregroundStyle(.secondary) }
-                }.padding(10)
+        Form {
+            Section {
+                Picker("Language",selection:$appLanguage) { Text(verbatim:"English").tag("en");Text(verbatim:"Türkçe").tag("tr") }.accessibilityIdentifier("AppLanguage").uiAuditSelection("languagePicker",appLanguage=="tr" ? "Türkçe":"English")
+                Picker("Appearance",selection:$appAppearance) { Text("System").tag("system");Text("Light").tag("light");Text("Dark").tag("dark") }.uiAuditSelection("appearancePicker",appAppearance)
+                Picker("Wheel finish",selection:$fanTheme) { Text("Glass").tag("glass");Text("Solid").tag("metallic") }
             }
-            GroupBox("Drag shortcuts") {
-                VStack(alignment:.leading,spacing:16) {
-                    ForEach(WheelShortcut.allCases) { wheel in HStack {
-                        LText(wheel.title);Spacer()
-                        Picker(LocalizedStringKey(wheel.title),selection:shortcut(wheel)) { ForEach(ModifierPreferences.available(for:wheel)) { chord in Text("\(chord.symbols)  \(chord.title)").tag(chord.rawValue) } }.labelsHidden().frame(maxWidth:240)
-                    } }
-                    Text("Tap the chosen modifier combination while dragging files.").font(.caption).foregroundStyle(.secondary)
-                }.padding(10)
-            }.id(shortcutsRevision)
-            GroupBox("Optional extras") {
-                VStack(alignment:.leading,spacing:13) {
-                    if AppFeatures.webDownloads {
-                        Toggle("Web downloads",isOn:Binding(get:{ WebDownloadGate.isOn(preference:webDownloads,status:toolStatus) },set:{ webDownloads=$0;UserDefaults.standard.set($0,forKey:WebDownloadGate.preferenceKey) }))
-                            .accessibilityIdentifier("WebDownloadsEnabled")
-                        Text("Save media from a public link. This uses separate tools that file conversion does not need.").font(.caption).foregroundStyle(.secondary)
-                        if WebDownloadGate.isOn(preference:webDownloads,status:toolStatus),case .needsTools=WebDownloadGate.availability(included:true,preference:webDownloads,status:toolStatus) {
-                            HStack {
-                                Text("The web download tools are not installed.").font(.caption).foregroundStyle(.secondary)
-                                Spacer()
-                                Button("Install web download tools") { NotificationCenter.default.post(name:.showToolSetup,object:nil) }
-                            }
-                        }
-                        Divider()
+            Section {
+                Toggle(isOn:Binding(get:{launch},set:updateLaunch)) {
+                    Text("Launch at login")
+                    if launchUnavailable { Text("Launch at login is unavailable for this copy.") }
+                    if let launchError { Text(launchError) }
+                }.disabled(launchUnavailable)
+                if launchNeedsApproval { LabeledContent { Button("Open Login Items") { SMAppService.openSystemSettingsLoginItems() } } label:{ Text("Allow Twister in macOS Login Items.").font(.subheadline).foregroundStyle(.secondary) } }
+                Toggle(isOn:$feedback) {
+                    Text("Sound and haptic feedback")
+                    Text("Sound follows your Mac’s volume. Haptics need a compatible Force Touch trackpad.")
+                }
+                HStack { Spacer();Button("Try Feedback") { _ = WheelFeedback.shared.testPreview() }.disabled(!feedback) }
+                Toggle("Notify when a task finishes in the background",isOn:$jobNotifications)
+                Toggle(isOn:Binding(get:{!reduceAnimations},set:{reduceAnimations = !$0})) {
+                    Text("Subtle animations")
+                    if systemReducedMotion { Text("macOS Reduce Motion is on. Twister keeps motion off.") }
+                }
+            }
+            Section {
+                ForEach(WheelShortcut.allCases) { wheel in
+                    Picker(selection:shortcut(wheel)) { ForEach(ModifierPreferences.available(for:wheel)) { chord in Text("\(chord.symbols)  \(chord.title)").tag(chord.rawValue) } } label:{ LText(wheel.title) }
+                }
+            } header:{ Text("Drag shortcuts") } footer:{ Text("Tap the chosen modifier combination while dragging files.").frame(maxWidth:.infinity,alignment:.leading) }
+            .id(shortcutsRevision)
+            Section("Optional extras") {
+                if AppFeatures.webDownloads {
+                    Toggle(isOn:Binding(get:{ WebDownloadGate.isOn(preference:webDownloads,status:toolStatus) },set:{ webDownloads=$0;UserDefaults.standard.set($0,forKey:WebDownloadGate.preferenceKey) })) {
+                        Text("Web downloads")
+                        Text("Save media from a public link. This uses separate tools that file conversion does not need.")
+                    }.accessibilityIdentifier("WebDownloadsEnabled")
+                    if WebDownloadGate.isOn(preference:webDownloads,status:toolStatus),case .needsTools=WebDownloadGate.availability(included:true,preference:webDownloads,status:toolStatus) {
+                        LabeledContent {
+                            Button("Install Web Download Tools…") { NotificationCenter.default.post(name:.showToolSetup,object:nil) }
+                        } label:{ Text("The web download tools are not installed.").font(.subheadline).foregroundStyle(.secondary) }
                     }
-                    Toggle("Arrange windows while dragging",isOn:$windowManagementEnabled)
-                    Text("Window arrangement is an optional extra. It keeps working but is no longer being extended.").font(.caption).foregroundStyle(.secondary)
-                    if windowManagementEnabled { windowArrangementDetails }
-                }.padding(10)
+                }
+                Toggle(isOn:$windowManagementEnabled) {
+                    Text("Arrange windows while dragging")
+                    Text("Window arrangement is an optional extra. It keeps working but is no longer being extended.")
+                }
+                if windowManagementEnabled { windowArrangementDetails }
             }
             .onReceive(NotificationCenter.default.publisher(for:.toolSetupChanged)) { _ in refreshOptionalExtras() }
             .onReceive(NotificationCenter.default.publisher(for:NSApplication.didBecomeActiveNotification)) { _ in refreshOptionalExtras() }
-            GroupBox("File actions") {
-                VStack(spacing:16) {
-                    HStack { Text("Float Behaviour");Spacer();Picker("Float behavior",selection:$floatBehavior) { Text("Create a New Float").tag("createNew");Text("Add Files to an Existing Float").tag("addToExisting") }.labelsHidden().frame(maxWidth:240) }
-                    HStack { Text("Terminal app");Spacer();Picker("Terminal app",selection:$terminalApplication) { ForEach(terminalApplications,id:\.0) { app in Text(app.1).tag(app.0) } }.labelsHidden().frame(maxWidth:240) }
-                }.padding(10)
+            Section("File actions") {
+                Picker("Float behavior",selection:$floatBehavior) { Text("Create a New Float").tag("createNew");Text("Add Files to an Existing Float").tag("addToExisting") }
+                Picker("Terminal app",selection:$terminalApplication) { ForEach(terminalApplications,id:\.0) { app in Text(app.1).tag(app.0) } }
             }
-            DisclosureGroup("Additional options") { VStack(alignment:.leading,spacing:13) {
+            Section("Advanced") {
                 Toggle("Enable Twister",isOn:$enabled)
                 Toggle("Reveal finished files in Finder while Twister is active",isOn:$reveal)
-                HStack { Text("Wheel size");Slider(value:$wheelScale,in:0.85...1.4).frame(width:230);Text("\(Int(wheelScale*100))%").monospacedDigit().frame(width:40) }
-            }.padding(.top,12) }
-        }.padding(26).frame(maxWidth:680) }.frame(maxWidth:.infinity)
+                LabeledContent("Wheel size") { HStack { Slider(value:$wheelScale,in:0.85...1.4).frame(width:200);Text("\(Int(wheelScale*100))%").monospacedDigit().frame(width:44,alignment:.trailing) } }
+            }
+        }.formStyle(.grouped)
     }
     private var formats:some View {
         HStack(spacing:0) {
             VStack(spacing:0) {
-                TextField("Search formats",text:$formatSearch).textFieldStyle(.roundedBorder).padding(12)
+                TextField("Search",text:$formatSearch).textFieldStyle(.roundedBorder).padding(8).accessibilityLabel(L10n.text("Search formats"))
+                Divider()
                 List(selection:$selectedFormat) {
                     ForEach(FormatPreferenceItem.groups,id:\.0) { group in
                         let entries=FormatPreferenceItem.all.filter{$0.group==group.0 && (formatSearch.isEmpty || $0.title.localizedCaseInsensitiveContains(formatSearch) || $0.id.localizedCaseInsensitiveContains(formatSearch))}
-                        if !entries.isEmpty { Section(LocalizedStringKey(group.0)) { ForEach(entries) { item in Text(item.id=="gz" ? "GZIP":item.id.uppercased()).tag(item.id) } } }
+                        if !entries.isEmpty { Section(LocalizedStringKey(group.0)) { ForEach(entries) { item in Text(item.id=="gz" ? "GZIP":item.id.uppercased()).tag(item.id).listRowSeparator(.hidden) } } }
                     }
-                }.listStyle(.sidebar)
-            }.frame(width:154).background(TwisterPalette.surface)
+                }.listStyle(.inset)
+            }.frame(width:160)
             Divider()
             FormatSettingsDetail(format:FormatPreferenceItem.all.first{$0.id==selectedFormat} ?? FormatPreferenceItem.all[0],preferences:preferences,state:state).frame(maxWidth:.infinity,maxHeight:.infinity)
         }
@@ -215,7 +196,7 @@ struct SettingsView:View {
 enum SettingsSection:String,CaseIterable,Identifiable {
     case general="General",formats="Formats",presets="Presets",compatibility="Compatibility",folders="Folders",updates="Updates",about="About"
     var id:String { rawValue }
-    var symbol:String { switch self { case .general:return "gearshape";case .formats:return "doc.on.doc";case .presets:return "bookmark";case .compatibility:return "square.grid.3x3";case .folders:return "folder";case .updates:return "arrow.triangle.2.circlepath";case .about:return "info.circle" } }
+    var symbol:String { switch self { case .general:return "gearshape";case .formats:return "doc";case .presets:return "bookmark";case .compatibility:return "arrow.left.arrow.right";case .folders:return "folder";case .updates:return "arrow.down.circle";case .about:return "info.circle" } }
 }
 
 private struct FormatSettingsDetail:View {
@@ -231,75 +212,81 @@ private struct FormatSettingsDetail:View {
     private var hasLayout:Bool { ["docx","pages","epub"].contains(format.id) }
     private var hasControls:Bool { hasQuality || hasMetadata || hasAudioBitrate || hasDepth || hasCompression || hasLayout || format.id=="gif" }
     var body:some View {
-        ScrollView { VStack(alignment:.leading,spacing:20) {
-            TwisterPageHeading(eyebrow:"Format preferences",title:"\(format.title) \(format.isInputOnly ? "input":"exports")",subtitle:format.isInputOnly ? "Bring this format in, then choose its next form.":"Your go-to settings whenever you save a \(format.title) file.")
-            LText(format.compatibilityLabel).font(.caption).foregroundStyle(.secondary)
-            if format.isInputOnly { Text("This format can be imported. Choose an output format in the sidebar to configure its defaults.").foregroundStyle(.secondary).padding(.vertical,14) }
-            else if hasControls {
-                GroupBox { VStack(alignment:.leading,spacing:18) {
-                    HStack { Text("Conversion Settings").font(.headline);Spacer();Button("Restore Defaults") { preferences.restoreDefaults(for:format.id) }.controlSize(.small) }
-                    Divider()
-                    if hasQuality { row("Quality") { Picker("Quality",selection:profile(\.quality)) { ForEach(OutputQuality.allCases) { LText($0.title).tag($0) } }.labelsHidden() } }
+        Form {
+            Section {
+                LabeledContent { LText(format.compatibilityLabel) } label:{ Text(verbatim:format.title) }
+            } footer:{
+                if format.isInputOnly { Text("This format can be imported. Choose an output format in the sidebar to configure its defaults.").frame(maxWidth:.infinity,alignment:.leading) }
+                else if !hasControls { Text("This output format has no adjustable conversion defaults.").frame(maxWidth:.infinity,alignment:.leading) }
+            }
+            if !format.isInputOnly,hasControls {
+                Section("Conversion Settings") {
+                    if hasQuality { Picker("Quality",selection:profile(\.quality)) { ForEach(OutputQuality.allCases) { LText($0.title).tag($0) } } }
                     if hasMetadata { Toggle("Preserve metadata",isOn:profile(\.preserveMetadata)) }
-                    if hasAudioBitrate { row("Bitrate") { Picker("Audio bitrate",selection:profile(\.audioBitrate)) { ForEach([128,192,256,320],id:\.self) { Text("\($0) kbps").tag($0) } }.labelsHidden() } }
-                    if hasDepth { row("Sample depth") { Picker("Sample depth",selection:profile(\.audioSampleDepth)) { Text("Match Source").tag("matchSource");Text("16-bit integer").tag("pcm16");Text("24-bit integer").tag("pcm24");Text("32-bit integer").tag("pcm32");Text("32-bit float").tag("float32") }.labelsHidden() } }
-                    if isVideo { row("Maximum height") { Picker("Maximum video height",selection:profile(\.videoMaxHeight)) { Text("Original").tag(0);ForEach([2160,1080,720,480],id:\.self) { Text("\($0)p").tag($0) } }.labelsHidden() } }
-                    if hasCompression { row("Compression") { compressionPicker(profile(\.compressionPreset)) } }
+                    if hasAudioBitrate { Picker("Bitrate",selection:profile(\.audioBitrate)) { ForEach([128,192,256,320],id:\.self) { Text("\($0) kbps").tag($0) } } }
+                    if hasDepth { Picker("Sample depth",selection:profile(\.audioSampleDepth)) { Text("Match Source").tag("matchSource");Text("16-bit integer").tag("pcm16");Text("24-bit integer").tag("pcm24");Text("32-bit integer").tag("pcm32");Text("32-bit float").tag("float32") } }
+                    if isVideo { Picker("Maximum height",selection:profile(\.videoMaxHeight)) { Text("Original").tag(0);ForEach([2160,1080,720,480],id:\.self) { Text("\($0)p").tag($0) } } }
+                    if hasCompression { compressionPicker(profile(\.compressionPreset)) }
                     if format.id=="gif" {
-                        row("Frame rate") { Picker("GIF frame rate",selection:profile(\.gifFrameRate)) { ForEach([10,15,24],id:\.self) { Text("\($0) fps").tag($0) } }.labelsHidden() }
-                        row("Maximum width") { Picker("GIF maximum width",selection:profile(\.gifMaxWidth)) { ForEach([480,960,1280],id:\.self) { Text("\($0) px").tag($0) } }.labelsHidden() }
-                        row("Compression") { compressionPicker(profile(\.compressionPreset)) }
+                        Picker("Frame rate",selection:profile(\.gifFrameRate)) { ForEach([10,15,24],id:\.self) { Text("\($0) fps").tag($0) } }
+                        Picker("Maximum width",selection:profile(\.gifMaxWidth)) { ForEach([480,960,1280],id:\.self) { Text("\($0) px").tag($0) } }
+                        compressionPicker(profile(\.compressionPreset))
                     }
-                    if ["docx","pages"].contains(format.id) { row("PDF layout") { Picker("PDF output layout",selection:profile(\.pdfOfficeLayout)) { Text("Editable paragraphs and tables").tag("editable");Text("Preserve original pages").tag("preservePages") }.labelsHidden() } }
-                    if format.id=="epub" { row("PDF layout") { Picker("EPUB layout",selection:profile(\.epubLayout)) { Text("Reflowable text").tag("reflowable");Text("Preserve original pages").tag("fixed") }.labelsHidden() } }
-                }.padding(12) }
-            } else { Text("This output format has no adjustable conversion defaults.").foregroundStyle(.secondary).padding(.vertical,14) }
-            if let state,!format.isInputOnly {
-                HStack { LText("Keep these settings as a preset you can run on any files that convert to \(format.title).").font(.caption).foregroundStyle(.secondary).fixedSize(horizontal:false,vertical:true);Spacer(minLength:8);Button { PresetPrompt.save(.convert(format.id),options:preferences.options(for:format.id),state:state) } label:{ LText("Save as preset…").lineLimit(1).fixedSize() }.controlSize(.small) }
+                    if ["docx","pages"].contains(format.id) { Picker("PDF layout",selection:profile(\.pdfOfficeLayout)) { Text("Editable paragraphs and tables").tag("editable");Text("Preserve original pages").tag("preservePages") } }
+                    if format.id=="epub" { Picker("PDF layout",selection:profile(\.epubLayout)) { Text("Reflowable text").tag("reflowable");Text("Preserve original pages").tag("fixed") } }
+                    HStack { Spacer();Button("Restore Defaults") { preferences.restoreDefaults(for:format.id) } }
+                }
             }
             if ["jpg","png"].contains(format.id) { imageCompression }
             if isVideo || format.id=="gif" { videoCompression }
-            Spacer(minLength:12)
-        }.padding(14) }.id(format.id)
+            if let state,!format.isInputOnly {
+                Section {
+                    LabeledContent {
+                        Button { PresetPrompt.save(.convert(format.id),options:preferences.options(for:format.id),state:state) } label:{ LText("Save as Preset…").lineLimit(1).fixedSize() }
+                    } label:{ LText("Keep these settings as a preset you can run on any files that convert to \(format.title).").font(.subheadline).foregroundStyle(.secondary).fixedSize(horizontal:false,vertical:true) }
+                }
+            }
+        }.formStyle(.grouped).id(format.id)
     }
     private var imageCompression:some View {
-        GroupBox { VStack(alignment:.leading,spacing:17) {
-            HStack { Text("Compression Settings").font(.headline);Spacer();Button("Restore Defaults") { preferences.restoreCompressionDefaults(video:false) }.controlSize(.small) }
-            Divider()
-            row("Image Compression") { Picker("Image compression",selection:Binding(get:{preferences.imageCompressionStrength},set:{preferences.setCompression($0,key:"defaultImageCompressionStrength")})) { Text("Balanced").tag("balanced");Text("Strong").tag("strong") }.labelsHidden() }
-            row("Image size") { Picker("Image size",selection:Binding(get:{preferences.imageCompressionSize},set:{preferences.setCompression($0,key:"defaultImageCompressionSize")})) { Text("Keep original dimensions").tag("original");Text("Large · 2560 px").tag("large");Text("Medium · 1920 px").tag("medium");Text("Small · 1280 px").tag("small") }.labelsHidden() }
-        }.padding(12) }
+        Section("Compression Settings") {
+            Picker("Image Compression",selection:Binding(get:{preferences.imageCompressionStrength},set:{preferences.setCompression($0,key:"defaultImageCompressionStrength")})) { Text("Balanced").tag("balanced");Text("Strong").tag("strong") }
+            Picker("Image size",selection:Binding(get:{preferences.imageCompressionSize},set:{preferences.setCompression($0,key:"defaultImageCompressionSize")})) { Text("Keep original dimensions").tag("original");Text("Large · 2560 px").tag("large");Text("Medium · 1920 px").tag("medium");Text("Small · 1280 px").tag("small") }
+            HStack { Spacer();Button("Restore Defaults") { preferences.restoreCompressionDefaults(video:false) } }
+        }
     }
     private var videoCompression:some View {
-        GroupBox { VStack(alignment:.leading,spacing:17) {
-            HStack { Text("Compression Settings").font(.headline);Spacer();Button("Restore Defaults") { preferences.restoreCompressionDefaults(video:true) }.controlSize(.small) }
-            Divider()
-            row("Video Compression") { Picker("Video compression",selection:Binding(get:{preferences.videoCompressionStrength},set:{preferences.setCompression($0,key:"defaultVideoCompressionStrength")})) { Text("Balanced").tag("balanced");Text("Strong").tag("strong") }.labelsHidden() }
-        }.padding(12) }
+        Section("Compression Settings") {
+            Picker("Video Compression",selection:Binding(get:{preferences.videoCompressionStrength},set:{preferences.setCompression($0,key:"defaultVideoCompressionStrength")})) { Text("Balanced").tag("balanced");Text("Strong").tag("strong") }
+            HStack { Spacer();Button("Restore Defaults") { preferences.restoreCompressionDefaults(video:true) } }
+        }
     }
     private func profile<T>(_ key:WritableKeyPath<OutputFormatProfile,T>)->Binding<T> {
         Binding(get:{preferences.profile(for:format.id)[keyPath:key]},set:{value in var p=preferences.profile(for:format.id);p[keyPath:key]=value;preferences.save(p,for:format.id)})
     }
-    private func row<Content:View>(_ title:String,@ViewBuilder content:()->Content)->some View { HStack(alignment:.center,spacing:12) { LText(title);Spacer(minLength:8);content().frame(maxWidth:260) } }
-    private func compressionPicker(_ binding:Binding<String>)->some View { Picker("Compression",selection:binding) { Text("Faster").tag("fast");Text("Balanced").tag("balanced");Text("Smallest").tag("maximum") }.labelsHidden() }
+    private func compressionPicker(_ binding:Binding<String>)->some View { Picker("Compression",selection:binding) { Text("Faster").tag("fast");Text("Balanced").tag("balanced");Text("Smallest").tag("maximum") } }
 }
 
 private struct FolderSettingsView:View {
     @State private var folders:[AllowedFolder]=[]
     @State private var error:String?
     var body:some View {
-        VStack(alignment:.leading,spacing:18) {
-            Text("Folders").font(.title2.weight(.semibold))
-            Text("Twister saves results beside the originals. Allow a folder once to include every folder inside it.").foregroundStyle(.secondary)
-            if folders.isEmpty { VStack(spacing:9) { Image(systemName:"folder.badge.questionmark").font(.system(size:40)).foregroundStyle(.secondary);Text("No folders allowed yet.").foregroundStyle(.secondary) }.frame(maxWidth:.infinity,maxHeight:.infinity) }
-            else { List { ForEach(folders) { grant in HStack {
-                Image(systemName:"folder").foregroundStyle(Color.twister)
-                VStack(alignment:.leading,spacing:3) { Text(URL(fileURLWithPath:grant.path).lastPathComponent);Text(grant.path).font(.caption).foregroundStyle(.secondary).textSelection(.enabled) }
-                Spacer();Button { FolderAccessPreferences.remove(grant);refresh() } label:{Image(systemName:"minus.circle")}.buttonStyle(.plain).help("Remove folder access")
-            } } }.listStyle(.inset) }
-            if let error { LText(error).font(.caption).foregroundStyle(.red) }
-            HStack { Button("Allow Folder…") { choose(home:false) };Button("Allow Home Folder Access…") { choose(home:true) };Spacer() }
-        }.padding(24).onAppear(perform:refresh)
+        Form {
+            Section {
+                if folders.isEmpty { Text("No folders allowed yet.").foregroundStyle(.secondary) }
+                ForEach(folders) { grant in HStack {
+                    Image(nsImage:NSWorkspace.shared.icon(forFile:grant.path)).resizable().frame(width:24,height:24).accessibilityHidden(true)
+                    VStack(alignment:.leading,spacing:2) { Text(URL(fileURLWithPath:grant.path).lastPathComponent);Text((grant.path as NSString).abbreviatingWithTildeInPath).font(.subheadline).foregroundStyle(.secondary).textSelection(.enabled) }
+                    Spacer();Button { FolderAccessPreferences.remove(grant);refresh() } label:{Image(systemName:"minus.circle")}.buttonStyle(.borderless).help("Remove folder access").accessibilityLabel(L10n.text("Remove folder access"))
+                } }
+                HStack { Spacer();Button("Allow Home Folder Access…") { choose(home:true) };Button("Allow Folder…") { choose(home:false) } }
+            } header:{ Text("Folders") } footer:{
+                VStack(alignment:.leading,spacing:4) {
+                    Text("Twister saves results beside the originals. Allow a folder once to include every folder inside it.")
+                    if let error { LText(error).foregroundStyle(.red) }
+                }.frame(maxWidth:.infinity,alignment:.leading)
+            }
+        }.formStyle(.grouped).onAppear(perform:refresh)
     }
     private func refresh() { folders=FolderAccessPreferences.grants() }
     private func choose(home:Bool) {
@@ -315,31 +302,66 @@ private struct CompatibilitySettingsView:View {
     @State private var source="jpg"
     private var targets:[String] { FeatureCatalog.conversionMatrix[source] ?? [] }
     var body:some View {
-        VStack(alignment:.leading,spacing:20) {
-            Text("Format Compatibility").font(.title2.weight(.semibold))
-            Text("Choose an input format to see its available outputs.").foregroundStyle(.secondary)
-            Picker("Input format",selection:$source) { ForEach(FormatPreferenceItem.all.filter{!$0.isOutputOnly}) { LText($0.title).tag($0.id) } }.frame(width:270)
-            Divider()
-            Text("Convert to").font(.headline)
-            LazyVGrid(columns:[GridItem(.adaptive(minimum:105))],alignment:.leading,spacing:12) { ForEach(targets,id:\.self) { format in Button { onSelectFormat(format) } label:{ Text(format=="gz" ? "GZIP":format.uppercased()).frame(maxWidth:.infinity).padding(.vertical,9) } } }
-            Spacer()
-            Text("Files are processed locally on your Mac.").font(.caption).foregroundStyle(.secondary)
-        }.padding(28)
+        Form {
+            Section {
+                Picker("Input format",selection:$source) { ForEach(FormatPreferenceItem.all.filter{!$0.isOutputOnly}) { LText($0.title).tag($0.id) } }
+            } footer:{ Text("Choose an input format to see its available outputs.").frame(maxWidth:.infinity,alignment:.leading) }
+            Section("Convert to") {
+                if targets.isEmpty { Text("No output formats").foregroundStyle(.secondary) }
+                LazyVGrid(columns:[GridItem(.adaptive(minimum:76),spacing:8)],alignment:.leading,spacing:8) { ForEach(targets,id:\.self) { format in Button { onSelectFormat(format) } label:{ Text(format=="gz" ? "GZIP":format.uppercased()).frame(maxWidth:.infinity) } } }
+            }
+        }.formStyle(.grouped)
     }
 }
 
 private struct AboutSettingsView:View {
     private var version:String { Bundle.main.object(forInfoDictionaryKey:"CFBundleShortVersionString") as? String ?? "Development" }
+    private var build:String { Bundle.main.object(forInfoDictionaryKey:"CFBundleVersion") as? String ?? "—" }
     var body:some View {
-        VStack(spacing:17) {
-            Spacer()
-            TwisterMark(size:96,happy:true)
-            Text("Twister").font(.system(size:32,weight:.bold,design:.default))
-            Text("A little order.").font(.headline)
-            Text("Version \(version)").foregroundStyle(.secondary)
-            Text("Convert, edit, and organize your files.\nProcessed locally on your Mac.").multilineTextAlignment(.center).foregroundStyle(.secondary)
-            Text("Native tools for everyday files.").font(.caption).foregroundStyle(.secondary)
-            Spacer()
-        }.padding(30).frame(maxWidth:.infinity)
+        VStack(spacing:8) {
+            Image(nsImage:NSApp.applicationIconImage).resizable().frame(width:96,height:96).accessibilityHidden(true)
+            Text(verbatim:"Twister").font(.title.weight(.semibold))
+            Text("Version \(version) (\(build))").font(.callout).foregroundStyle(.secondary).textSelection(.enabled)
+            Text("Convert, edit, and organize your files.\nProcessed locally on your Mac.").font(.callout).multilineTextAlignment(.center).foregroundStyle(.secondary).padding(.top,8)
+        }.padding(32).frame(maxWidth:.infinity,maxHeight:.infinity)
     }
+}
+
+/// The selected Settings pane, shared by the toolbar tabs and the view.
+@MainActor final class SettingsNavigation:ObservableObject {
+    @Published var section=SettingsSection.general
+}
+
+/// Standard preference tabs in the window toolbar, one per pane.
+@MainActor final class SettingsToolbar:NSObject,NSToolbarDelegate {
+    let navigation:SettingsNavigation
+    private let toolbar=NSToolbar(identifier:"Twister.Settings")
+    private var observations:Set<AnyCancellable>=[]
+    init(navigation:SettingsNavigation) { self.navigation=navigation;super.init() }
+    func install(in window:NSWindow) {
+        toolbar.delegate=self;toolbar.displayMode = .iconAndLabel;toolbar.allowsUserCustomization=false
+        window.toolbar=toolbar;window.toolbarStyle = .preference
+        toolbar.selectedItemIdentifier=identifier(navigation.section)
+        navigation.$section.sink { [weak self,weak window] section in
+            guard let self else{return}
+            self.toolbar.selectedItemIdentifier=self.identifier(section)
+            // A preference window is titled after its pane.
+            if let window { L10n.windowTitle(window,source:section.rawValue) }
+        }.store(in:&observations)
+        NotificationCenter.default.publisher(for:.twisterLanguageChanged).sink { [weak self] _ in
+            guard let self else{return}
+            for item in self.toolbar.items { if let section=SettingsSection(rawValue:item.itemIdentifier.rawValue) { item.label=L10n.text(section.rawValue) } }
+        }.store(in:&observations)
+    }
+    private func identifier(_ section:SettingsSection)->NSToolbarItem.Identifier { .init(section.rawValue) }
+    func toolbarAllowedItemIdentifiers(_ toolbar:NSToolbar)->[NSToolbarItem.Identifier] { SettingsSection.allCases.map(identifier) }
+    func toolbarDefaultItemIdentifiers(_ toolbar:NSToolbar)->[NSToolbarItem.Identifier] { SettingsSection.allCases.map(identifier) }
+    func toolbarSelectableItemIdentifiers(_ toolbar:NSToolbar)->[NSToolbarItem.Identifier] { SettingsSection.allCases.map(identifier) }
+    func toolbar(_ toolbar:NSToolbar,itemForItemIdentifier itemIdentifier:NSToolbarItem.Identifier,willBeInsertedIntoToolbar flag:Bool)->NSToolbarItem? {
+        guard let section=SettingsSection(rawValue:itemIdentifier.rawValue) else { return nil }
+        let item=NSToolbarItem(itemIdentifier:itemIdentifier)
+        item.label=L10n.text(section.rawValue);item.image=NSImage(systemSymbolName:section.symbol,accessibilityDescription:nil)
+        item.target=self;item.action=#selector(select(_:));return item
+    }
+    @objc private func select(_ sender:NSToolbarItem) { if let section=SettingsSection(rawValue:sender.itemIdentifier.rawValue) { navigation.section=section } }
 }
