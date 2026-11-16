@@ -58,6 +58,11 @@ struct TwisterEntrance:ViewModifier {
 extension View {
     func twisterAnimation<V:Equatable>(value:V)->some View { modifier(TwisterMotionModifier(value:value)) }
     func twisterEntrance(delay:Double=0)->some View { modifier(TwisterEntrance(delay:delay)) }
+    /// The fill and hairline of a bordered list, for rows that are not in a List.
+    func twisterGroup()->some View {
+        background(Color(nsColor:.controlBackgroundColor),in:RoundedRectangle(cornerRadius:6,style:.continuous))
+            .overlay(RoundedRectangle(cornerRadius:6,style:.continuous).strokeBorder(Color(nsColor:.separatorColor),lineWidth:1))
+    }
     func twisterCard(radius:CGFloat=10)->some View {
         background(TwisterPalette.surface,in:RoundedRectangle(cornerRadius:min(radius,10),style:.continuous))
             .overlay(RoundedRectangle(cornerRadius:min(radius,10),style:.continuous).strokeBorder(TwisterPalette.border,lineWidth:1))
@@ -110,6 +115,12 @@ struct TwisterGroupBoxStyle:GroupBoxStyle {
             configuration.content
         }.padding(20).frame(maxWidth:.infinity,alignment:.leading).twisterCard()
     }
+}
+
+/// The window behind a sidebar shows through it, as in Finder and Mail.
+struct SidebarBackground:NSViewRepresentable {
+    func makeNSView(context:Context)->NSVisualEffectView { let view=NSVisualEffectView();view.material = .sidebar;view.blendingMode = .behindWindow;view.state = .followsWindowActiveState;return view }
+    func updateNSView(_ view:NSVisualEffectView,context:Context) { }
 }
 
 struct TwisterMark:View {

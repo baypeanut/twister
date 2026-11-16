@@ -65,3 +65,18 @@ extension EnvironmentValues {
         for observer in workspaceObservers { workspaceCenter.removeObserver(observer) }
     }
 }
+
+/// Names a window that has no title bar. A native title bar already does, so nothing is drawn below one.
+struct WindowHeader:View {
+    let title:String
+    @Environment(\.nativeWindowChrome) private var nativeWindowChrome
+    var body:some View {
+        if !nativeWindowChrome {
+            HStack(spacing:8) {
+                WindowCloseButton().frame(width:16,height:16)
+                ZStack { WindowDragRegion();HStack { LText(title).font(.headline);Spacer() }.allowsHitTesting(false) }
+            }.padding(.horizontal,16).frame(height:36)
+            Divider()
+        }
+    }
+}
