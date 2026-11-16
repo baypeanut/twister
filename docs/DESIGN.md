@@ -16,6 +16,8 @@ The main window supports a 700 × 580 content area. Long file names wrap or trun
 
 Native open panels, drag and drop, clipboard import, Finder gestures, contextual menus and keyboard shortcuts remain available. Selection actions are generated from supported operations rather than decorative placeholders. A conversion or tool started while another task runs waits in a queue and starts by itself; moving, sharing and Library reuse stay disabled until the running task ends. A batch lists its files with their status, and a file that failed shows its reason beside a retry for the failed files only. Reduced Motion preferences are respected; hover feedback does not shift content.
 
+A preset is a saved operation with its options and an optional destination. Presets are saved from the place where the options are chosen, and the workspace offers only the presets the catalog allows for the current selection. Twister ships no sample presets. The Services menu entries follow the same rule: a request that cannot act on the files says why instead of opening an empty chooser.
+
 English and Turkish copy share one catalog. User file names and paths remain verbatim. Icons that accompany text are decorative; icon-only actions retain accessible labels.
 
 ## Shortcuts actions

@@ -14,6 +14,14 @@ Press ⌘V in the workspace to import supported files, an image, text or a media
 
 While dragging files in Finder, hold Shift for conversions, Command for tools or Control for file actions. The modifier choices can be changed in Settings. These optional gestures use macOS permissions; choosing and dropping files in the workspace remains available separately.
 
+## Send files from Finder
+
+Select files in Finder and choose **Services** in the context menu. **Open in Twister** places them in the workspace, **Convert with Twister…** opens the conversion wheel for them, and **Run Twister Preset…** lists the saved presets that fit every selected file. If the entries are not shown, enable them in System Settings → Keyboard → Keyboard Shortcuts → Services → Files and Folders.
+
+## Save a preset
+
+Use the bookmark button in an editor footer to save the tool with its current options, or **Save as preset…** in Settings → Formats to save a conversion. Name the preset and choose whether it follows the current output folder, always saves beside the originals or always saves to the current folder. Presets that fit the selection appear under **Presets** in the workspace; **Run** adds the preset to the task queue. Rename, duplicate, reorder or delete presets from the **…** menu there or in Settings → Presets. A preset saved from an editor keeps values that belong to one file as well, such as a crop rectangle, so save presets from options that make sense for other files.
+
 ## Understand exports
 
 Conversions and editing tools write separate results. Twister stages an export before publishing it and chooses a new name when the destination already contains that name. Explicit file actions such as **Move** act on the selected files themselves, so distinguish those actions from exporting an edited copy.

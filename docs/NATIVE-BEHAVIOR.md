@@ -22,6 +22,12 @@ Finishing or skipping the welcome tour opens the workspace immediately. Media an
 
 Window arrangement is off by default. Enabling it starts its observer; disabling Twister or window arrangement stops that observer. Existing explicit preferences are respected.
 
+## Finder services
+
+`Resources/Info.plist` declares three Services menu entries for files: **Open in Twister**, **Convert with Twister…** and **Run Twister Preset…**. They accept `public.item`, return nothing and are localized through the generated `ServicesMenu.strings` tables. macOS starts Twister when an entry is chosen while it is not running. Opening sends the files to the workspace, converting also opens the conversion wheel for them, and the preset entry opens a list of the saved presets that fit every file. A preset started there joins the task queue, so its result reaches the batch list, the Library and the background notification like any other task. An entry that cannot act on the files reports the reason in an alert.
+
+The audit bundle made by `scripts/test-native-ui.py` leaves the services out, so QA copies never add entries to the Services menu.
+
 ## Verification
 
 `--window-lifecycle-smoke OUTPUT` uses isolated preferences and generated files in its own process. Its 28 assertions cover window levels and controls, native titlebar close-button duplication, app/Space/session notifications, view and source preservation, an uncancelled background token, Library persistence, minimize/reopen, Escape, observer cleanup and opt-in monitoring. It does not claim to synthesize external-application clicks.

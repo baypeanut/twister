@@ -13,6 +13,8 @@ Native file tools for macOS. Convert, edit and prepare images, PDFs, documents, 
 - Organize, merge and split PDFs. Undo and redo up to 50 page or annotation edits.
 - Preview and trim audio and video, adjust selection endpoints and export clips.
 - Choose a saved output folder or keep results beside the original files.
+- Save an operation with its options as a preset and run it again from the workspace, Finder or the command line.
+- Send files from Finder through the Services menu.
 - Search recent results in Library, preview them and use them in another operation.
 - Download supported public media links and continue editing the downloaded files.
 - Carry files between apps with Float and use optional window arrangement tools.
@@ -44,6 +46,14 @@ Click the menu-bar icon to open Twister. Click it again, press Escape or switch 
 
 A conversion or tool started while another task is running waits in a queue. A batch lists each file as waiting, working, done or failed with its reason; a summary such as "7 of 9 done, 2 failed" offers **Retry failed** for the failed files only. Library records the files that succeeded.
 
+### Presets
+
+**Save as preset…**, the bookmark button in an editor footer and in the EPUB options, keeps the tool with the options you chose. Settings → Formats saves a conversion with that format's settings. A preset can follow the current output folder, always save beside the originals or always save to one folder. The workspace lists the presets that fit the selected files under **Presets**; Settings → Presets lists all of them. Each can be run, renamed, duplicated, moved up or down and deleted. A password typed for a protected file is never saved in a preset.
+
+### Finder
+
+Select files in Finder and open **Services** from the context menu or the Finder menu: **Open in Twister** sends them to the workspace, **Convert with Twister…** opens the conversion wheel for them and **Run Twister Preset…** lists the presets that fit. macOS lists the entries once it has registered the app, normally the first time Twister is opened. If they are missing or you want a keyboard shortcut for one, turn them on in System Settings → Keyboard → Keyboard Shortcuts → Services → Files and Folders.
+
 | Action | Shortcut |
 | --- | --- |
 | Choose files | ⌘O |
@@ -68,13 +78,24 @@ swift build --product twister-cli
 .build/debug/twister-cli inspect photo.png
 ```
 
-The CLI supports `convert`, `tool`, `inspect`, `dependencies`, `catalog` and JSON options. With the optional runtimes installed, `twister-cli dependencies` prints the resolved conversion-tool paths; a missing dependency returns an error. The app and CLI have separate executable names so both can be built on the default macOS filesystem. Add `--json` to a conversion or tool command to print the output paths as a JSON array:
+The CLI supports `convert`, `tool`, `preset`, `inspect`, `dependencies`, `catalog` and JSON options. With the optional runtimes installed, `twister-cli dependencies` prints the resolved conversion-tool paths; a missing dependency returns an error. The app and CLI have separate executable names so both can be built on the default macOS filesystem. Add `--json` to a conversion or tool command to print the output paths as a JSON array:
 
 ```sh
 .build/debug/twister-cli convert png photo.jpg --json
 ```
 
 Each file of a batch is exported by itself. The paths of the finished files go to standard output, and each failed file is reported on standard error as `PATH: reason`.
+
+Presets are shared with the app. They are stored in `~/Library/Application Support/Twister/Presets.json`; set `TWISTER_PRESETS_FILE` to use another file.
+
+```sh
+.build/debug/twister-cli preset list
+.build/debug/twister-cli preset run "Web JPEG" --json -- photo.png "--odd name.png"
+.build/debug/twister-cli preset export "Web JPEG" > web-jpeg.json
+.build/debug/twister-cli preset import web-jpeg.json
+```
+
+`preset list` prints each name with its operation, and `preset list --json` prints every preset in the format `export` and `import` use. `preset run` accepts `--options`, `--json` and `--` like `convert`, uses the same exit statuses and saves where the preset says; `--options` changes the saved options for that run only. `import` adds presets without replacing any: a name that is already taken gets a number. A preset is not run when its name is unknown or its folder is missing, and the command exits with 1.
 
 | Exit status | Meaning |
 | --- | --- |
