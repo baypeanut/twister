@@ -549,14 +549,14 @@ private final class ShelfPanel:NSPanel {
             icon.draw(in:rect,from:.zero,operation:.sourceOver,fraction:1,respectFlipped:true,hints:[.interpolation:NSImageInterpolation.high])
             NSGraphicsContext.restoreGraphicsState()
         }
-        // A silver wire clip keeps the stack recognizable without a surrounding window.
-        let clip=NSBezierPath();clip.move(to:NSPoint(x:76,y:29));clip.line(to:NSPoint(x:57,y:72))
-        clip.curve(to:NSPoint(x:78,y:81),controlPoint1:NSPoint(x:47,y:94),controlPoint2:NSPoint(x:70,y:101))
-        clip.line(to:NSPoint(x:94,y:43));clip.curve(to:NSPoint(x:81,y:37),controlPoint1:NSPoint(x:102,y:26),controlPoint2:NSPoint(x:87,y:22))
-        clip.line(to:NSPoint(x:66,y:72));clip.lineCapStyle = .round
-        NSColor.black.withAlphaComponent(0.24).setStroke();clip.lineWidth=4.5;clip.stroke()
-        NSColor(srgbRed:0.76,green:0.79,blue:0.77,alpha:1).setStroke();clip.lineWidth=2.6;clip.stroke()
-        NSColor.white.withAlphaComponent(0.8).setStroke();clip.lineWidth=0.7;clip.stroke()
+        // The system paperclip marks the corner that moves Float; white with a shadow stays legible over any file icon.
+        let configuration=NSImage.SymbolConfiguration(pointSize:26,weight:.semibold).applying(.init(paletteColors:[.white]))
+        if let clip=NSImage(systemSymbolName:"paperclip",accessibilityDescription:nil)?.withSymbolConfiguration(configuration) {
+            NSGraphicsContext.saveGraphicsState()
+            let shadow=NSShadow();shadow.shadowColor=NSColor.black.withAlphaComponent(0.45);shadow.shadowBlurRadius=2;shadow.shadowOffset=NSSize(width:0,height:-1);shadow.set()
+            clip.draw(in:NSRect(x:94-clip.size.width,y:84-clip.size.height,width:clip.size.width,height:clip.size.height))
+            NSGraphicsContext.restoreGraphicsState()
+        }
     }
     override func mouseDown(with event:NSEvent) { origin=convert(event.locationInWindow,from:nil);moved=false;onInteraction?(true) }
     override func mouseUp(with event:NSEvent) { onInteraction?(false);if !moved && !sessionActive { onClick?() } }

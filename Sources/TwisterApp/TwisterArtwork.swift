@@ -3,7 +3,6 @@ import AppKit
 /// A folded strip: one continuous gesture, with a deliberate cut at its center.
 /// The same vector is used in the menu bar, app icon and first-run experience.
 enum TwisterArtwork {
-    static let gold=NSColor(srgbRed:0.69,green:0.29,blue:0.18,alpha:1)
 
     private static func ribbon(_ upper:Bool)->CGPath {
         let p=CGMutablePath()
@@ -18,11 +17,11 @@ enum TwisterArtwork {
         }
         p.closeSubpath();return p
     }
-    static func draw(in rect:NSRect,monochrome:Bool=false) {
+    static func draw(in rect:NSRect,color:NSColor = .controlAccentColor) {
         guard let c=NSGraphicsContext.current?.cgContext else{return}
         c.saveGState();defer{c.restoreGState()}
         c.translateBy(x:rect.minX,y:rect.maxY);c.scaleBy(x:rect.width,y:-rect.height)
-        c.setFillColor((monochrome ? NSColor.black:gold).cgColor)
+        c.setFillColor(color.cgColor)
         c.addPath(ribbon(true));c.fillPath();c.addPath(ribbon(false));c.fillPath()
     }
     static func mark(size:CGFloat)->NSImage {
@@ -30,7 +29,7 @@ enum TwisterArtwork {
     }
     static func menuIcon(updateAvailable:Bool=false)->NSImage {
         let image=NSImage(size:NSSize(width:20,height:20),flipped:false) {rect in
-            draw(in:rect.insetBy(dx:0.5,dy:0.5),monochrome:true)
+            draw(in:rect.insetBy(dx:0.5,dy:0.5),color:.black)
             if updateAvailable {NSColor.black.setFill();NSBezierPath(ovalIn:NSRect(x:16,y:16,width:3,height:3)).fill()}
             return true
         }

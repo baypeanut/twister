@@ -10,14 +10,20 @@ import AppKit
             NSGraphicsContext.saveGraphicsState();NSGraphicsContext.current=NSGraphicsContext(bitmapImageRep:rep)
             draw(NSRect(x:0,y:0,width:width,height:height));NSGraphicsContext.restoreGraphicsState();return rep
         }
-        let mark=bitmap(256,256){rect in TwisterArtwork.draw(in:rect)}
+        let mark=bitmap(256,256){rect in TwisterArtwork.draw(in:rect,color:.systemBlue)}
         for name in ["TwisterMark.png","TwisterMarkHappy.png"] {
             try mark.representation(using:.png,properties:[:])!.write(to:output.appendingPathComponent(name))
         }
         let icon=bitmap(1024,1024) {_ in
-            let background=NSBezierPath(roundedRect:NSRect(x:55,y:55,width:914,height:914),xRadius:202,yRadius:202)
-            NSColor(srgbRed:0.96,green:0.94,blue:0.90,alpha:1).setFill();background.fill()
-            TwisterArtwork.draw(in:NSRect(x:210,y:160,width:604,height:704))
+            // The standard macOS icon grid: an 824-point body in a 1024 canvas, with the system's soft drop shadow.
+            let body=NSRect(x:100,y:100,width:824,height:824)
+            let background=NSBezierPath(roundedRect:body,xRadius:185,yRadius:185)
+            NSGraphicsContext.saveGraphicsState()
+            let shadow=NSShadow();shadow.shadowColor=NSColor.black.withAlphaComponent(0.3);shadow.shadowBlurRadius=20;shadow.shadowOffset=NSSize(width:0,height:-10);shadow.set()
+            NSColor.white.setFill();background.fill()
+            NSGraphicsContext.restoreGraphicsState()
+            NSGradient(starting:NSColor(srgbRed:0.10,green:0.42,blue:0.92,alpha:1),ending:NSColor(srgbRed:0.31,green:0.66,blue:1.0,alpha:1))!.draw(in:background,angle:90)
+            TwisterArtwork.draw(in:NSRect(x:262,y:222,width:500,height:580),color:.white)
         }
         let png=icon.representation(using:.png,properties:[:])!
         try png.write(to:output.appendingPathComponent("TwisterIcon.png"))
