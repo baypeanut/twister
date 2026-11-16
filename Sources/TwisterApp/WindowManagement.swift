@@ -25,7 +25,8 @@ enum WindowPlacementGlyph {
         let origin:NSPoint
         var intent=WindowDragIntent()
     }
-    private var timer:Timer?
+    /// The 25 ms observer exists only while the feature is turned on.
+    private var polling:OptionalPolling<Timer>?
     private var target:Target?
     private var wasDown=false
     private var fileSession=DragPasteboardSession()
@@ -40,7 +41,7 @@ enum WindowPlacementGlyph {
     private let fileWheelIsVisible:()->Bool
     private let preferences:UserDefaults
     private var preferenceObservers:[NSObjectProtocol]=[]
-    var isMonitoring:Bool { timer != nil }
+    var isMonitoring:Bool { polling?.isRunning == true }
     var onNotice:((String)->Void)?
 
     init(fileWheelIsVisible:@escaping()->Bool,preferences:UserDefaults = .standard) {
@@ -51,25 +52,27 @@ enum WindowPlacementGlyph {
                 Task { @MainActor in self?.refreshMonitoring() }
             })
         }
+        polling=OptionalPolling(start:{ [weak self] in
+            let timer=Timer(timeInterval:0.025,repeats:true) { [weak self] _ in
+                Task { @MainActor in self?.tick() }
+            }
+            RunLoop.main.add(timer,forMode:.common);return timer
+        },stop:{ $0.invalidate() })
         refreshMonitoring()
     }
 
     func refreshMonitoring() {
-        guard preferences.bool(forKey:"enabled"),preferences.bool(forKey:"windowManagementEnabled") else {
-            placementTask?.cancel();timer?.invalidate();timer=nil;cancel();target=nil;wasDown=false;return
+        guard WindowArrangementPreference.isOn(in:preferences) else {
+            placementTask?.cancel();polling?.set(false);cancel();target=nil;wasDown=false;return
         }
-        guard timer == nil else { return }
-        timer=Timer(timeInterval:0.025,repeats:true) { [weak self] _ in
-            Task { @MainActor in self?.tick() }
-        }
-        RunLoop.main.add(timer!,forMode:.common)
+        polling?.set(true)
     }
 
     func stop() {
-        placementTask?.cancel();timer?.invalidate();timer=nil;cancel();target=nil
+        placementTask?.cancel();polling?.set(false);cancel();target=nil
         for observer in preferenceObservers { NotificationCenter.default.removeObserver(observer) };preferenceObservers=[]
     }
-    deinit { timer?.invalidate();for observer in preferenceObservers { NotificationCenter.default.removeObserver(observer) } }
+    deinit { polling?.set(false);for observer in preferenceObservers { NotificationCenter.default.removeObserver(observer) } }
 
     static var permissionName:String {
         ProcessInfo.processInfo.operatingSystemVersion.majorVersion>=27 ? "Device Control and Data Access":"Accessibility"
@@ -84,7 +87,7 @@ enum WindowPlacementGlyph {
     }
 
     private func tick() {
-        guard preferences.bool(forKey:"enabled"),preferences.bool(forKey:"windowManagementEnabled") else { refreshMonitoring();return }
+        guard WindowArrangementPreference.isOn(in:preferences) else { refreshMonitoring();return }
         let down=NSEvent.pressedMouseButtons & 1 != 0 || CGEventSource.buttonState(.combinedSessionState,button:.left)
         let freshFile=fileSession.containsFreshDrag(isDown:down,changeCount:NSPasteboard(name:.drag).changeCount,
                                                     now:ProcessInfo.processInfo.systemUptime)
