@@ -300,8 +300,8 @@ private final class WindowPlacementPreviewView:NSView {
     var title=""
     override func draw(_ dirtyRect:NSRect) {
         let shape=NSBezierPath(roundedRect:bounds.insetBy(dx:4,dy:4),xRadius:15,yRadius:15)
-        TwisterPalette.gold.withAlphaComponent(0.16).setFill();shape.fill()
-        TwisterPalette.gold.withAlphaComponent(0.8).setStroke();shape.lineWidth=2;shape.stroke()
+        NSColor.controlAccentColor.withAlphaComponent(0.16).setFill();shape.fill()
+        NSColor.controlAccentColor.withAlphaComponent(0.8).setStroke();shape.lineWidth=2;shape.stroke()
         let text=NSAttributedString(string:title,attributes:[.font:NSFont.systemFont(ofSize:14,weight:.semibold),.foregroundColor:NSColor.labelColor])
         let size=text.size(),rect=NSRect(x:bounds.midX-size.width/2-16,y:bounds.maxY-62,width:size.width+32,height:38)
         NSColor.windowBackgroundColor.withAlphaComponent(0.95).setFill();NSBezierPath(roundedRect:rect,xRadius:11,yRadius:11).fill()

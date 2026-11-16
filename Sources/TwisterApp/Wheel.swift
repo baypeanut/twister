@@ -158,18 +158,18 @@ final class WheelView:NSView {
         for (i,item) in items.enumerated() {
             let path=petal(i)
             if solid,selected != i,let gradient=NSGradient(starting:NSColor(calibratedWhite:0.36,alpha:1),ending:NSColor(calibratedWhite:0.20,alpha:1)) { gradient.draw(in:path,angle:90) }
-            else if selected==i { TwisterPalette.gold.setFill();path.fill() }
+            else if selected==i { NSColor.controlAccentColor.setFill();path.fill() }
             else { NSColor.controlBackgroundColor.withAlphaComponent(0.88).setFill();path.fill() }
             NSColor.gray.withAlphaComponent(0.24).setStroke();path.lineWidth=0.7;path.stroke()
-            let foreground=selected==i ? TwisterPalette.ink:solid ? NSColor.white:NSColor.labelColor
+            let foreground=selected==i ? NSColor.alternateSelectedControlTextColor:solid ? NSColor.white:NSColor.labelColor
             let scale=min(bounds.width,bounds.height)/320
             let source=item.symbol.flatMap { NSImage(systemSymbolName:$0,accessibilityDescription:item.title) }
-            let baseFont=NSFont.systemFont(ofSize:(source == nil ? 13:9.5)*scale,weight:.semibold)
+            let baseFont=NSFont.systemFont(ofSize:(source == nil ? 13:10.5)*scale,weight:.medium)
             let font=baseFont
             let layout:WheelLabelLayout.Content
             if let cached=labelLayouts[i] { layout=cached }
             else {
-                layout=WheelLabelLayout.fitted(L10n.uppercase(item.title),font:font,color:.labelColor,
+                layout=WheelLabelLayout.fitted(L10n.text(item.title),font:font,color:.labelColor,
                                                inside:path,centers:geometry.labelCenters(i),
                                                maximumWidth:84*scale,iconSize:source == nil ? nil:20*scale,scale:scale)
                 labelLayouts[i]=layout

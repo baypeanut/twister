@@ -24,7 +24,7 @@ enum FloatShelfViewMode:Int { case icons,list }
     private let collapseButton=NSButton()
     private let pinButton=NSButton()
     private let carryGrip=ShelfCarryGrip()
-    private let glass=ShelfBackdrop()
+    private let glass=NSVisualEffectView()
     private var hoverTask:Task<Void,Never>?
     private var interacting=false
     private var headerHeight:NSLayoutConstraint!
@@ -91,7 +91,7 @@ enum FloatShelfViewMode:Int { case icons,list }
 
     private func buildContent() {
         glass.material = .popover;glass.blendingMode = .behindWindow;glass.state = .active
-        glass.wantsLayer=true;glass.layer?.cornerRadius=24;glass.layer?.masksToBounds=true
+        glass.wantsLayer=true;glass.layer?.cornerRadius=12;glass.layer?.cornerCurve = .continuous;glass.layer?.masksToBounds=true
         glass.autoresizingMask=[.width,.height];surface.addSubview(glass)
         surface.onFilesDropped={ [weak self] urls in self?.append(urls) }
         surface.onHover={ [weak self] inside in self?.scheduleHover(inside) }
@@ -383,18 +383,6 @@ private final class ShelfPanel:NSPanel {
     override var canBecomeKey:Bool { true }
     override var canBecomeMain:Bool { false }
 }
-@MainActor private final class ShelfBackdrop:NSVisualEffectView {
-    private let tint=CAGradientLayer()
-    override init(frame frameRect:NSRect) { super.init(frame:frameRect);wantsLayer=true;layer?.addSublayer(tint);updateTint() }
-    required init?(coder:NSCoder) { super.init(coder:coder) }
-    override func viewDidChangeEffectiveAppearance() { super.viewDidChangeEffectiveAppearance();updateTint() }
-    override func layout() { super.layout();tint.frame=bounds }
-    private func updateTint() {
-        let dark=effectiveAppearance.bestMatch(from:[.darkAqua,.aqua]) == .darkAqua
-        tint.colors=dark ? [NSColor(srgbRed:0.17,green:0.18,blue:0.17,alpha:0.9).cgColor,NSColor(srgbRed:0.17,green:0.18,blue:0.17,alpha:0.9).cgColor]:[NSColor(srgbRed:0.96,green:0.95,blue:0.92,alpha:0.95).cgColor,NSColor(srgbRed:0.96,green:0.95,blue:0.92,alpha:0.95).cgColor]
-        tint.startPoint=CGPoint(x:0.5,y:1);tint.endPoint=CGPoint(x:0.5,y:0)
-    }
-}
 @MainActor private final class ShelfMoveHeader:NSView {
     var onMoveEnded:(()->Void)?
     var onMoving:((Bool)->Void)?
@@ -476,7 +464,7 @@ private final class ShelfPanel:NSPanel {
     private var thumbnailRequest:QLThumbnailGenerator.Request?
     override var isSelected:Bool { didSet { updateSelection() } }
     override func loadView() {
-        view=NSView();view.wantsLayer=true;view.layer?.cornerRadius=13;view.layer?.borderWidth=1
+        view=NSView();view.wantsLayer=true;view.layer?.cornerRadius=6
         icon.imageScaling = .scaleProportionallyUpOrDown
         name.font = .systemFont(ofSize:11);name.maximumNumberOfLines=2;name.isSelectable=false;name.lineBreakMode = .byWordWrapping
         detail.font = .systemFont(ofSize:9);detail.textColor = .secondaryLabelColor;detail.lineBreakMode = .byTruncatingMiddle
@@ -506,8 +494,9 @@ private final class ShelfPanel:NSPanel {
     }
     private func updateSelection() {
         guard isViewLoaded else { return }
-        view.layer?.backgroundColor=(isSelected ? TwisterPalette.gold.withAlphaComponent(0.18):NSColor.clear).cgColor
-        view.layer?.borderColor=(isSelected ? TwisterPalette.gold.withAlphaComponent(0.7):NSColor.clear).cgColor
+        view.effectiveAppearance.performAsCurrentDrawingAppearance {
+            view.layer?.backgroundColor=(isSelected ? NSColor.unemphasizedSelectedContentBackgroundColor:NSColor.clear).cgColor
+        }
         view.setAccessibilitySelected(isSelected)
     }
 }
