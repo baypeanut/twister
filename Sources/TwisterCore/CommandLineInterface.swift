@@ -2,11 +2,13 @@ import Foundation
 import Darwin
 
 public enum TwisterCommandLine {
-    static let usage="Usage: twister-cli convert FORMAT [--options JSON] [--json] [--] FILE...\n       twister-cli tool TOOL_ID [--options JSON] [--json] [--] FILE...\n       twister-cli catalog"
-    public static func run(arguments args:[String] = CommandLine.arguments,token:CancellationToken = .init()) -> Int32 {
+    static let usage="Usage: twister-cli convert FORMAT [--options JSON] [--json] [--] FILE...\n       twister-cli tool TOOL_ID [--options JSON] [--json] [--] FILE...\n       twister-cli catalog\nExit status: 0 every file was exported, 1 nothing was exported, 3 some files failed and the other exports were kept, 64 usage error."
+    /// Some files failed; the exports of the others were kept and printed.
+    public static let partialFailureExitCode:Int32=3
+    public static func run(arguments args:[String] = CommandLine.arguments,token:CancellationToken = .init(),output:(String)->Void={ print($0) },errorOutput:(String)->Void={ fputs($0+"\n",stderr) }) -> Int32 {
 do {
     if args.count==2,args[1]=="catalog" {
-        let data=try JSONSerialization.data(withJSONObject:["conversionMatrix":FeatureCatalog.conversionMatrix,"tools":ToolKind.allCases.map(\.rawValue)],options:[.prettyPrinted,.sortedKeys]);print(String(decoding:data,as:UTF8.self));return 0
+        let data=try JSONSerialization.data(withJSONObject:["conversionMatrix":FeatureCatalog.conversionMatrix,"tools":ToolKind.allCases.map(\.rawValue)],options:[.prettyPrinted,.sortedKeys]);output(String(decoding:data,as:UTF8.self));return 0
     }
     if args.count==3,args[1]=="inspect" {
         let input=URL(fileURLWithPath:args[2]),category=FileCategory.detect(input)
@@ -17,13 +19,13 @@ do {
         case .audio,.video:let info=try MediaEngine.inspect(input,token:token);result["duration"]=info.duration;result["hasAudio"]=info.hasAudio;result["hasVideo"]=info.hasVideo;result["width"]=info.video?.width;result["height"]=info.video?.height;result["channels"]=info.audio?.channels
         default:break
         }
-        print(String(decoding:try JSONSerialization.data(withJSONObject:result,options:.sortedKeys),as:UTF8.self));return 0
+        output(String(decoding:try JSONSerialization.data(withJSONObject:result,options:.sortedKeys),as:UTF8.self));return 0
     }
     if args.count==2,args[1]=="dependencies" {
-        var result:[String:String]=[:];for name in ["ffmpeg","ffprobe","soffice","exiftool"] { result[name]=try Dependencies.executable(name).path };print(String(decoding:try JSONSerialization.data(withJSONObject:result,options:.sortedKeys),as:UTF8.self));return 0
+        var result:[String:String]=[:];for name in ["ffmpeg","ffprobe","soffice","exiftool"] { result[name]=try Dependencies.executable(name).path };output(String(decoding:try JSONSerialization.data(withJSONObject:result,options:.sortedKeys),as:UTF8.self));return 0
     }
-    guard args.count>=4 else { print(usage);return 64 }
-    guard let invocation=invocation(Array(args.dropFirst(3))) else { fputs("--options requires a JSON value.\n\(usage)\n",stderr);return 64 }
+    guard args.count>=4 else { output(usage);return 64 }
+    guard let invocation=invocation(Array(args.dropFirst(3))) else { errorOutput("--options requires a JSON value.\n\(usage)");return 64 }
     var options=OperationOptions()
     let paths=invocation.paths,jsonOutput=invocation.json
     if let suppliedOptions=invocation.options {
@@ -44,11 +46,16 @@ do {
     if args[1]=="convert" { operation = .convert(args[2]) }
     else if args[1]=="tool",let kind=ToolKind(rawValue:args[2]) { operation = .tool(kind) }
     else { throw TwisterError.invalidInput("Unknown operation.") }
-    let outputs=try ConversionEngine.run(ConversionRequest(inputs:paths.map{URL(fileURLWithPath:$0)},operation:operation,options:options),token:token)
-    if jsonOutput { print(String(decoding:try JSONEncoder().encode(outputs.map(\.path)),as:UTF8.self)) }
-    else { for url in outputs { print(url.path) } }
-    return 0
-} catch { fputs("\(error.localizedDescription)\n",stderr);return 1 }
+    let report=try ConversionEngine.runBatch(ConversionRequest(inputs:paths.map{URL(fileURLWithPath:$0)},operation:operation,options:options),token:token)
+    // Finished files stay on stdout so a script can use them even when others failed.
+    for item in report.items { if let reason=item.failure { errorOutput(item.inputs.count==1 ? "\(item.inputs[0].path): \(reason)":reason) } }
+    if report.cancelled>0 { errorOutput(TwisterError.cancelled.localizedDescription) }
+    let outputs=report.outputs
+    if outputs.isEmpty { return 1 }
+    if jsonOutput { output(String(decoding:try JSONEncoder().encode(outputs.map(\.path)),as:UTF8.self)) }
+    else { for url in outputs { output(url.path) } }
+    return report.succeeded==report.items.count ? 0:partialFailureExitCode
+} catch { errorOutput(error.localizedDescription);return 1 }
 
     }
 

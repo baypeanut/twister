@@ -72,6 +72,16 @@ The CLI supports `convert`, `tool`, `inspect`, `dependencies`, `catalog` and JSO
 .build/debug/twister-cli convert png photo.jpg --json
 ```
 
+Each file of a batch is exported by itself. The paths of the finished files go to standard output, and each failed file is reported on standard error as `PATH: reason`.
+
+| Exit status | Meaning |
+| --- | --- |
+| 0 | Every file was exported |
+| 1 | Nothing was exported |
+| 3 | Some files failed; the other exports were kept and printed |
+| 64 | Usage error |
+| 130, 143 | Interrupted by Ctrl-C or `kill`; exports that had already finished are kept |
+
 ## Guides
 
 - [Getting started](docs/guide/getting-started.md)
