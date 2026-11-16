@@ -94,7 +94,7 @@ struct SavePresetButton:View {
     let action:()->Void
     var body:some View {
         Button(action:action) { Image(systemName:"bookmark") }
-            .buttonStyle(TwisterButtonStyle(.quiet,compact:true)).help(L10n.text("Save as preset…")).accessibilityLabel(L10n.text("Save as preset…")).accessibilityIdentifier("editor.savePreset")
+            .buttonStyle(.borderless).controlSize(.regular).help(L10n.text("Save as preset…")).accessibilityLabel(L10n.text("Save as preset…")).accessibilityIdentifier("editor.savePreset")
     }
 }
 
@@ -107,21 +107,24 @@ struct PresetListView:View {
     /// Called after a preset starts, with the files it runs on.
     private let onRun:((Preset)->Void)?
     private let inputs:[URL]?
-    init(state:AppState,all:Bool=false,inputs:[URL]?=nil,onRun:((Preset)->Void)?=nil) { self.state=state;center=state.presets;self.all=all;self.inputs=inputs;self.onRun=onRun }
+    /// A Form section already draws the group around its rows.
+    private let grouped:Bool
+    init(state:AppState,all:Bool=false,inputs:[URL]?=nil,grouped:Bool=true,onRun:((Preset)->Void)?=nil) { self.state=state;center=state.presets;self.all=all;self.inputs=inputs;self.grouped=grouped;self.onRun=onRun }
     private var files:[URL] { inputs ?? state.inputs }
     private var presets:[Preset] { all ? center.presets:center.library.applicable(to:files) }
     var body:some View {
         VStack(alignment:.leading,spacing:8) {
             if let issue=center.issue {
-                HStack(alignment:.top) { Label { LText(issue) } icon:{ Image(systemName:"exclamationmark.circle") }.font(.caption).foregroundStyle(.orange).textSelection(.enabled);Spacer(minLength:8);Button { center.issue=nil } label:{ Image(systemName:"xmark") }.buttonStyle(TwisterButtonStyle(.quiet,compact:true)).accessibilityLabel(L10n.text("Dismiss")) }
+                HStack(alignment:.top) { Label { LText(issue) } icon:{ Image(systemName:"exclamationmark.triangle.fill").symbolRenderingMode(.multicolor) }.font(.subheadline).textSelection(.enabled);Spacer(minLength:8);Button { center.issue=nil } label:{ Image(systemName:"xmark") }.buttonStyle(.borderless).accessibilityLabel(L10n.text("Dismiss")) }
             }
             if !presets.isEmpty {
-                VStack(spacing:0) {
+                let rows=VStack(spacing:0) {
                     ForEach(Array(presets.enumerated()),id:\.element.id) { index,preset in
                         if index>0 { Divider() }
                         row(preset,index:index)
                     }
-                }.padding(.horizontal,12).padding(.vertical,4).twisterCard()
+                }
+                if grouped { rows.padding(.horizontal,12).twisterGroup() } else { rows }
             }
         }
     }
@@ -140,14 +143,14 @@ struct PresetListView:View {
     private func row(_ preset:Preset,index:Int)->some View {
         let fits=preset.applies(to:files)
         return HStack(spacing:10) {
-            Image(systemName:symbol(preset)).font(.system(size:12)).foregroundStyle(TwisterPalette.forest).frame(width:18).accessibilityHidden(true)
+            Image(systemName:symbol(preset)).foregroundStyle(.secondary).frame(width:18).accessibilityHidden(true)
             VStack(alignment:.leading,spacing:2) {
-                Text(verbatim:preset.name).font(.system(size:12,weight:.semibold)).lineLimit(1).truncationMode(.middle)
-                Text(verbatim:detail(preset)).font(.system(size:10)).foregroundStyle(.secondary).lineLimit(1).truncationMode(.middle)
+                Text(verbatim:preset.name).lineLimit(1).truncationMode(.middle)
+                Text(verbatim:detail(preset)).font(.subheadline).foregroundStyle(.secondary).lineLimit(1).truncationMode(.middle)
             }
             Spacer(minLength:8)
             Button { state.run(preset,inputs:files);onRun?(preset) } label:{ LText("Run").lineLimit(1).fixedSize() }
-                .buttonStyle(TwisterButtonStyle(.secondary,compact:true)).disabled(!fits)
+                .controlSize(.small).disabled(!fits)
                 .help(L10n.text(fits ? "Run on the selected files":files.isEmpty ? "Choose files to run this preset.":"This preset does not fit the selected files."))
                 .accessibilityLabel(L10n.text("Run preset \(preset.name)"))
             Menu {
@@ -157,9 +160,9 @@ struct PresetListView:View {
                 Button { center.move(preset,by:1,among:presets) } label:{ LText("Move Down") }.disabled(index==presets.count-1)
                 Divider()
                 Button(role:.destructive) { PresetPrompt.delete(preset,in:center) } label:{ LText("Delete…") }
-            } label:{ Image(systemName:"ellipsis") }
+            } label:{ Image(systemName:"ellipsis.circle") }
                 .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize().accessibilityLabel(L10n.text("Preset actions for \(preset.name)"))
-        }.padding(.vertical,7)
+        }.padding(.vertical,6)
     }
 }
 
@@ -168,12 +171,16 @@ struct PresetSettingsView:View {
     @ObservedObject private var center:PresetCenter
     init(state:AppState) { self.state=state;center=state.presets }
     var body:some View {
-        ScrollView { VStack(alignment:.leading,spacing:18) {
-            LText("Presets").font(.title2.weight(.semibold))
-            LText("A preset keeps an operation with its options. Save one from a tool or from Formats, then run it on any files it fits, from Finder or with twister-cli.").foregroundStyle(.secondary).fixedSize(horizontal:false,vertical:true)
-            if center.presets.isEmpty { VStack(spacing:9) { Image(systemName:"bookmark").font(.system(size:36)).foregroundStyle(.secondary);LText("No presets yet.").foregroundStyle(.secondary) }.frame(maxWidth:.infinity).padding(.vertical,40) }
-            PresetListView(state:state,all:true)
-            if !center.presets.isEmpty { LText(state.inputs.isEmpty ? "Choose files in the workspace to run a preset.":"Run uses the files selected in the workspace.").font(.caption).foregroundStyle(.secondary) }
-        }.padding(24).frame(maxWidth:680,alignment:.leading) }.frame(maxWidth:.infinity).onAppear { center.reload() }
+        Form {
+            Section {
+                if center.presets.isEmpty { LText("No presets yet.").foregroundStyle(.secondary) }
+                else { PresetListView(state:state,all:true,grouped:false) }
+            } header:{ LText("Presets") } footer:{
+                VStack(alignment:.leading,spacing:4) {
+                    LText("A preset keeps an operation with its options. Save one from a tool or from Formats, then run it on any files it fits, from Finder or with twister-cli.")
+                    if !center.presets.isEmpty { LText(state.inputs.isEmpty ? "Choose files in the workspace to run a preset.":"Run uses the files selected in the workspace.") }
+                }.frame(maxWidth:.infinity,alignment:.leading)
+            }
+        }.formStyle(.grouped).onAppear { center.reload() }
     }
 }

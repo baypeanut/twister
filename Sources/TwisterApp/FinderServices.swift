@@ -33,13 +33,13 @@ struct PresetPickerView:View {
     var body:some View {
         VStack(alignment:.leading,spacing:14) {
             VStack(alignment:.leading,spacing:4) {
-                LText("Run a preset").font(.system(size:17,weight:.semibold))
+                LText("Run a preset").font(.headline)
                 Group { if inputs.count==1 { Text(verbatim:inputs[0].lastPathComponent) } else { LText("\(inputs.count) files") } }
-                    .font(.system(size:11)).foregroundStyle(.secondary).lineLimit(1).truncationMode(.middle)
+                    .font(.subheadline).foregroundStyle(.secondary).lineLimit(1).truncationMode(.middle)
             }
             ScrollView { PresetListView(state:state,inputs:inputs) { _ in onDone() } }
-            HStack { Spacer();Button { onDone() } label:{ LText("Cancel") }.buttonStyle(TwisterButtonStyle(.secondary)).keyboardShortcut(.cancelAction) }
-        }.padding(20).frame(minWidth:380,minHeight:260).background(TwisterPalette.canvas).tint(.twister)
+            HStack { Spacer();Button { onDone() } label:{ LText("Cancel") }.keyboardShortcut(.cancelAction) }
+        }.padding(20).frame(minWidth:380,minHeight:260).background(Color(nsColor:.windowBackgroundColor))
     }
 }
 
