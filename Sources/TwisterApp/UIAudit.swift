@@ -6,6 +6,8 @@ import TwisterUpdates
 
 struct UIAuditOptions {
     static let scenes=["home.empty","home.selected","home.output-folder","library","settings.general","settings.formats","settings.updates","wheel.pdf-multiple","pdf.organizer","editor.crop-image","editor.annotate-image","editor.frame-image"]
+    /// Windows and states outside the gallery, captured only when named with --scenes.
+    static let reviewScenes=["home.batch","settings.presets","settings.compatibility","settings.folders","tool.compress","setup","download","welcome","epub","preset.picker","toast.success","toast.progress"]
     var output:URL
     var scenes=Self.scenes
     var appearances=["light","dark"]
@@ -21,7 +23,7 @@ struct UIAuditOptions {
             guard index<arguments.count else{throw UIAuditError("Missing value for "+key)}
             let value=arguments[index];index+=1
             switch key {
-            case "--scenes":scenes=value.split(separator:",").map(String.init);guard !scenes.isEmpty,Set(scenes).count==scenes.count,scenes.allSatisfy(Self.scenes.contains) else{throw UIAuditError("Unknown or repeated audit scene. Supported: "+Self.scenes.joined(separator:","))}
+            case "--scenes":scenes=value.split(separator:",").map(String.init);guard !scenes.isEmpty,Set(scenes).count==scenes.count,scenes.allSatisfy((Self.scenes+Self.reviewScenes).contains) else{throw UIAuditError("Unknown or repeated audit scene. Supported: "+Self.scenes.joined(separator:","))}
             case "--appearance":guard ["light","dark","both"].contains(value) else{throw UIAuditError("Appearance must be light, dark or both")};appearances=value=="both" ? ["light","dark"]:[value]
             case "--language":guard ["en","tr","both"].contains(value) else{throw UIAuditError("Language must be en, tr or both")};languages=value=="both" ? ["en","tr"]:[value]
             default:throw UIAuditError("Unknown audit argument: "+key)
@@ -137,7 +139,20 @@ struct UIAuditError:LocalizedError { let message:String;init(_ message:String){s
             state.libraryVisible=true
         }
         let isEditor=scene.hasPrefix("editor.")
-        let isTool=isEditor || scene=="pdf.organizer"
+        let isTool=isEditor || scene=="pdf.organizer" || scene=="tool.compress"
+        if scene=="home.batch" || scene=="toast.progress" || scene=="epub" {
+            state.inputs=[image,text,pdf]
+            let job=QueuedJob(operation:.convert("pdf"),options:.init(),inputs:state.inputs,destination:.besideOriginals)
+            if scene=="home.batch" {
+                state.batch=JobBatch(job:job,items:[BatchItem(inputs:[image],status:.succeeded([image])),BatchItem(inputs:[text],status:.failed("The file could not be read.")),BatchItem(inputs:[pdf],status:.cancelled)],finished:true)
+            } else if scene=="toast.progress" { state.working=true;state.progressIsDeterminate=true;state.progress=0.4;state.progressLabel="Converting 2 of 3" }
+        }
+        if scene=="settings.presets" || scene=="preset.picker" || scene=="home.batch" {
+            state.inputs=scene=="home.batch" ? state.inputs:[image]
+            _ = try state.presets.save(name:"Web JPG",operation:.convert("jpg"),options:.init(),destination:.besideOriginals)
+            _ = try state.presets.save(name:"Shrink for mail",operation:.tool(.compress),options:.init(),destination:nil)
+        }
+        if scene=="tool.compress" {state.inputs=[image]}
         let view:AnyView,size:NSSize
         switch scene {
         case "home.empty","home.selected","home.output-folder","library":view=AnyView(HomeView(state:state,updater:updater));size=NSSize(width:700,height:580)
@@ -149,6 +164,18 @@ struct UIAuditError:LocalizedError { let message:String;init(_ message:String){s
             view=AnyView(ToolEditor(state:state,tool:tool));size=NSSize(width:900,height:420)
         case "pdf.organizer":
             view=AnyView(ToolEditor(state:state,tool:.organizePDF));size=NSSize(width:780,height:590)
+        case "home.batch":view=AnyView(HomeView(state:state,updater:updater));size=NSSize(width:700,height:580)
+        case "settings.presets","settings.compatibility","settings.folders":
+            let section:SettingsSection=scene=="settings.presets" ? .presets:scene=="settings.compatibility" ? .compatibility:.folders
+            view=AnyView(SettingsView(updater:updater,state:state,initialSection:section));size=NSSize(width:700,height:520)
+        case "tool.compress":view=AnyView(ToolEditor(state:state,tool:.compress));size=NSSize(width:600,height:630)
+        case "setup":view=AnyView(ToolSetupView(model:ToolSetupModel()));size=NSSize(width:646,height:690)
+        case "download":view=AnyView(WebDownloadView(model:WebDownloadModel(state:state),state:state));size=NSSize(width:660,height:520)
+        case "welcome":view=AnyView(WelcomeView(onDone:{},onClose:{},onMinimize:{},onSetUpTools:{}));size=NSSize(width:760,height:520)
+        case "epub":view=AnyView(EPUBOptionsView(state:state,inputs:[pdf]));size=NSSize(width:440,height:240)
+        case "preset.picker":view=AnyView(PresetPickerView(state:state,inputs:[image],onDone:{}));size=NSSize(width:420,height:300)
+        case "toast.success":view=AnyView(SuccessToastView(notice:.filesReady([image,text])));size=NSSize(width:480,height:64)
+        case "toast.progress":view=AnyView(JobProgressView(state:state,grouped:false).frame(maxWidth:.infinity,maxHeight:.infinity).background(ToastBackground()));size=NSSize(width:480,height:84)
         case "wheel.pdf-multiple":
             let wheel=WheelView(frame:NSRect(x:0,y:0,width:320,height:320));let inputs=[fixtures["pdf1"]!,fixtures["pdf2"]!]
             wheel.mode = .tools;wheel.inputs=inputs

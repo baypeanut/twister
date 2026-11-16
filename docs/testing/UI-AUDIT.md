@@ -17,6 +17,8 @@ To capture a smaller review set:
 build/Twister.app/Contents/MacOS/Twister --ui-audit build/design-review --scenes home.empty,home.selected,library --appearance both --language en
 ```
 
+Scenes outside the gallery can be captured by name for review: `home.batch`, `settings.presets`, `settings.compatibility`, `settings.folders`, `tool.compress`, `setup`, `download`, `welcome`, `epub`, `preset.picker`, `toast.success` and `toast.progress`. They are not part of the 48 captures.
+
 The destination must be empty or marked as an existing audit-owned directory. The audit refuses to overwrite unrelated files.
 
 Application workflow regressions also exercise real image/PDF/audio/video exports, a corrupt file failing alone in its batch, retry of only that file, queued tasks, cancellation recovery, missing Library entries and eight production editor lifecycles. They require FFmpeg and FFprobe on PATH or configured tool paths:
