@@ -7,6 +7,16 @@ source scripts/signing-configuration.sh
 twister_load_signing_configuration
 twister_selected_update_config=${TWISTER_UPDATE_CONFIG:-Configuration/Updates.plist}
 twister_public_build=false
+# TWISTER_WEB_DOWNLOADS=0 builds a copy without the web downloader: no entry
+# point in the interface and no yt-dlp or Deno in the bundle. Default: included.
+twister_web_downloads=true
+case "${TWISTER_WEB_DOWNLOADS:-1}" in
+  1|true|yes|on) ;;
+  0|false|no|off) twister_web_downloads=false ;;
+  *) print -u2 "TWISTER_WEB_DOWNLOADS must be 1 or 0"; exit 1 ;;
+esac
+twister_bundled_tools=(ffmpeg ffprobe)
+if [[ "$twister_web_downloads" == true ]]; then twister_bundled_tools+=(yt-dlp deno); fi
 if [[ -f "$twister_selected_update_config" ]] && { plutil -type PublicRepository "$twister_selected_update_config" >/dev/null 2>&1 || [[ "$(plutil -extract ExternalTools raw -o - "$twister_selected_update_config" 2>/dev/null || true)" == true ]]; }; then twister_public_build=true; fi
 # SwiftPM also embeds a literal fallback resource path, which compiler prefix
 # maps do not rewrite. Build in a private temporary directory outside the home
@@ -37,6 +47,10 @@ python3 scripts/generate-localizations.py
 ditto Resources/Localizations "$application/Contents/Resources"
 if [[ -d "$binary_dir/Twister_TwisterCore.bundle" ]]; then ditto "$binary_dir/Twister_TwisterCore.bundle" "$application/Contents/Resources/Twister_TwisterCore.bundle"; fi
 python3 scripts/configure-updates.py "$application/Contents/Info.plist" "${TWISTER_UPDATE_CONFIG:-Configuration/Updates.plist}"
+if [[ "$twister_web_downloads" == false ]]; then
+  plutil -replace TwisterWebDownloads -bool false "$application/Contents/Info.plist"
+  rm -f -- "$application/Contents/Resources/Tools/yt-dlp" "$application/Contents/Resources/Tools/deno"
+fi
 mkdir -p "$application/Contents/Frameworks"
 if [[ -d "$application/Contents/Frameworks/Sparkle.framework" ]]; then rm -rf "$application/Contents/Frameworks/Sparkle.framework"; fi
 ditto "$sparkle_framework" "$application/Contents/Frameworks/Sparkle.framework"
@@ -46,7 +60,7 @@ if [[ "$twister_public_build" == true ]]; then
   fi
   plutil -replace TwisterExternalTools -bool true "$application/Contents/Info.plist"
 else
-for component in ffmpeg ffprobe yt-dlp deno; do
+for component in "${twister_bundled_tools[@]}"; do
   if [[ ! -x "Tools/$component" ]]; then print -u2 "Missing Tools/$component; see scripts/setup-tools.sh and scripts/setup-web-download-tools.py"; exit 1; fi
   cp "Tools/$component" "$application/Contents/Resources/Tools/$component"
 done
@@ -82,8 +96,10 @@ codesign "${twister_signing_flags[@]}" "$application/Contents/Frameworks/Sparkle
 if [[ "$twister_public_build" == false ]]; then
 codesign "${twister_signing_flags[@]}" "$application/Contents/Resources/Tools/ffmpeg"
 codesign "${twister_signing_flags[@]}" "$application/Contents/Resources/Tools/ffprobe"
+if [[ "$twister_web_downloads" == true ]]; then
 codesign "${twister_signing_flags[@]}" "$application/Contents/Resources/Tools/yt-dlp"
 codesign "${twister_signing_flags[@]}" --entitlements Configuration/Deno.entitlements "$application/Contents/Resources/Tools/deno"
+fi
 fi
 codesign "${twister_signing_flags[@]}" "$application"
 codesign --verify --deep --strict "$application"
