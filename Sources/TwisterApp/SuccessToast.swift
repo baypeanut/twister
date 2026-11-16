@@ -7,7 +7,7 @@ struct SuccessNotice {
     var files:[URL]=[]
 
     static func filesReady(_ files:[URL])->SuccessNotice {
-        SuccessNotice(title:files.isEmpty ? "Nicely done.":"Nicely done. \(files.count) file\(files.count == 1 ? " is":"s are") ready.",
+        SuccessNotice(title:files.isEmpty ? "Task complete":files.count == 1 ? "1 file is ready":"\(files.count) files are ready",
                       detail:files.first?.lastPathComponent ?? "Your task is complete.",files:files)
     }
     static func action(_ title:String,files:[URL])->SuccessNotice {
@@ -26,7 +26,7 @@ struct SuccessNotice {
         guard NSApp.isActive else { return }
         let screen=NSScreen.screens.first { $0.frame.contains(NSEvent.mouseLocation) } ?? NSScreen.main
         let visible=screen?.visibleFrame ?? NSRect(x:0,y:0,width:1440,height:900)
-        let size=NSSize(width:min(560,visible.width-32),height:88)
+        let size=NSSize(width:min(480,visible.width-32),height:64)
         let frame=NSRect(x:visible.midX-size.width/2,y:visible.minY+28,width:size.width,height:size.height)
         let toast=SuccessToastPanel(contentRect:frame,styleMask:[.borderless,.nonactivatingPanel],backing:.buffered,defer:false)
         toast.title="Twister — Complete"
@@ -39,7 +39,7 @@ struct SuccessNotice {
         toast.hidesOnDeactivate=true
         toast.animationBehavior = .none
         toast.collectionBehavior=[.transient,.ignoresCycle]
-        toast.contentView=NSHostingView(rootView:SuccessToastView(notice:notice).tint(Color.twister).twisterLanguage())
+        toast.contentView=NSHostingView(rootView:SuccessToastView(notice:notice).twisterLanguage())
         panel=toast
         let shownAt=ProcessInfo.processInfo.systemUptime
         toast.orderFrontRegardless()
@@ -78,21 +78,19 @@ private final class SuccessToastPanel:NSPanel {
     override var canBecomeMain:Bool { false }
 }
 
-private struct SuccessToastView:View {
+struct SuccessToastView:View {
     let notice:SuccessNotice
     var body:some View {
-        HStack(spacing:13) {
-            TwisterCheck()
-            VStack(alignment:.leading,spacing:5) {
-                LText(notice.title).font(.system(size:13,weight:.semibold,design:.default)).lineLimit(2)
-                Text(notice.detail).font(.system(size:11)).foregroundStyle(.secondary).lineLimit(1).truncationMode(.middle)
+        HStack(spacing:12) {
+            Image(systemName:"checkmark.circle.fill").font(.title).foregroundStyle(.green).accessibilityHidden(true)
+            VStack(alignment:.leading,spacing:2) {
+                LText(notice.title).font(.headline).lineLimit(2)
+                Text(notice.detail).font(.subheadline).foregroundStyle(.secondary).lineLimit(1).truncationMode(.middle)
             }.frame(maxWidth:.infinity,alignment:.leading)
             if !notice.files.isEmpty {
                 Button("Show in Finder") { NSWorkspace.shared.activateFileViewerSelecting(notice.files) }
-                    .buttonStyle(TwisterButtonStyle(.secondary,compact:true))
             }
-        }.padding(.horizontal,18).frame(maxWidth:.infinity,maxHeight:.infinity)
-            .background(TwisterPalette.sage.opacity(0.6)).background(TwisterPalette.canvas)
-            .clipShape(RoundedRectangle(cornerRadius:22,style:.continuous))
+        }.padding(.horizontal,16).frame(maxWidth:.infinity,maxHeight:.infinity)
+            .background(ToastBackground())
     }
 }
