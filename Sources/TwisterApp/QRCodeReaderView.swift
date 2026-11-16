@@ -52,32 +52,29 @@ struct QRCodeReaderView:View {
     @MainActor init(inputs:[URL],onSuccess:@escaping(SuccessNotice)->Void) { _model=StateObject(wrappedValue:QRCodeReaderModel(inputs:inputs,onSuccess:onSuccess)) }
     var body:some View {
         VStack(spacing:0) {
-            HStack(spacing:13) {
-                WindowCloseButton().frame(width:26,height:26)
-                ZStack { WindowDragRegion();HStack(spacing:12) { Image(systemName:"qrcode.viewfinder").font(.system(size:23)).foregroundStyle(Color.twister);VStack(alignment:.leading,spacing:4) { Text("Read QR Codes").font(.system(size:21,weight:.bold,design:.default));Text("A little code, decoded.").font(.system(size:11)).foregroundStyle(.secondary) };Spacer() }.allowsHitTesting(false) }
-            }.padding(20)
-            Divider()
+            WindowHeader(title:"Read QR Codes")
             if model.busy {
-                HStack(spacing:12) { ProgressView().controlSize(.small);VStack(alignment:.leading,spacing:4) { Text("Looking for little squares…").font(.system(size:12,weight:.semibold,design:.default));Text(model.label).font(.caption).foregroundStyle(.secondary).lineLimit(1) };Spacer();Button("Cancel") { model.token.cancel() }.buttonStyle(TwisterButtonStyle(.secondary,compact:true)) }.padding(20)
+                HStack(spacing:10) { ProgressView().controlSize(.small);VStack(alignment:.leading,spacing:2) { Text("Scanning for QR codes…");Text(model.label).font(.subheadline).foregroundStyle(.secondary).lineLimit(1) };Spacer();Button("Cancel") { model.token.cancel() } }.padding(.horizontal,16).padding(.vertical,10)
+                Divider()
             }
             ScrollView {
-                VStack(alignment:.leading,spacing:14) {
+                VStack(alignment:.leading,spacing:10) {
                     if model.report.results.isEmpty,!model.busy {
-                        VStack(spacing:13) { Image(systemName:"qrcode.viewfinder").font(.system(size:44,weight:.light)).foregroundStyle(TwisterPalette.forest);Text("No QR codes this time.").font(.system(size:19,weight:.bold,design:.default));Text("Try a clearer image or another PDF.").font(.system(size:12)).foregroundStyle(.secondary) }.frame(maxWidth:.infinity).padding(.vertical,45)
+                        VStack(alignment:.leading,spacing:2) { Text("No QR codes found.");Text("Try a clearer image or another PDF.").font(.subheadline).foregroundStyle(.secondary) }
                     }
                     ForEach(model.report.results) { result in
-                        VStack(alignment:.leading,spacing:14) {
-                            HStack { Text(result.sourceName).font(.system(size:11,weight:.semibold)).foregroundStyle(.secondary).lineLimit(1);if let page=result.page { TwisterPill(title:"Page \(page)") };Spacer();Button { model.copy(result) } label:{Label(model.copied.contains(result.id) ? "Copied":"Copy",systemImage:model.copied.contains(result.id) ? "checkmark":"doc.on.doc")}.buttonStyle(TwisterButtonStyle(.secondary,compact:true)) }
-                            Text(result.text).font(.system(size:13)).textSelection(.enabled).frame(maxWidth:.infinity,alignment:.leading)
-                        }.padding(18).twisterCard(radius:18)
+                        VStack(alignment:.leading,spacing:8) {
+                            HStack { Text(result.sourceName).lineLimit(1).truncationMode(.middle);if let page=result.page { Text("Page \(page)") };Spacer();Button { model.copy(result) } label:{ LText(model.copied.contains(result.id) ? "Copied":"Copy") }.controlSize(.small) }.font(.subheadline).foregroundStyle(.secondary)
+                            Text(result.text).textSelection(.enabled).frame(maxWidth:.infinity,alignment:.leading)
+                        }.padding(12).twisterGroup()
                     }
-                    ForEach(model.report.errors,id:\.self) { Text($0).font(.caption).foregroundStyle(.orange) }
-                    if let error=model.error { LText(error).font(.caption).foregroundStyle(.orange) }
-                }.padding(20)
+                    ForEach(model.report.errors,id:\.self) { Text($0).font(.subheadline).foregroundStyle(.secondary) }
+                    if let error=model.error { LText(error).font(.subheadline).foregroundStyle(.red) }
+                }.padding(16).frame(maxWidth:.infinity,alignment:.leading)
             }
             Divider()
-            if model.inputs.contains(where:{FileCategory.detect($0) == .pdf}) { SecureField("PDF password (if needed)",text:$model.password).textFieldStyle(.roundedBorder).padding(.horizontal,20).padding(.top,15) }
-            HStack { Button("Scan again") { model.scan() }.disabled(model.busy).buttonStyle(TwisterButtonStyle(.quiet,compact:true));Spacer();TwisterPill(title:"\(model.report.results.count) found");Button("Save report…") { model.saveReport() }.disabled(model.busy).buttonStyle(TwisterButtonStyle(.secondary,compact:true));Button(model.copiedAll ? "Copied all":"Copy all") { model.copyAll() }.disabled(model.report.results.isEmpty).buttonStyle(TwisterButtonStyle(.primary,compact:true)) }.padding(20)
-        }.frame(minWidth:530,minHeight:440).background(TwisterPalette.canvas).tint(.twister).twisterAnimation(value:model.busy).twisterAnimation(value:model.copiedAll).onAppear { model.scan() }.onDisappear { model.token.cancel() }
+            if model.inputs.contains(where:{FileCategory.detect($0) == .pdf}) { SecureField("PDF password (if needed)",text:$model.password).textFieldStyle(.roundedBorder).padding(.horizontal,16).padding(.top,12) }
+            HStack { Button("Scan Again") { model.scan() }.disabled(model.busy);Text("\(model.report.results.count) found").font(.subheadline).foregroundStyle(.secondary);Spacer();Button("Save Report…") { model.saveReport() }.disabled(model.busy);Button { model.copyAll() } label:{ LText(model.copiedAll ? "Copied All":"Copy All") }.disabled(model.report.results.isEmpty).keyboardShortcut(.defaultAction) }.padding(.horizontal,16).padding(.vertical,12)
+        }.frame(minWidth:530,minHeight:440).background(Color(nsColor:.windowBackgroundColor)).twisterAnimation(value:model.busy).twisterAnimation(value:model.copiedAll).onAppear { model.scan() }.onDisappear { model.token.cancel() }
     }
 }

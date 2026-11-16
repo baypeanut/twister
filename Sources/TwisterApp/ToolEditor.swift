@@ -91,40 +91,42 @@ struct ToolEditor:View {
     var video:Bool { category == .video && ![.removeMetadata,.compress,.joinVideos].contains(tool) }
     var audio:Bool { category == .audio && tool != .removeMetadata && tool != .compress }
     var sideBySide:Bool { visual || video || audio }
+    @Environment(\.nativeWindowChrome) private var nativeWindowChrome
     var body:some View {
         VStack(spacing:0) {
-            HStack(spacing:14) {
-                WindowCloseButton().frame(width:26,height:26)
+            HStack(spacing:8) {
+                WindowCloseButton().frame(width:nativeWindowChrome ? 0:16,height:16)
                 ZStack {
                     WindowDragRegion()
-                    HStack(spacing:13) {
-                        Image(systemName:FeatureCatalog.toolSymbols[tool] ?? "slider.horizontal.3").font(.system(size:19,weight:.medium)).foregroundStyle(Color.twister).frame(width:44,height:44).background(TwisterPalette.sand,in:RoundedRectangle(cornerRadius:6))
-                        VStack(alignment:.leading,spacing:5) { LText(tool.title).font(.system(size:21,weight:.bold,design:.default)).tracking(-0.5);LText(toolHint).font(.system(size:11)).foregroundStyle(.secondary) }
-                        Spacer()
-                        TwisterPill(title:inputs.count>1 ? "\(inputs.count) files":input?.pathExtension.uppercased() ?? "FILE",symbol:"doc")
-                    }.allowsHitTesting(false)
+                    HStack(spacing:6) {
+                        if !nativeWindowChrome { LText(tool.title).font(.headline) }
+                        if inputs.count>1 { LText("\(inputs.count) files").foregroundStyle(.secondary) }
+                        else if let input {
+                            Image(nsImage:NSWorkspace.shared.icon(forFile:input.path)).resizable().frame(width:16,height:16).accessibilityHidden(true)
+                            Text(input.lastPathComponent).lineLimit(1).truncationMode(.middle).foregroundStyle(nativeWindowChrome ? .primary:.secondary)
+                        }
+                        Spacer(minLength:8)
+                        if visual { Text("\(Int(imageSize.width)) × \(Int(imageSize.height))").monospacedDigit().foregroundStyle(.secondary) }
+                    }.font(.callout).allowsHitTesting(false)
                 }
-            }.padding(.horizontal,20).padding(.vertical,17).frame(height:82).uiAuditProbe("editor.header")
+            }.padding(.horizontal,16).frame(height:36).uiAuditProbe("editor.header")
             Divider()
             HStack(spacing:0) {
                 if sideBySide {
                     ScrollView {
                         VStack(alignment:.leading,spacing:18) {
-                            HStack { Label("PREVIEW",systemImage:"viewfinder").font(.system(size:10,weight:.bold,design:.default)).tracking(1).foregroundStyle(.secondary);Spacer();if visual { Text("\(Int(imageSize.width)) × \(Int(imageSize.height))").font(.system(size:10,design:.monospaced)).foregroundStyle(.secondary) } }
                             if visual { imagePreview.disabled(isLoading || !readyToApply) }
                             if video || audio { mediaPreview.disabled(isLoading || !readyToApply) }
-                            HStack(spacing:6) { Image(systemName:"doc");Text(input?.lastPathComponent ?? "").lineLimit(1) }.font(.system(size:11)).foregroundStyle(.secondary)
-                        }.padding(24)
-                    }.frame(minWidth:450,maxWidth:.infinity,maxHeight:.infinity).background(TwisterPalette.inset.opacity(0.55)).uiAuditProbe("editor.preview")
+                        }.padding(16)
+                    }.frame(minWidth:450,maxWidth:.infinity,maxHeight:.infinity).background(Color(nsColor:.underPageBackgroundColor)).uiAuditProbe("editor.preview")
                     Divider()
                 }
                 ScrollView {
                     VStack(alignment:.leading,spacing:18) {
-                        Text(sideBySide ? L10n.text("OPTIONS"):"\(inputs.count>1 ? "\(inputs.count) FILES":input?.lastPathComponent ?? "")").font(.system(size:10,weight:.bold,design:.default)).tracking(0.8).foregroundStyle(.secondary).lineLimit(2)
-                        if isLoading { ProgressView("Preparing your file…").font(.caption) }
+                        if isLoading { ProgressView("Preparing your file…").controlSize(.small) }
                         controls.disabled(isLoading || !readyToApply)
-                        if let previewError { HStack { LText(previewError).font(.callout).foregroundStyle(.orange);Spacer();Button { self.previewError=nil } label:{Image(systemName:"xmark")}.accessibilityLabel("Dismiss preview error") } }
-                    }.padding(24).frame(maxWidth:sideBySide ? .infinity:720,alignment:.leading)
+                        if let previewError { HStack(alignment:.top) { Label { LText(previewError) } icon:{ Image(systemName:"exclamationmark.triangle.fill").symbolRenderingMode(.multicolor) }.font(.callout);Spacer();Button { self.previewError=nil } label:{Image(systemName:"xmark")}.buttonStyle(.borderless).accessibilityLabel("Dismiss preview error") } }
+                    }.padding(16).frame(maxWidth:sideBySide ? .infinity:720,alignment:.leading)
                 }.frame(width:sideBySide ? 380:nil).frame(maxWidth:sideBySide ? nil:.infinity,maxHeight:.infinity).uiAuditProbe("editor.options")
             }.uiAuditProbe("editor.body")
             if state.activeTool==tool,state.activeInputs==inputs,(state.working || state.error != nil || (tool == .compress && !state.outputs.isEmpty)) {
@@ -133,20 +135,20 @@ struct ToolEditor:View {
                     if tool == .compress,!state.working,!state.outputs.isEmpty {
                         LText(compressionResultText).font(.caption).foregroundStyle(.secondary)
                     }
-                }.padding(.horizontal,20).padding(.vertical,10)
+                }.padding(.horizontal,16).padding(.vertical,8)
             } else if state.hasJob(tool,inputs:inputs) {
                 Label { LText("Waiting for the current task to finish.") } icon:{ Image(systemName:"clock") }
-                    .font(.caption).foregroundStyle(.secondary).frame(maxWidth:.infinity,alignment:.leading).padding(.horizontal,20).padding(.vertical,10)
+                    .font(.subheadline).foregroundStyle(.secondary).frame(maxWidth:.infinity,alignment:.leading).padding(.horizontal,16).padding(.vertical,8)
             }
             Divider()
             HStack(spacing:12) {
-                Button { reset() } label:{Label("Reset",systemImage:"arrow.counterclockwise")}.buttonStyle(TwisterButtonStyle(.quiet)).uiAuditProbe("editor.reset").accessibilityIdentifier("editor.reset")
+                Button("Reset") { reset() }.uiAuditProbe("editor.reset").accessibilityIdentifier("editor.reset")
                 Spacer()
                 if tool != .organizePDF { SavePresetButton { if let applied=appliedOptions() { PresetPrompt.save(.tool(tool),options:applied,state:state) } }.disabled(!canApply) }
                 OutputDestinationControl(state:state,compact:true)
-                Button { apply() } label:{Label { LText(primaryTitle) } icon:{ Image(systemName:"arrow.up.right") }.uiAuditProbe("editor.primary.label")}.buttonStyle(TwisterButtonStyle(.primary)).uiAuditProbe("editor.primary").accessibilityIdentifier("editor.primary").disabled(!canApply).help(isCropTool ? "Save a cropped copy (Return or ⌘S)":"Save a copy (⌘S)")
-            }.padding(.horizontal,20).padding(.vertical,15).uiAuditProbe("editor.footer")
-        }.frame(minWidth:sideBySide ? 900:480,minHeight:420).background(TwisterPalette.canvas).tint(.twister).buttonStyle(TwisterButtonStyle(.secondary,compact:true)).textFieldStyle(.roundedBorder)
+                Button { apply() } label:{LText(primaryTitle).uiAuditProbe("editor.primary.label")}.buttonStyle(.borderedProminent).uiAuditProbe("editor.primary").accessibilityIdentifier("editor.primary").disabled(!canApply).help(isCropTool ? "Save a cropped copy (Return or ⌘S)":"Save a copy (⌘S)")
+            }.controlSize(.large).padding(.horizontal,16).padding(.vertical,12).uiAuditProbe("editor.footer")
+        }.frame(minWidth:sideBySide ? 900:480,minHeight:420).background(Color(nsColor:.windowBackgroundColor)).textFieldStyle(.roundedBorder)
             .uiAuditStatus(isLoading ? "loading":readyToApply ? "ready":"failed: "+(previewError ?? "Input did not become ready"))
             .twisterAnimation(value:state.working).task(id:loadRevision) { await load() }
             .task(id:previewKey) { await renderPreview() }
@@ -167,36 +169,23 @@ struct ToolEditor:View {
             .onDeleteCommand { discardSelectedClip() }
             .onDisappear { disposeMedia() }
     }
-    var toolHint:String {
-        switch tool {
-        case .cropImage,.cropVideo:return "Keep the good part."
-        case .editImage:return "Little tweaks. A whole new look."
-        case .annotateImage:return "Make your point."
-        case .frameImage:return "Give it a little breathing room."
-        case .compress:return "Make some space. Keep what matters."
-        case .removeMetadata:return "Choose what your file shares."
-        case .createCollage:return "Better together."
-        case .trimAudio,.trimVideo:return "Straight to the good stuff."
-        default:return "Fine-tune it. Save a fresh copy."
-        }
-    }
     var primaryTitle:String {
         switch tool {
-        case .editImage:return "Save edited copy"
-        case .annotateImage:return "Save annotated copy"
-        case .frameImage:return "Save with background"
-        case .redactImage,.redactVideo:return "Save redacted copy"
-        case .redactAudio:return options.audioMode == "bleep" ? "Save bleeped copy":"Save muted copy"
-        case .audioToVideo:return "Create visualization"
-        case .removeMetadata:return "Save metadata copy"
-        case .videoSnapshots:return "Save \(options.snapshotTimes.count) frame\(options.snapshotTimes.count==1 ? "":"s")"
-        case .cropImage,.cropVideo:return "Save cropped copy"
-        case .trimAudio,.trimVideo:return "Save trimmed copy"
-        case .changeVideoSpeed:return "Save speed copy"
-        case .audioChannels:return "Save audio copy"
-        case .splitVideo:return options.joinSplitClips ? "Export one video":"Export clips"
-        case .organizePDF:return "Save organized PDF"
-        case .compress:return "Compress & save"
+        case .editImage:return "Save Edited Copy"
+        case .annotateImage:return "Save Annotated Copy"
+        case .frameImage:return "Save with Background"
+        case .redactImage,.redactVideo:return "Save Redacted Copy"
+        case .redactAudio:return options.audioMode == "bleep" ? "Save Bleeped Copy":"Save Muted Copy"
+        case .audioToVideo:return "Create Visualization"
+        case .removeMetadata:return "Save Metadata Copy"
+        case .videoSnapshots:return options.snapshotTimes.count==1 ? "Save 1 Frame":"Save \(options.snapshotTimes.count) Frames"
+        case .cropImage,.cropVideo:return "Save Cropped Copy"
+        case .trimAudio,.trimVideo:return "Save Trimmed Copy"
+        case .changeVideoSpeed:return "Save Speed Copy"
+        case .audioChannels:return "Save Audio Copy"
+        case .splitVideo:return options.joinSplitClips ? "Export One Video":"Export Clips"
+        case .organizePDF:return "Save Organized PDF"
+        case .compress:return "Compress & Save"
         default:return FeatureCatalog.toolNames[tool] ?? tool.title
         }
     }
@@ -293,7 +282,7 @@ struct ToolEditor:View {
             if tool == .cropImage,inputs.count>1 {
                 Text("This crop applies to every selected image and must fit inside each one.").font(.caption).foregroundStyle(.secondary)
             }
-            Picker("Aspect ratio",selection:$aspect) { ForEach(["Free","1:1","16:9","9:16","4:3","3:4"],id:\.self) { LText($0) } }.pickerStyle(.segmented).onChange(of:aspect) { value in
+            Picker("Aspect ratio",selection:$aspect) { ForEach(["Free","1:1","16:9","9:16","4:3","3:4"],id:\.self) { LText($0) } }.pickerStyle(.segmented).labelsHidden().onChange(of:aspect) { value in
                 guard value != "Free" else { return };let a=value.split(separator:":").compactMap{Double($0)};if a.count==2 { let ratio=a[0]/a[1];let w=min(imageSize.width,imageSize.height*ratio),h=w/ratio;setCrop(EditRect(x:(imageSize.width-w)/2,y:(imageSize.height-h)/2,width:w,height:h)) }
             }
             HStack { number("W",value:cropDimension(width:true));number("H",value:cropDimension(width:false));Text("px").foregroundStyle(.secondary) }
@@ -439,7 +428,7 @@ struct ToolEditor:View {
             ScrollView(.horizontal,showsIndicators:false) {
                 HStack(spacing:5) { ForEach(Array(splitIntervals.enumerated()),id:\.offset) { index,range in
                     Button { selectedSplitClip=index;if processedPlayback { playOriginal(play:false) };seek(range.start) } label:{
-                        VStack(spacing:4) { LText("Clip \(index+1)").font(.caption.bold());Text(timeLabel(range.end-range.start)).font(.caption2.monospacedDigit()) }.frame(width:max(65,300*(range.end-range.start)/max(0.001,duration)),height:46).strikethrough(options.discardedClips.contains(index)).foregroundStyle(options.discardedClips.contains(index) ? Color.secondary:Color.primary).background(selectedSplitClip==index ? Color.twister.opacity(0.3):Color.primary.opacity(0.08)).cornerRadius(6)
+                        VStack(spacing:4) { LText("Clip \(index+1)").font(.caption.bold());Text(timeLabel(range.end-range.start)).font(.caption2.monospacedDigit()) }.frame(width:max(65,300*(range.end-range.start)/max(0.001,duration)),height:46).strikethrough(options.discardedClips.contains(index)).foregroundStyle(options.discardedClips.contains(index) ? Color.secondary:Color.primary).background(selectedSplitClip==index ? Color.accentColor.opacity(0.3):Color.primary.opacity(0.08)).cornerRadius(6)
                     }.buttonStyle(.plain).opacity(options.discardedClips.contains(index) ? 0.4:1)
                 } }.focusable()
             }
@@ -475,7 +464,7 @@ struct ToolEditor:View {
                     .disabled(!pdfEditor.canRedo).help("Redo page edit (⇧⌘Z)").accessibilityIdentifier("pdf.redo")
                 Spacer()
             }.controlSize(.small)
-            LazyVGrid(columns:[GridItem(.adaptive(minimum:110))],spacing:14) { ForEach(Array(pdfEditor.pages.enumerated()),id:\.offset) { index,page in VStack { Image(nsImage:page.thumbnail(of:NSSize(width:100,height:140),for:.mediaBox)).resizable().scaledToFit().frame(height:140);Text("\(index+1)").font(.caption) }.padding(8).background(pdfEditor.selectedPage==index ? Color.twister.opacity(0.2):Color.primary.opacity(0.03)).cornerRadius(8).onTapGesture{pdfEditor.select(index)} } }
+            LazyVGrid(columns:[GridItem(.adaptive(minimum:110))],spacing:14) { ForEach(Array(pdfEditor.pages.enumerated()),id:\.offset) { index,page in VStack { Image(nsImage:page.thumbnail(of:NSSize(width:100,height:140),for:.mediaBox)).resizable().scaledToFit().frame(height:140);Text("\(index+1)").font(.caption) }.padding(8).foregroundStyle(pdfEditor.selectedPage==index ? Color(nsColor:.alternateSelectedControlTextColor):Color.primary).background(pdfEditor.selectedPage==index ? Color(nsColor:.selectedContentBackgroundColor):Color.clear,in:RoundedRectangle(cornerRadius:6,style:.continuous)).contentShape(Rectangle()).onTapGesture{pdfEditor.select(index)} } }
             HStack {
                 Button("Rotate") { pdfEditor.rotateSelected() }.disabled(!pdfEditor.hasSelection)
                 Button("Duplicate") { pdfEditor.duplicateSelected() }.disabled(!pdfEditor.hasSelection)
@@ -519,7 +508,7 @@ struct ToolEditor:View {
             case .annotateImage: break
             default: break
             }
-        }.frame(height:420).background(Color.black.opacity(0.94)).cornerRadius(20)
+        }.frame(height:420).background(Color.black).cornerRadius(6)
     }
     var mediaPreview:some View {
         VStack(spacing:10) {
@@ -528,7 +517,7 @@ struct ToolEditor:View {
                     PlayerView(player:player,onTime:updatePlayhead,onPlayback:{isPlaying=$0},hiddenControls:true)
                         .id(ObjectIdentifier(player)).frame(height:audio && tool != .audioToVideo ? 0:330)
                     if (tool == .cropVideo || tool == .redactVideo) && !processedPlayback { ImageEditPreview(image:nil,imageSize:imageSize,crop:tool == .cropVideo ? options.crop:nil,redactions:options.redactions,annotations:[],redactionColor:Color(cgColor:ImageEngine.color(options.backgroundColor)),activeRedactions:tool == .redactVideo ? activeVideoRegions:nil,onMoveRedaction:{i,r in options.redactions[i]=r;if options.videoRedactions.indices.contains(i) { options.videoRedactions[i].rect=r }},onMoveCrop:setCrop,cropEnabled:tool == .cropVideo,cropAspectRatio:cropAspectRatio,onCropInteraction:cropInteraction) { rect in if tool == .cropVideo { setCrop(rect) } else { options.redactions.append(rect);options.videoRedactions.append(VideoRedaction(rect:rect,start:options.start,end:options.end)) } }.frame(height:330) }
-                }.cornerRadius(10)
+                }.cornerRadius(6)
             }
             if tool == .audioToVideo {
                 if previewBusy { ProgressView("Preparing visualization…") }
@@ -543,12 +532,12 @@ struct ToolEditor:View {
                 }
                 else { AudioWaveformView(peaks:processedWaveform ?? waveform,duration:duration,current:playhead,selection:tool == .trimAudio ? TimeRange(start:options.start,end:options.end ?? duration):nil,redactions:options.audioRedactions,rangeEnabled:tool == .trimAudio || tool == .redactAudio,onSeek:seek,onRange:{start,end in options.start=start;options.end=end;if tool == .redactAudio { options.audioRedactions.append(TimeRange(start:start,end:end)) }}).frame(height:90) }
             }
-            if duration>0 { Slider(value:Binding(get:{min(playhead,playbackDuration)},set:seek),in:0...max(0.001,playbackDuration)).tint(.twister) }
+            if duration>0 { Slider(value:Binding(get:{min(playhead,playbackDuration)},set:seek),in:0...max(0.001,playbackDuration)) }
             HStack { Button { seek(max(0,playhead-1/frameRate)) } label:{Image(systemName:"backward.end")}.accessibilityLabel("Previous frame").help("Previous frame");Button(action:togglePlayback) { Image(systemName:isPlaying ? "pause.fill":"play.fill") }.accessibilityLabel(isPlaying ? "Pause":"Play").help("Play / Pause (Space)");Button { seek(min(playbackDuration,playhead+1/frameRate)) } label:{Image(systemName:"forward.end")}.accessibilityLabel("Next frame").help("Next frame");Spacer();Text("\(timeLabel(playhead)) / \(timeLabel(playbackDuration))").font(.caption.monospacedDigit()) }
             if (audio && tool != .audioToVideo && tool != .trimAudio) || tool == .redactVideo { HStack { Button("Original") { playOriginal() };Button(previewBusy ? "Preparing…":"Preview Processed") { processedPreview() }.disabled(previewBusy || (tool == .redactVideo || tool == .redactAudio) && !canApply) } }
             if tool == .redactVideo,processedPlayback { Text("Processed preview. Choose Original to edit areas.").font(.caption).foregroundStyle(.secondary) }
             if tool == .trimAudio || tool == .trimVideo { Button("Play Selected Range",action:playSelectedRange).help("Play selected range (⇧Space)") }
-            LText(mediaShortcutHint).font(.system(size:10)).foregroundStyle(.secondary)
+            LText(mediaShortcutHint).font(.footnote).foregroundStyle(.secondary)
                 .fixedSize(horizontal:false,vertical:true).frame(maxWidth:.infinity,alignment:.leading)
         }
     }
@@ -862,7 +851,7 @@ struct ToolEditor:View {
     func collage<T>(_ key:WritableKeyPath<CollageOptions,T>)->Binding<T> { Binding(get:{(options.collage ?? .init())[keyPath:key]},set:{var value=options.collage ?? .init();value[keyPath:key]=$0;options.collage=value}) }
     func relative(_ value:Binding<Double>)->Binding<Double> { Binding(get:{value.wrappedValue-1},set:{value.wrappedValue=$0+1}) }
     func number(_ label:String,value:Binding<Int>)->some View { HStack { Text(label);TextField("",value:value,format:.number).textFieldStyle(.roundedBorder).frame(minWidth:60) } }
-    func slider(_ title:String,value:Binding<Double>,range:ClosedRange<Double>,unit:String="")->some View { HStack { LText(title).font(.callout).frame(width:105,alignment:.leading);Slider(value:value,in:range).tint(.twister);Text("\(value.wrappedValue,specifier:"%.2f") \(unit)").font(.caption.monospacedDigit()).frame(width:70,alignment:.trailing);Button { value.wrappedValue=["Playback speed":1,"Target loudness":-16,"Loudness range":11,"True peak limit":-1.5,"Left volume":1,"Right volume":1,"Padding":160,"Corners":24,"Shadow":24,"Stroke width":3,"Text size":24][title] ?? 0 } label:{Image(systemName:"arrow.counterclockwise").font(.caption)}.buttonStyle(.plain) } }
+    func slider(_ title:String,value:Binding<Double>,range:ClosedRange<Double>,unit:String="")->some View { HStack { LText(title).font(.callout).frame(width:105,alignment:.leading);Slider(value:value,in:range);Text("\(value.wrappedValue,specifier:"%.2f") \(unit)").font(.caption.monospacedDigit()).frame(width:70,alignment:.trailing);Button { value.wrappedValue=["Playback speed":1,"Target loudness":-16,"Loudness range":11,"True peak limit":-1.5,"Left volume":1,"Right volume":1,"Padding":160,"Corners":24,"Shadow":24,"Stroke width":3,"Text size":24][title] ?? 0 } label:{Image(systemName:"arrow.counterclockwise").font(.caption)}.buttonStyle(.plain) } }
     func colorBinding(_ string:Binding<String>,preservingOpacity:Bool=false)->Binding<Color> {
         Binding(get:{Color(cgColor:ImageEngine.color(string.wrappedValue))},set:{
             string.wrappedValue=preservingOpacity ? ImageColorCodec.backgroundHex(NSColor($0)):hex($0)
@@ -949,8 +938,8 @@ struct AudioWaveformView:View {
         GeometryReader { geometry in
             Canvas { context,size in
                 let w=size.width/CGFloat(max(1,peaks.count))
-                for (i,p) in peaks.enumerated() { let h=max(1,CGFloat(sqrt(abs(p)))*(size.height-12));let rect=CGRect(x:CGFloat(i)*w,y:(size.height-h)/2,width:max(1,w*0.8),height:h);context.fill(Path(roundedRect:rect,cornerRadius:1),with:.color(CGFloat(i)*w<=size.width*current/max(0.01,duration) ? .twister:.secondary.opacity(0.5))) }
-                for range in redactions+[selection,dragging].compactMap({$0}) { let rect=CGRect(x:size.width*range.start/max(duration,0.01),y:0,width:size.width*(range.end-range.start)/max(duration,0.01),height:size.height);context.fill(Path(rect),with:.color(.twister.opacity(0.18)));context.stroke(Path(rect),with:.color(.twister),lineWidth:1) }
+                for (i,p) in peaks.enumerated() { let h=max(1,CGFloat(sqrt(abs(p)))*(size.height-12));let rect=CGRect(x:CGFloat(i)*w,y:(size.height-h)/2,width:max(1,w*0.8),height:h);context.fill(Path(roundedRect:rect,cornerRadius:1),with:.color(CGFloat(i)*w<=size.width*current/max(0.01,duration) ? .accentColor:.secondary.opacity(0.5))) }
+                for range in redactions+[selection,dragging].compactMap({$0}) { let rect=CGRect(x:size.width*range.start/max(duration,0.01),y:0,width:size.width*(range.end-range.start)/max(duration,0.01),height:size.height);context.fill(Path(rect),with:.color(.accentColor.opacity(0.18)));context.stroke(Path(rect),with:.color(.accentColor),lineWidth:1) }
                 let x=size.width*current/max(duration,0.01);var cursor=Path();cursor.move(to:CGPoint(x:x,y:0));cursor.addLine(to:CGPoint(x:x,y:size.height));context.stroke(cursor,with:.color(.primary),lineWidth:1)
             }.background(Color.primary.opacity(0.035)).cornerRadius(8).contentShape(Rectangle()).gesture(DragGesture(minimumDistance:0).onChanged { value in
                 let a=max(0,min(duration,value.startLocation.x/geometry.size.width*duration)),b=max(0,min(duration,value.location.x/geometry.size.width*duration))

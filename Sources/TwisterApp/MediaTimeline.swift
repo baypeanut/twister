@@ -26,7 +26,7 @@ struct MediaTimeRangeLane:View {
                         .frame(width:max(14,(range.end-range.start)*scale),height:geometry.size.height)
                         .offset(x:range.start*scale)
                 }
-                if let pending { Rectangle().fill(Color.twister.opacity(0.3)).frame(width:max(1,(pending.end-pending.start)*scale)).offset(x:pending.start*scale) }
+                if let pending { Rectangle().fill(Color.accentColor.opacity(0.3)).frame(width:max(1,(pending.end-pending.start)*scale)).offset(x:pending.start*scale) }
                 Rectangle().fill(.white).frame(width:2).offset(x:min(geometry.size.width-2,max(0,current*scale))).allowsHitTesting(false)
             }.allowsHitTesting(false).accessibilityHidden(true)
                 .overlay {
@@ -40,13 +40,13 @@ private struct MediaRangeClip:View {
     let label:String
     var body:some View {
         ZStack {
-            RoundedRectangle(cornerRadius:5).fill(Color.twister.opacity(0.25)).overlay(RoundedRectangle(cornerRadius:5).stroke(Color.twister,lineWidth:2))
+            RoundedRectangle(cornerRadius:5).fill(Color.accentColor.opacity(0.25)).overlay(RoundedRectangle(cornerRadius:5).stroke(Color.accentColor,lineWidth:2))
             LText(label).font(.caption2.bold()).foregroundStyle(.white).lineLimit(1).padding(.horizontal,10)
             HStack(spacing:0) { handle(start:true);Spacer(minLength:0);handle(start:false) }
         }
     }
     func handle(start:Bool)->some View {
-        RoundedRectangle(cornerRadius:3).fill(Color.twister).frame(width:12)
+        RoundedRectangle(cornerRadius:3).fill(Color.accentColor).frame(width:12)
             .overlay(Capsule().fill(.white).frame(width:2,height:15))
             .accessibilityLabel(start ? "Range start":"Range end")
     }
@@ -109,7 +109,7 @@ private struct MediaPointMarker:View {
     let onChange:(Double)->Void
     @State private var initial:Double?
     var body:some View {
-        Rectangle().fill(Color.twister).frame(width:8).overlay(Capsule().fill(.white).frame(width:2,height:15))
+        Rectangle().fill(Color.accentColor).frame(width:8).overlay(Capsule().fill(.white).frame(width:2,height:15))
             .gesture(DragGesture(minimumDistance:0).onChanged { value in
                 if initial==nil { initial=time };onChange(max(0.001,min(duration-0.001,(initial ?? time)+value.translation.width/scale)))
             }.onEnded { _ in initial=nil })

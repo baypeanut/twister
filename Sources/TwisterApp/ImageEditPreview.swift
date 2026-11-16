@@ -45,19 +45,19 @@ struct ImageEditPreview:View {
                             path.addRect(CGRect(x:origin.x+selection.x*ratio,y:origin.y+selection.y*ratio,width:selection.width*ratio,height:selection.height*ratio))
                         }.fill(Color.black.opacity(0.5),style:FillStyle(eoFill:true)).allowsHitTesting(false)
                     }
-                    rectangle(selection,ratio:ratio,origin:origin,color:.twister,fill:false,handles:true)
+                    rectangle(selection,ratio:ratio,origin:origin,color:.accentColor,fill:false,handles:true)
                 }
                 ForEach(Array(redactions.enumerated()),id:\.offset) { i,r in
                     let active=activeRedactions?.contains(i) ?? true
-                    rectangle(r,ratio:ratio,origin:origin,color:active ? redactionColor:.twister,fill:active,handles:true)
+                    rectangle(r,ratio:ratio,origin:origin,color:active ? redactionColor:.accentColor,fill:active,handles:true)
                 }
                 if selectAnnotations,let index=selectedAnnotation,annotations.indices.contains(index) {
-                    rectangle(annotations[index].rect,ratio:ratio,origin:origin,color:.twister,fill:false,handles:true)
+                    rectangle(annotations[index].rect,ratio:ratio,origin:origin,color:.accentColor,fill:false,handles:true)
                 }
-                if let dragRect,!cropEnabled,annotationStyle==nil { rectangle(dragRect,ratio:ratio,origin:origin,color:.twister,fill:false,handles:false) }
+                if let dragRect,!cropEnabled,annotationStyle==nil { rectangle(dragRect,ratio:ratio,origin:origin,color:.accentColor,fill:false,handles:false) }
                 if case .new=target,let style=annotationStyle,let source=annotationSource,
                    let draft=AnnotationDrawing.draft(style:style,points:stroke) {
-                    if draft.kind == .image { rectangle(draft.rect,ratio:ratio,origin:origin,color:.twister,fill:false,handles:false) }
+                    if draft.kind == .image { rectangle(draft.rect,ratio:ratio,origin:origin,color:.accentColor,fill:false,handles:false) }
                     else { AnnotationDraftOverlay(draft:draft,source:source,imageSize:imageSize,origin:origin,ratio:ratio) }
                 }
                 Color.clear.contentShape(Rectangle()).gesture(DragGesture(minimumDistance:2).onChanged { value in
@@ -146,7 +146,7 @@ struct ImageEditPreview:View {
     func rectangle(_ r:EditRect,ratio:CGFloat,origin:CGPoint,color:Color,fill:Bool,handles:Bool)->some View {
         ZStack(alignment:.topLeading) {
             Rectangle().fill(fill ? color.opacity(0.7):.clear).overlay(Rectangle().stroke(color,lineWidth:1.5))
-            if handles { ForEach(Handle.allCases,id:\.rawValue) { h in RoundedRectangle(cornerRadius:2).fill(Color.twister).frame(width:8,height:8).offset(x:r.width*ratio*h.x-4,y:r.height*ratio*h.y-4) } }
+            if handles { ForEach(Handle.allCases,id:\.rawValue) { h in RoundedRectangle(cornerRadius:2).fill(Color.accentColor).frame(width:8,height:8).offset(x:r.width*ratio*h.x-4,y:r.height*ratio*h.y-4) } }
         }.frame(width:max(1,r.width*ratio),height:max(1,r.height*ratio)).offset(x:origin.x+r.x*ratio,y:origin.y+r.y*ratio)
     }
 }
