@@ -947,7 +947,7 @@
   "1 task waiting": "1 işlem sırada",
   "{0} tasks waiting": "{0} işlem sırada",
   "Clear queue": "Sırayı temizle",
-  "Retry failed": "Başarısızları yeniden dene",
+  "Retry failed": "Başarısızları dene",
   "Show files": "Dosyaları göster",
   "Hide files": "Dosyaları gizle",
   "Dismiss results": "Sonuçları kapat",

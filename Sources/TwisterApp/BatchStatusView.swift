@@ -41,7 +41,7 @@ struct BatchStatusView:View {
                 }
                 Spacer(minLength:8)
                 if batch.finished,report.failed>0 {
-                    Button { state.retryFailed(batch) } label:{ LText("Retry failed") }.buttonStyle(TwisterButtonStyle(.secondary,compact:true))
+                    Button { state.retryFailed(batch) } label:{ LText("Retry failed").lineLimit(1).fixedSize() }.buttonStyle(TwisterButtonStyle(.secondary,compact:true))
                 }
                 Button { expanded = !showsFiles } label:{ Image(systemName:showsFiles ? "chevron.up":"chevron.down") }
                     .buttonStyle(TwisterButtonStyle(.quiet,compact:true)).accessibilityLabel(L10n.text(showsFiles ? "Hide files":"Show files"))

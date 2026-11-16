@@ -1308,7 +1308,7 @@
 "RESIZE, CROP, CONVERT" = "BOYUTLANDIR, KIRP, DÖNÜŞTÜR";
 "RESTORE CLIPS" = "KLİPLERİ GERİ GETİR";
 "RESTORE DEFAULTS" = "VARSAYILANLARA DÖN";
-"RETRY FAILED" = "BAŞARISIZLARI YENİDEN DENE";
+"RETRY FAILED" = "BAŞARISIZLARI DENE";
 "REVEAL FINISHED FILES IN EXPLORER" = "TAMAMLANAN DOSYALARI DOSYA GEZGİNİ'NDE GÖSTER";
 "REVEAL FINISHED FILES IN FINDER" = "TAMAMLANAN DOSYALARI FİNDER'DA GÖSTER";
 "REVEAL FINISHED FILES IN FINDER WHILE TWISTER IS ACTIVE" = "TWİSTER ETKİNKEN BİTEN DOSYALARI FİNDER’DA GÖSTER";
@@ -1378,7 +1378,7 @@
 "Restore Clips" = "Klipleri Geri Getir";
 "Restore Defaults" = "Varsayılanlara Dön";
 "Restore defaults" = "Varsayılanlara dön";
-"Retry failed" = "Başarısızları yeniden dene";
+"Retry failed" = "Başarısızları dene";
 "Reveal finished files in Explorer" = "Tamamlanan dosyaları Dosya Gezgini'nde göster";
 "Reveal finished files in Finder" = "Tamamlanan dosyaları Finder'da göster";
 "Reveal finished files in Finder while Twister is active" = "Twister etkinken biten dosyaları Finder’da göster";
