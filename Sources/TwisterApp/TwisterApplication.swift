@@ -130,6 +130,7 @@ enum TwisterApplication {
         self?.wheel?.hide();self?.progressToast.dismiss();self?.successToast.dismiss()
     }
     var toolSetupWindow:NSWindow?
+    private var toolSetupModel:ToolSetupModel?
     var downloadWindow:NSWindow?
     lazy var downloadModel=WebDownloadModel(state:state)
     private var downloadHotKey:EventHotKeyRef?
@@ -149,7 +150,7 @@ enum TwisterApplication {
         appMenu.addItem(withTitle:"Library",action:#selector(showLibrary),keyEquivalent:"2")
         appMenu.addItem(withTitle:"Find in Library…",action:#selector(findInLibrary),keyEquivalent:"f")
         appMenu.addItem(withTitle:"Choose Files…",action:#selector(chooseFiles),keyEquivalent:"o")
-        appMenu.addItem(withTitle:"Download Link…",action:#selector(showDownloadLink),keyEquivalent:"")
+        if AppFeatures.webDownloads { appMenu.addItem(withTitle:"Download Link…",action:#selector(showDownloadLink),keyEquivalent:"") }
         appMenu.addItem(withTitle:"Settings…",action:#selector(showSettings),keyEquivalent:",")
         appMenu.addItem(withTitle:"Welcome…",action:#selector(showWelcome),keyEquivalent:"")
         appMenu.addItem(withTitle:"Check for Updates…",action:#selector(checkForUpdates),keyEquivalent:"u")
@@ -174,7 +175,7 @@ enum TwisterApplication {
         menu.addItem(withTitle:"Twister",action:#selector(showHome),keyEquivalent:"")
         menu.addItem(NSMenuItem.separator())
         menu.addItem(withTitle:"Choose Files…",action:#selector(chooseFiles),keyEquivalent:"o")
-        menu.addItem(withTitle:"Download Link…",action:#selector(showDownloadLink),keyEquivalent:"")
+        if AppFeatures.webDownloads { menu.addItem(withTitle:"Download Link…",action:#selector(showDownloadLink),keyEquivalent:"") }
         menu.addItem(withTitle:"Enable Twister",action:#selector(toggleEnabled),keyEquivalent:"").state = UserDefaults.standard.bool(forKey:"enabled") ? .on : .off
         menu.addItem(withTitle:"Settings…",action:#selector(showSettings),keyEquivalent:",")
         menu.addItem(withTitle:"Welcome…",action:#selector(showWelcome),keyEquivalent:"")
@@ -219,7 +220,7 @@ enum TwisterApplication {
         state.onOpenWheel = { [weak self] in self?.wheel.show(inputs:self?.state.inputs ?? [],mode:.tools,at:NSEvent.mouseLocation,keyboard:true) }
         state.onWebDownload = { [weak self] url,mode in self?.showWebDownload(url,mode:mode) }
         state.onWebDrop = { [weak self] urls in self?.wheel.show(inputs:urls,mode:.tools,at:NSEvent.mouseLocation,keyboard:true) }
-        registerDownloadShortcut()
+        if AppFeatures.webDownloads { registerDownloadShortcut() }
         installFinderServices()
         homeKeyboardMonitor=NSEvent.addLocalMonitorForEvents(matching:.keyDown) { [weak self] event in
             guard let self,event.window===self.home,self.home?.isKeyWindow==true else{return event}
@@ -264,7 +265,8 @@ enum TwisterApplication {
     }
     @objc func showToolSetup() {
         if toolSetupWindow == nil {
-            let model=ToolSetupModel()
+            let model=ToolSetupModel();toolSetupModel=model
+            model.isBusy={ [weak self] in self?.state.working == true }
             model.onWorkingChange={ [weak self] working in guard let self else{return};self.toolSetupWorking=working;self.toolSetupWindow?.standardWindowButton(.closeButton)?.isEnabled = !working;self.updater.setBusy(working || self.state.working) }
             toolSetupWindow=makeWindow(title:"Set up Twister tools",size:NSSize(width:646,height:690),view:ToolSetupView(model:model,onDone:{ [weak self] in
                 guard ExternalToolSetup.status.ready else{return}
@@ -275,7 +277,9 @@ enum TwisterApplication {
     }
     @objc func showDownloadLink() { showWebDownload(WebLinkPayload.clipboardLink(),mode:.video) }
     func showWebDownload(_ url:URL?,mode:WebDownloadMode) {
+        guard AppFeatures.webDownloads else { state.error="Web downloads are not part of this copy of Twister.";return }
         if downloadWindow == nil {
+            downloadModel.onInstallTools = { [weak self] groups in self?.showToolSetup();self?.toolSetupModel?.install(groups:groups) }
             downloadWindow=makeToolWindow(title:"Download from the web",size:NSSize(width:660,height:680),view:WebDownloadView(model:downloadModel,state:state))
             downloadWindow?.contentMinSize=NSSize(width:620,height:520)
             downloadModel.onUseFiles = { [weak self] in guard let self else { return };self.state.inputs=self.downloadModel.completed;self.downloadWindow?.close();self.showHome() }

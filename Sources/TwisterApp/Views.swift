@@ -31,7 +31,9 @@ struct SettingsView:View {
     @AppStorage("appLanguage") private var appLanguage="en"
     @AppStorage("windowManagementEnabled") private var windowManagementEnabled=false
     @AppStorage(JobNotifier.preferenceKey) private var jobNotifications=true
-    @State private var windowAccessibility=AXIsProcessTrusted()
+    @State private var windowAccessibility=false
+    @State private var webDownloads=WebDownloadGate.preference(in:.standard)
+    @State private var toolStatus=ExternalToolSetup.status
     @Environment(\.accessibilityReduceMotion) private var systemReducedMotion
     init(updater:AppUpdater,state:AppState?=nil,showingUpdates:Bool=false,initialSection:SettingsSection = .general) {
         self.updater=updater;self.state=state
@@ -90,6 +92,29 @@ struct SettingsView:View {
                 Label("Local by design",systemImage:"lock.shield").font(.system(size:10,weight:.medium,design:.default)).foregroundStyle(.secondary).padding(.bottom,17)
             }.padding(.horizontal,16).frame(width:188).background(TwisterPalette.inset.opacity(0.6))
     }
+    private func refreshOptionalExtras() { toolStatus=ExternalToolSetup.status;webDownloads=WebDownloadGate.preference(in:.standard) }
+    /// Instructions and the permission check appear only after the feature is turned on.
+    @ViewBuilder private var windowArrangementDetails:some View {
+        Text("Drag a window by its title bar or resize border, then tap Shift or Command. Hover over a layout and release the mouse to place it. Escape cancels.")
+            .font(.caption).foregroundStyle(.secondary)
+        Text("1/3 left · middle · right   /   1/2 left · right   /   2/3 left · right")
+            .font(.caption).foregroundStyle(.secondary)
+        Group {
+            if !windowAccessibility {
+                HStack {
+                    Text("Allow \(WindowManagementController.permissionName) once to move and resize other apps’ windows.").font(.caption).foregroundStyle(.secondary)
+                    Spacer()
+                    Button("Open permission settings…") { WindowManagementController.requestAccess() }
+                }
+                if Bundle.main.bundleIdentifier == "app.twister.desktop" {
+                    Text("Choose this copy of Twister when adding it to \(WindowManagementController.permissionName).").font(.caption).foregroundStyle(.secondary)
+                    Button("Show Twister in Finder") { NSWorkspace.shared.activateFileViewerSelecting([Bundle.main.bundleURL]) }
+                }
+            } else { Label("\(WindowManagementController.permissionName) is enabled",systemImage:"checkmark.circle").font(.caption).foregroundStyle(.secondary) }
+        }
+        .onAppear { windowAccessibility=AXIsProcessTrusted() }
+        .onReceive(Timer.publish(every:2,on:.main,in:.common).autoconnect()) { _ in windowAccessibility=AXIsProcessTrusted() }
+    }
     private var general:some View {
         ScrollView { VStack(alignment:.leading,spacing:20) {
             TwisterPageHeading(eyebrow:"General",title:"Make yourself at home.",subtitle:"Appearance, shortcuts, and everyday defaults.").padding(.bottom,4)
@@ -124,27 +149,28 @@ struct SettingsView:View {
                     Text("Tap the chosen modifier combination while dragging files.").font(.caption).foregroundStyle(.secondary)
                 }.padding(10)
             }.id(shortcutsRevision)
-            GroupBox("Window management") {
+            GroupBox("Optional extras") {
                 VStack(alignment:.leading,spacing:13) {
+                    if AppFeatures.webDownloads {
+                        Toggle("Web downloads",isOn:Binding(get:{ WebDownloadGate.isOn(preference:webDownloads,status:toolStatus) },set:{ webDownloads=$0;UserDefaults.standard.set($0,forKey:WebDownloadGate.preferenceKey) }))
+                            .accessibilityIdentifier("WebDownloadsEnabled")
+                        Text("Save media from a public link. This uses separate tools that file conversion does not need.").font(.caption).foregroundStyle(.secondary)
+                        if WebDownloadGate.isOn(preference:webDownloads,status:toolStatus),case .needsTools=WebDownloadGate.availability(included:true,preference:webDownloads,status:toolStatus) {
+                            HStack {
+                                Text("The web download tools are not installed.").font(.caption).foregroundStyle(.secondary)
+                                Spacer()
+                                Button("Install web download tools") { NotificationCenter.default.post(name:.showToolSetup,object:nil) }
+                            }
+                        }
+                        Divider()
+                    }
                     Toggle("Arrange windows while dragging",isOn:$windowManagementEnabled)
-                    Text("Drag a window by its title bar or resize border, then tap Shift or Command. Hover over a layout and release the mouse to place it. Escape cancels.")
-                        .font(.caption).foregroundStyle(.secondary)
-                    Text("1/3 left · middle · right   /   1/2 left · right   /   2/3 left · right")
-                        .font(.caption).foregroundStyle(.secondary)
-                    if !windowAccessibility {
-                        HStack {
-                            Text("Allow \(WindowManagementController.permissionName) once to move and resize other apps’ windows.").font(.caption).foregroundStyle(.secondary)
-                            Spacer()
-                            Button("Open permission settings…") { WindowManagementController.requestAccess() }
-                        }
-                        if Bundle.main.bundleIdentifier == "app.twister.desktop" {
-                            Text("Choose this copy of Twister when adding it to \(WindowManagementController.permissionName).").font(.caption).foregroundStyle(.secondary)
-                            Button("Show Twister in Finder") { NSWorkspace.shared.activateFileViewerSelecting([Bundle.main.bundleURL]) }
-                        }
-                    } else { Label("\(WindowManagementController.permissionName) is enabled",systemImage:"checkmark.circle").font(.caption).foregroundStyle(.secondary) }
+                    Text("Window arrangement is an optional extra. It keeps working but is no longer being extended.").font(.caption).foregroundStyle(.secondary)
+                    if windowManagementEnabled { windowArrangementDetails }
                 }.padding(10)
             }
-            .onReceive(Timer.publish(every:2,on:.main,in:.common).autoconnect()) { _ in windowAccessibility=AXIsProcessTrusted() }
+            .onReceive(NotificationCenter.default.publisher(for:.toolSetupChanged)) { _ in refreshOptionalExtras() }
+            .onReceive(NotificationCenter.default.publisher(for:NSApplication.didBecomeActiveNotification)) { _ in refreshOptionalExtras() }
             GroupBox("File actions") {
                 VStack(spacing:16) {
                     HStack { Text("Float Behaviour");Spacer();Picker("Float behavior",selection:$floatBehavior) { Text("Create a New Float").tag("createNew");Text("Add Files to an Existing Float").tag("addToExisting") }.labelsHidden().frame(maxWidth:240) }

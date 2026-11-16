@@ -58,7 +58,7 @@ struct HomeView:View {
             navigationItem("Library",symbol:"clock",selected:state.libraryVisible) { state.libraryVisible=true }
             Divider().padding(.vertical,20)
             Text("TOOLS").font(.system(size:9,weight:.semibold)).tracking(1.5).foregroundStyle(.secondary).padding(.horizontal,10).padding(.bottom,9)
-            navigationItem("Download a link",symbol:"arrow.down.to.line",selected:false) { state.onWebDownload?(WebLinkPayload.clipboardLink(),.video) }
+            if AppFeatures.webDownloads { navigationItem("Download a link",symbol:"arrow.down.to.line",selected:false) { state.onWebDownload?(WebLinkPayload.clipboardLink(),.video) } }
             navigationItem("Settings",symbol:"slider.horizontal.3",selected:false) { state.onSettings?() }
             Spacer(minLength:24)
             VStack(alignment:.leading,spacing:7) {

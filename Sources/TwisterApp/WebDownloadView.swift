@@ -1,6 +1,15 @@
 import AppKit
+import Combine
 import SwiftUI
 import TwisterCore
+
+enum AppFeatures {
+    /// False only in a copy built with `TWISTER_WEB_DOWNLOADS=0`; such a copy has no downloader interface.
+    static let webDownloads=WebDownloadGate.buildIncludesDownloader(Bundle.main.infoDictionary)
+    static var webDownloadAvailability:WebDownloadAvailability {
+        WebDownloadGate.availability(included:webDownloads,preference:WebDownloadGate.preference(in:.standard),status:ExternalToolSetup.status)
+    }
+}
 
 @MainActor final class WebDownloadModel:ObservableObject {
     @Published var linkText=""
@@ -14,8 +23,11 @@ import TwisterCore
     @Published var selectedPhotos=Set<Int>()
     @Published var shortcutAvailable=false
     @Published var destination:URL
+    @Published private(set) var availability=AppFeatures.webDownloadAvailability
     let state:AppState
     var onUseFiles:(()->Void)?
+    var onInstallTools:(([ToolGroup])->Void)?
+    private var observers=Set<AnyCancellable>()
     private var inspection:Task<Void,Never>?
     private var inspectionToken=CancellationToken()
     private var revision=UUID()
@@ -23,10 +35,29 @@ import TwisterCore
     init(state:AppState) {
         self.state=state
         destination=UserDefaults.standard.string(forKey:"webDownloadDestination").map{URL(fileURLWithPath:$0,isDirectory:true)} ?? FileManager.default.urls(for:.downloadsDirectory,in:.userDomainMask)[0]
+        for name in [Notification.Name.toolSetupChanged,NSApplication.didBecomeActiveNotification,UserDefaults.didChangeNotification] {
+            NotificationCenter.default.publisher(for:name).receive(on:RunLoop.main).sink { [weak self] _ in self?.refreshAvailability() }.store(in:&observers)
+        }
+    }
+    /// A link pasted before the tools are present is kept and checked once they are.
+    func refreshAvailability() {
+        let current=AppFeatures.webDownloadAvailability
+        guard current != availability else { return }
+        availability=current
+        if current == .ready,!linkText.isEmpty,info == nil,!inspecting,!downloading { inspect() }
+    }
+    func resolveAvailability() {
+        switch availability {
+        case .off:UserDefaults.standard.set(true,forKey:WebDownloadGate.preferenceKey);refreshAvailability()
+        case .needsTools(let groups):onInstallTools?(groups)
+        case .excluded,.ready:break
+        }
     }
     func open(_ url:URL?,mode:WebDownloadMode) {
         guard !downloading else { return }
+        refreshAvailability()
         pendingMode=mode
+        guard availability == .ready else { if let url { linkText=url.absoluteString };return }
         if let url { linkText=url.absoluteString;inspect() }
     }
     func editedLink() {
@@ -108,6 +139,7 @@ struct WebDownloadView:View {
                 }.frame(height:50)
             }.padding(22)
             Divider()
+            if model.availability == .ready {
             ScrollView {
                 VStack(alignment:.leading,spacing:20) {
                     HStack(spacing:10) {
@@ -187,7 +219,21 @@ struct WebDownloadView:View {
                 else if let info=model.info { Button(!info.photos.isEmpty ? "Download \(model.selectedPhotos.count) \(model.selectedPhotos.count==1 ? "photo":"photos")":model.mode == .audioMP3 ? "Download MP3":info.kind == .image ? "Download image":"Download") { model.download() }.buttonStyle(TwisterButtonStyle(.primary)).disabled(model.downloading || state.working || (!info.photos.isEmpty && model.selectedPhotos.isEmpty)) }
                 else { Button("Check link") { model.inspect() }.buttonStyle(TwisterButtonStyle(.primary)).disabled(model.linkText.isEmpty || model.inspecting) }
             }.padding(20)
+            } else { unavailable }
         }.onChange(of:model.mode) { _ in model.configurationChanged() }.onChange(of:model.maximumHeight) { _ in model.configurationChanged() }.frame(minWidth:620,minHeight:520).background(TwisterPalette.canvas).tint(.twister).buttonStyle(TwisterButtonStyle(.secondary,compact:true))
+    }
+    /// Shown in place of the link form until the user has opted in and the tools are present.
+    private var unavailable:some View {
+        let off=model.availability == .off
+        return VStack(alignment:.leading,spacing:14) {
+            Label(LocalizedStringKey(off ? "Web downloads are turned off":"Web downloads need their own tools"),systemImage:"arrow.down.to.line").font(.headline)
+            LText(off ? "Turn them on here or in Settings → General → Optional extras.":"Downloading from a link uses extra tools that media conversion does not need. Twister downloads them once from pinned, checksum-verified sources, and you can remove them again in tool setup. Converting and editing files works without them.")
+                .font(.callout).foregroundStyle(.secondary).fixedSize(horizontal:false,vertical:true)
+            if !model.linkText.isEmpty { Text("Your link is kept and checked as soon as web downloads are ready.").font(.caption).foregroundStyle(.secondary) }
+            Button { model.resolveAvailability() } label:{ LText(off ? "Turn on web downloads":"Install web download tools") }
+                .buttonStyle(TwisterButtonStyle(.primary)).keyboardShortcut(.defaultAction).accessibilityIdentifier("WebDownloadSetup")
+            Spacer(minLength:0)
+        }.padding(24).frame(maxWidth:.infinity,maxHeight:.infinity,alignment:.topLeading)
     }
     func details(_ info:WebMediaInfo)->String {
         var details=[info.site,info.kind.rawValue.capitalized]

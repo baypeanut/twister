@@ -56,7 +56,7 @@ import TwisterCore
                 if officeMode==1 {while !token.isCancelled {try await Task.sleep(nanoseconds:20_000_000)};try token.check()}
                 status.officeReady=true;report(1,"Office tools are ready.")
             }
-        })
+        },inspect:{_ in nil},measure:{_ in 0},remove:{_ in})
         let w=NSWindow(contentRect:NSRect(x:100,y:80,width:646,height:690),styleMask:[.titled,.closable,.resizable],backing:.buffered,defer:false)
         w.title="Twister First Run QA";w.isReleasedWhenClosed=false
         w.contentView=NSHostingView(rootView:ToolSetupView(model:model,onDone:{finish+=1}).twisterLanguage().defaultAppStorage(defaults))
