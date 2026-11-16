@@ -14,6 +14,19 @@ private struct UIAuditStatusKey:PreferenceKey {
     static let defaultValue="ready"
     static func reduce(value:inout String,nextValue:()->String) { value=nextValue() }
 }
+/// What a control shows as selected, reported by the view that owns it.
+/// SwiftUI no longer backs every Picker with an AppKit control the audit can find.
+private struct UIAuditSelectionsKey:PreferenceKey {
+    static let defaultValue:[String:String]=[:]
+    static func reduce(value:inout [String:String],nextValue:()->[String:String]) { value.merge(nextValue(),uniquingKeysWith:{$1}) }
+}
+private struct UIAuditSelection:ViewModifier {
+    @Environment(\.uiAuditEnabled) private var enabled
+    let id:String,value:String
+    @ViewBuilder func body(content:Content)->some View {
+        if enabled { content.preference(key:UIAuditSelectionsKey.self,value:[id:value]) }else{content}
+    }
+}
 private struct UIAuditProbe:ViewModifier {
     @Environment(\.uiAuditEnabled) private var enabled
     let id:String
@@ -32,6 +45,7 @@ private struct UIAuditStatus:ViewModifier {
 @MainActor final class UIAuditLayout {
     var frames:[String:CGRect]=[:]
     var status="waiting"
+    var selections:[String:String]=[:]
     func issues(in bounds:CGRect,editor:Bool)->[String] {
         guard [bounds.minX,bounds.minY,bounds.width,bounds.height].allSatisfy({$0.isFinite}),bounds.width>0,bounds.height>0 else{return ["Invalid visible content bounds"]}
         var issues:[String]=[]
@@ -66,10 +80,12 @@ private struct UIAuditStatus:ViewModifier {
 extension View {
     func uiAuditProbe(_ id:String)->some View { modifier(UIAuditProbe(id:id)) }
     func uiAuditStatus(_ value:String)->some View { modifier(UIAuditStatus(value:value)) }
+    func uiAuditSelection(_ id:String,_ value:String)->some View { modifier(UIAuditSelection(id:id,value:value)) }
     @MainActor func uiAuditRoot(_ recorder:UIAuditLayout)->some View {
         self.environment(\.uiAuditEnabled,true).coordinateSpace(name:"twister.ui-audit")
             .onPreferenceChange(UIAuditFramesKey.self){recorder.frames=$0}
             .onPreferenceChange(UIAuditStatusKey.self){recorder.status=$0}
+            .onPreferenceChange(UIAuditSelectionsKey.self){recorder.selections=$0}
     }
 }
 

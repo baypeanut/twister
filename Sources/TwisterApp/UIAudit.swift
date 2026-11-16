@@ -168,7 +168,7 @@ struct UIAuditError:LocalizedError { let message:String;init(_ message:String){s
         host.isReleasedWhenClosed=false;host.title="Twister UI Audit · "+scene;host.contentView=NSHostingView(rootView:root);host.center();window=host;host.makeKeyAndOrderFront(nil);NSApp.activate(ignoringOtherApps:true)
         try await settle(recorder:isTool ? recorder:nil)
         guard let content=host.contentView else{throw UIAuditError("Scene has no content view")}
-        observedPreferences=try await verifyPreferences(scene:scene,appearance:appearance,language:language,defaults:defaults,view:content)
+        observedPreferences=try await verifyPreferences(scene:scene,appearance:appearance,language:language,defaults:defaults,view:content,recorder:recorder)
         let issues=recorder.issues(in:content.bounds,editor:isEditor)
         try save(scene:scene,appearance:appearance,language:language,view:content,recorder:recorder,issues:issues)
     }
@@ -234,7 +234,7 @@ struct UIAuditError:LocalizedError { let message:String;init(_ message:String){s
         }
         return values
     }
-    private func verifyPreferences(scene:String,appearance:String,language:String,defaults:UserDefaults,view:NSView)async throws->[String:String] {
+    private func verifyPreferences(scene:String,appearance:String,language:String,defaults:UserDefaults,view:NSView,recorder:UIAuditLayout?=nil)async throws->[String:String] {
         let deadline=Date().addingTimeInterval(3)
         var values:[String:String]=[:],issues:[String]=[]
         repeat {
@@ -244,6 +244,10 @@ struct UIAuditError:LocalizedError { let message:String;init(_ message:String){s
             for key in ["suiteLanguage","standardLanguage"] where values[key] != language {issues.append(key+"="+(values[key] ?? "missing"))}
             if scene=="settings.general" {
                 values.merge(renderedSelections(view),uniquingKeysWith:{$1})
+                // A Picker without an AppKit control or accessibility node still
+                // reports the selection it renders.
+                if values["languagePicker"]==nil,let shown=recorder?.selections["languagePicker"] {values["languagePicker"]=shown;values["languagePickerSource"]="view"}
+                if values["appearancePicker"]==nil,let shown=recorder?.selections["appearancePicker"] {values["appearancePicker"]=shown;values["appearancePickerSource"]="view"}
                 if values["appearancePicker"] != appearance {issues.append("rendered appearance picker="+(values["appearancePicker"] ?? "unavailable"))}
                 if values["languagePicker"] != (language=="tr" ? "Türkçe":"English") {issues.append("rendered language picker="+(values["languagePicker"] ?? "unavailable"))}
             }

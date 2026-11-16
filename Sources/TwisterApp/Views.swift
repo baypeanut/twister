@@ -120,8 +120,8 @@ struct SettingsView:View {
             TwisterPageHeading(eyebrow:"General",title:"Make yourself at home.",subtitle:"Appearance, shortcuts, and everyday defaults.").padding(.bottom,4)
             GroupBox {
                 VStack(spacing:16) {
-                    HStack { Text("Language");Spacer();Picker("Language",selection:$appLanguage) { Text(verbatim:"English").tag("en");Text(verbatim:"Türkçe").tag("tr") }.labelsHidden().frame(width:230).accessibilityIdentifier("AppLanguage") }
-                    HStack { Text("Appearance");Spacer();Picker("Appearance",selection:$appAppearance) { Text("System").tag("system");Text("Light").tag("light");Text("Dark").tag("dark") }.labelsHidden().pickerStyle(.segmented).frame(width:230) }
+                    HStack { Text("Language");Spacer();Picker("Language",selection:$appLanguage) { Text(verbatim:"English").tag("en");Text(verbatim:"Türkçe").tag("tr") }.labelsHidden().frame(width:230).accessibilityIdentifier("AppLanguage").uiAuditSelection("languagePicker",appLanguage=="tr" ? "Türkçe":"English") }
+                    HStack { Text("Appearance");Spacer();Picker("Appearance",selection:$appAppearance) { Text("System").tag("system");Text("Light").tag("light");Text("Dark").tag("dark") }.labelsHidden().pickerStyle(.segmented).frame(width:230).uiAuditSelection("appearancePicker",appAppearance) }
                     HStack { Text("Wheel finish");Spacer();Picker("Wheel finish",selection:$fanTheme) { Text("Glass").tag("glass");Text("Solid").tag("metallic") }.labelsHidden().pickerStyle(.segmented).frame(width:230) }
                     Divider()
                     Toggle("Launch at login",isOn:Binding(get:{launch},set:updateLaunch)).disabled(launchUnavailable)
