@@ -17,6 +17,7 @@ jobs:
           from pathlib import Path
           info = plistlib.loads(Path('Configuration/Updates.public.plist').read_bytes())
           if info.get('Enabled', True) is False:
-              raise SystemExit('Twister updates are disabled until an independent signing key and feed are configured.')
+              print('::notice::Twister updates are disabled until an independent signing key and feed are configured.')
+              raise SystemExit(0)
           assert info.get('PublicRepository') == 'baypeanut/twister'
           PYCODE

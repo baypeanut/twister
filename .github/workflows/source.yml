@@ -35,6 +35,10 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
+      - name: Report macOS toolchain
+        run: |
+          xcodebuild -version
+          swift --version
       - name: Public source boundary
         run: python3 scripts/audit-public-tree.py
       - name: Build native macOS app
@@ -75,3 +79,46 @@ jobs:
           name: Twister-macOS-arm64
           path: build/Twister-macOS-arm64.zip
           retention-days: 7
+  mac-tests:
+    runs-on: macos-15
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Report macOS toolchain
+        run: |
+          xcodebuild -version
+          swift --version
+      - name: Cache Swift build products
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
+        with:
+          path: .build
+          key: swift-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('Package.resolved', 'Package.swift', 'scripts/setup-*') }}
+      - name: Cache downloaded tools and fixtures
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
+        with:
+          path: |
+            ~/Library/Caches/Homebrew
+            Downloads
+            Tools/ExifTool
+            Reference/archive-fixtures
+            Tests/TwisterCoreTests/Fixtures/astronaut.png
+          key: tools-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('Package.resolved', 'scripts/setup-*') }}
+      - name: Prepare complete test dependencies
+        run: |
+          scripts/setup-exiftool.sh
+          python3 scripts/setup-resources.py
+          python3 scripts/setup-test-fixtures.py
+          if ! command -v ffmpeg >/dev/null || ! command -v ffprobe >/dev/null; then
+            HOMEBREW_NO_AUTO_UPDATE=1 brew install ffmpeg
+          fi
+          if [ ! -x /Applications/LibreOffice.app/Contents/MacOS/soffice ]; then
+            HOMEBREW_NO_AUTO_UPDATE=1 brew install --cask libreoffice
+          fi
+          /Applications/LibreOffice.app/Contents/MacOS/soffice --version
+          swift build
+          .build/debug/twister-cli dependencies
+      - name: Complete conversion and regression suite
+        run: swift test

@@ -8,5 +8,10 @@
     "repository": "actions/upload-artifact",
     "tag": "v6",
     "commit": "b7c566a772e6b6bfb58ed0dc250532a479d7789f"
+  },
+  "cache": {
+    "repository": "actions/cache",
+    "tag": "v4",
+    "commit": "0057852bfaa89a56745cba8c7296529d2fc39830"
   }
 }
