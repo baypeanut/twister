@@ -988,5 +988,14 @@
   "The presets file could not be read and was kept as {0}.": "Ön ayar dosyası okunamadı ve {0} adıyla saklandı.",
   "Give the preset a name.": "Ön ayara bir ad ver.",
   "A preset named “{0}” already exists.": "“{0}” adında bir ön ayar zaten var.",
-  "The preset’s folder is no longer available: {0}": "Ön ayarın klasörü artık kullanılamıyor: {0}"
+  "The preset’s folder is no longer available: {0}": "Ön ayarın klasörü artık kullanılamıyor: {0}",
+  "Open in Twister": "Twister'da Aç",
+  "Convert with Twister…": "Twister ile Dönüştür…",
+  "Run Twister Preset…": "Twister Ön Ayarını Çalıştır…",
+  "Run Twister Preset": "Twister Ön Ayarını Çalıştır",
+  "OK": "Tamam",
+  "Run a preset": "Ön ayar çalıştır",
+  "Select at least one file to use this service.": "Bu servisi kullanmak için en az bir dosya seç.",
+  "Twister cannot convert these files together.": "Twister bu dosyaları birlikte dönüştüremiyor.",
+  "No preset fits these files. Save one in Twister first.": "Bu dosyalara uyan ön ayar yok. Önce Twister'da bir tane kaydet."
 }

@@ -122,6 +122,8 @@ enum TwisterApplication {
     private var homeKeyboardMonitor:Any?
     var settings:NSWindow?
     var updateConnection:NSWindow?
+    var presetPicker:NSWindow?
+    var finderServices:FinderServicesProvider?
     private let progressToast=ProgressToastController()
     var toolSetupWorking=false
     private lazy var workspaceDismissal=WorkspaceDismissalController { [weak self] in
@@ -218,6 +220,7 @@ enum TwisterApplication {
         state.onWebDownload = { [weak self] url,mode in self?.showWebDownload(url,mode:mode) }
         state.onWebDrop = { [weak self] urls in self?.wheel.show(inputs:urls,mode:.tools,at:NSEvent.mouseLocation,keyboard:true) }
         registerDownloadShortcut()
+        installFinderServices()
         homeKeyboardMonitor=NSEvent.addLocalMonitorForEvents(matching:.keyDown) { [weak self] event in
             guard let self,event.window===self.home,self.home?.isKeyWindow==true else{return event}
             return self.state.handleHomeKey(event,window:self.home!) ? nil:event

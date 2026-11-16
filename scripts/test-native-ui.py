@@ -30,6 +30,7 @@ def bundle_for_audit(binary, output):
                 TwisterExternalTools=True)
     # This candidate is only used by the explicit own-window QA entrypoints.
     info.pop("CFBundleDocumentTypes", None)
+    info.pop("NSServices", None)
     with (contents / "Info.plist").open("wb") as stream:
         plistlib.dump(info, stream)
     for localization in (repository / "Resources/Localizations").glob("*.lproj"):

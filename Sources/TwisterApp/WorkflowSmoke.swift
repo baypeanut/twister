@@ -181,6 +181,21 @@ import TwisterUpdates
         state.run(join)
         try check(!state.working && state.queue.isEmpty && state.error != nil && state.history.count==presetHistory+2,"A preset that does not fit the selection starts nothing and says why")
         state.error=nil
+        var serviceRequests:[FinderServiceRequest]=[],serviceErrors:[String]=[]
+        let services=FinderServicesProvider(presets:state.presets,perform:{serviceRequests.append($0)},report:{serviceErrors.append($0)})
+        try check(FinderService.allCases.allSatisfy{services.responds(to:Selector($0.rawValue+":userData:error:"))},"Every Services entry has a receiver in the application")
+        let serviceBoard=NSPasteboard.withUniqueName();defer{serviceBoard.releaseGlobally()}
+        var serviceError:NSString=""
+        serviceBoard.clearContents();serviceBoard.writeObjects([image as NSURL])
+        services.runTwisterPreset(serviceBoard,userData:nil,error:&serviceError)
+        guard let fromFinder=serviceRequests.first,serviceErrors.isEmpty,fromFinder.presets.map(\.id)==[beside.id,archive.id] else {throw UIAuditError("The preset service did not offer the presets that fit the file")}
+        state.inputs=[];state.run(fromFinder.presets[1],inputs:fromFinder.files);try await finish(state)
+        try check(state.outputs.first?.pathExtension=="tiff" && state.history.count==presetHistory+3 && state.batch?.job.inputs==[image],"A preset chosen for files sent from Finder runs through the queue and reaches the Library")
+        let unfit=originals.appendingPathComponent("Notes.xyz");try Data("Plain".utf8).write(to:unfit)
+        serviceBoard.clearContents();serviceBoard.writeObjects([unfit as NSURL])
+        services.runTwisterPreset(serviceBoard,userData:nil,error:&serviceError)
+        try check(serviceRequests.count==1 && serviceErrors.count==1 && serviceError.length>0,"A service that cannot act on the files reports why instead of opening an empty chooser")
+        state.inputs=[image]
         let validSelection=state.inputs,missing=JobRecord(title:"Removed",inputs:[],outputs:[fixture.appendingPathComponent("Missing.png").path])
         state.history.insert(missing,at:0);state.selectedHistoryID=missing.id;state.libraryVisible=true
         let keyboardWindow=NSWindow(contentRect:.zero,styleMask:.titled,backing:.buffered,defer:false);keyboardWindow.isReleasedWhenClosed=false

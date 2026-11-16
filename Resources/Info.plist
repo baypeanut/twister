@@ -55,6 +55,60 @@
 	</dict>
 	<key>NSHighResolutionCapable</key>
 	<true/>
+	<key>NSServices</key>
+	<array>
+		<dict>
+			<key>NSMenuItem</key>
+			<dict>
+				<key>default</key>
+				<string>Open in Twister</string>
+			</dict>
+			<key>NSMessage</key>
+			<string>openInTwister</string>
+			<key>NSPortName</key>
+			<string>Twister</string>
+			<key>NSRequiredContext</key>
+			<dict/>
+			<key>NSSendFileTypes</key>
+			<array>
+				<string>public.item</string>
+			</array>
+		</dict>
+		<dict>
+			<key>NSMenuItem</key>
+			<dict>
+				<key>default</key>
+				<string>Convert with Twister…</string>
+			</dict>
+			<key>NSMessage</key>
+			<string>convertWithTwister</string>
+			<key>NSPortName</key>
+			<string>Twister</string>
+			<key>NSRequiredContext</key>
+			<dict/>
+			<key>NSSendFileTypes</key>
+			<array>
+				<string>public.item</string>
+			</array>
+		</dict>
+		<dict>
+			<key>NSMenuItem</key>
+			<dict>
+				<key>default</key>
+				<string>Run Twister Preset…</string>
+			</dict>
+			<key>NSMessage</key>
+			<string>runTwisterPreset</string>
+			<key>NSPortName</key>
+			<string>Twister</string>
+			<key>NSRequiredContext</key>
+			<dict/>
+			<key>NSSendFileTypes</key>
+			<array>
+				<string>public.item</string>
+			</array>
+		</dict>
+	</array>
 	<key>SUAllowsAutomaticUpdates</key>
 	<false/>
 	<key>SUAutomaticallyUpdate</key>
