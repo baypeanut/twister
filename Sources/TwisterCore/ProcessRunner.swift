@@ -18,6 +18,41 @@ public enum ProcessRunner {
     static let metadataTimeout: TimeInterval = 300
     static let officeTimeout: TimeInterval = 900
 
+    static func failureReason(from diagnostics: String, tool: String, code: Int32) -> String {
+        let causes = ["invalid", "no such file", "permission denied", "not on whitelist", "error:",
+                      "could not", "cannot", "failed", "unsupported", "not found", "not permitted"]
+        let noise = ["terminating thread", "task finished with error code", "conversion failed!",
+                     "ffmpeg version", "configuration:", "libav", "libsw", "fontconfig warning:",
+                     "input #", "output #", "duration:", "stream #", "stream mapping:", "press [q]", "frame="]
+        var fallback: String?
+        for raw in diagnostics.split(whereSeparator: \.isNewline) {
+            var line = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+            var component: String?
+            while line.hasPrefix("["), let end = line.firstIndex(of: "]") {
+                let prefix = String(line[line.index(after: line.startIndex)..<end])
+                if let address = prefix.range(of: " @ ") { component = String(prefix[..<address.lowerBound]) }
+                line = String(line[line.index(after: end)...]).trimmingCharacters(in: .whitespaces)
+            }
+            guard !line.isEmpty else { continue }
+            let lower = line.lowercased()
+            guard !noise.contains(where: { lower.hasPrefix($0) }) else { continue }
+            // MediaEngine retries unsupported managed bitrates by recognizing
+            // the encoder and its setup failure. Keep that semantic context,
+            // without exposing the pointer address or shutdown chatter.
+            if lower.contains("encoder setup failed"), let component {
+                return String("\(component): \(line)".prefix(300))
+            }
+            if causes.contains(where: { lower.contains($0) }) {
+                let head = String(line.prefix(300))
+                return causes.contains(where: { head.lowercased().contains($0) }) ? head : String(line.suffix(300))
+            }
+            // Unknown tools still keep a diagnostic tail, including an
+            // unterminated line after a large burst of output.
+            if fallback == nil { fallback = String(line.suffix(300)) }
+        }
+        return fallback ?? "\(tool) exited with code \(code)."
+    }
+
     /// Conversion inputs stay local even if a media container references an
     /// external playlist segment. Local pipes/data/encrypted files still work.
     /// ffmpeg applies an input option only to the next `-i`, so every input
@@ -49,9 +84,10 @@ public enum ProcessRunner {
 
     /// The child leads its own process group, so Cancel or an expired `timeout`
     /// also stops helpers it started. `timeout` is wall-clock seconds; nil waits
-    /// for as long as the work takes.
+    /// for as long as the work takes. `onDiagnostics` receives bounded original
+    /// stderr on the calling thread before a nonzero exit is thrown.
     @discardableResult
-    public static func run(_ executable: URL, _ arguments: [String], directory: URL? = nil, token: CancellationToken = .init(), environment: [String: String] = [:], timeout: TimeInterval? = nil, onOutput: (@Sendable (Data) -> Void)? = nil) throws -> ProcessResult {
+    public static func run(_ executable: URL, _ arguments: [String], directory: URL? = nil, token: CancellationToken = .init(), environment: [String: String] = [:], timeout: TimeInterval? = nil, onDiagnostics: ((Data) -> Void)? = nil, onOutput: (@Sendable (Data) -> Void)? = nil) throws -> ProcessResult {
         try token.check()
         let output = Pipe(), errors = Pipe()
         var actions: posix_spawn_file_actions_t?, attributes: posix_spawnattr_t?
@@ -131,11 +167,11 @@ public enum ProcessRunner {
         if timedOut { throw TwisterError.failed("\(executable.lastPathComponent) took too long to respond and was stopped.") }
         guard reaped else { throw TwisterError.failed("\(executable.lastPathComponent) stopped unexpectedly.") }
         let (text, diagnostics) = captured.snapshot()
+        onDiagnostics?(diagnostics)
         // WIFEXITED ? WEXITSTATUS : WTERMSIG
         let code = status & 0x7f == 0 ? (status >> 8) & 0xff : status & 0x7f
         guard code == 0 else {
-            let diagnostic = String(decoding: diagnostics.suffix(6000), as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines)
-            throw TwisterError.failed(diagnostic.isEmpty ? "\(executable.lastPathComponent) exited with code \(code)." : diagnostic)
+            throw TwisterError.failed(failureReason(from: String(decoding: diagnostics, as: UTF8.self), tool: executable.lastPathComponent, code: code))
         }
         return ProcessResult(output: text, errorOutput: diagnostics)
     }
