@@ -104,6 +104,10 @@ jobs:
             ~/Library/Caches/Homebrew
             Downloads
             Tools/ExifTool
+            Tools/ffmpeg
+            Tools/ffprobe
+            Tools/yt-dlp
+            Tools/deno
             Reference/archive-fixtures
             Tests/TwisterCoreTests/Fixtures/astronaut.png
           key: tools-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('Package.resolved', 'scripts/setup-*') }}
@@ -112,13 +116,12 @@ jobs:
           scripts/setup-exiftool.sh
           python3 scripts/setup-resources.py
           python3 scripts/setup-test-fixtures.py
-          if ! command -v ffmpeg >/dev/null || ! command -v ffprobe >/dev/null; then
-            HOMEBREW_NO_AUTO_UPDATE=1 brew install ffmpeg
-          fi
           if [ ! -x /Applications/LibreOffice.app/Contents/MacOS/soffice ]; then
             HOMEBREW_NO_AUTO_UPDATE=1 brew install --cask libreoffice
           fi
-          /Applications/LibreOffice.app/Contents/MacOS/soffice --version
+          # The tests need the same pinned ffmpeg, yt-dlp and Deno the app installs; Homebrew's ffmpeg lacks WebP and Vorbis.
+          scripts/setup-tools.sh
+          python3 scripts/setup-web-download-tools.py
           swift build
           .build/debug/twister-cli dependencies
       - name: Complete conversion and regression suite
