@@ -18,6 +18,16 @@ While dragging files in Finder, hold Shift for conversions, Command for tools or
 
 Conversions and editing tools write separate results. Twister stages an export before publishing it and chooses a new name when the destination already contains that name. Explicit file actions such as **Move** act on the selected files themselves, so distinguish those actions from exporting an edited copy.
 
+## Follow a batch
+
+Each file of a batch is staged and published by itself. The workspace lists the files as waiting, working, done or failed, with a summary such as "7 of 9 done, 2 failed". A failed file shows its reason and leaves no partial export; the finished files stay where they were saved. **Retry failed** runs the same operation again for the failed files only. **Cancel** stops the remaining files, removes the one in progress and keeps the exports that had already finished.
+
+Tools that combine a selection into one result, such as **Create PDF**, **Merge PDFs**, **Create Collage** and **Join Videos**, either finish completely or publish nothing.
+
+## Queue another task
+
+You can change the selection and start another conversion or tool while a task is running. It waits in the queue with the output folder it captured and starts when the running task ends; **Clear queue** removes the waiting tasks. Moving, sharing and Library reuse wait until the running task has finished.
+
 ## Choose where results go
 
 The default destination is **Beside originals**. Use the output-folder chooser in the workspace or editor footer to save results elsewhere; Twister remembers that folder. A running export keeps the destination it captured when it started, even if you change the preference afterward.
@@ -28,4 +38,4 @@ A saved folder may become unavailable after it is moved, removed or loses its ac
 
 ## Dismiss the workspace
 
-Click the menu-bar icon again, switch to another app or press Escape when a text field is not editing. Dismissing the workspace preserves the selection and leaves an active export running. Open Twister again to check progress or return to an editor; media previews pause when the app loses focus.
+Click the menu-bar icon again, switch to another app or press Escape when a text field is not editing. Dismissing the workspace preserves the selection and leaves an active export running. When a task ends while Twister is hidden or inactive, a macOS notification reports how many files are done and how many failed; turn it off with **Notify when a task finishes in the background** in Settings. Open Twister again to check progress or return to an editor; media previews pause when the app loses focus.

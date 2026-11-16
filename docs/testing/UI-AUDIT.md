@@ -19,7 +19,7 @@ build/Twister.app/Contents/MacOS/Twister --ui-audit build/design-review --scenes
 
 The destination must be empty or marked as an existing audit-owned directory. The audit refuses to overwrite unrelated files.
 
-Application workflow regressions also exercise real image/PDF/audio/video exports, corrupt batch rollback, cancellation recovery, missing Library entries and eight production editor lifecycles. They require FFmpeg and FFprobe on PATH or configured tool paths:
+Application workflow regressions also exercise real image/PDF/audio/video exports, a corrupt file failing alone in its batch, retry of only that file, queued tasks, cancellation recovery, missing Library entries and eight production editor lifecycles. They require FFmpeg and FFprobe on PATH or configured tool paths:
 
 ```sh
 python3 scripts/test-workflows.py

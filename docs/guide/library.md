@@ -4,7 +4,7 @@
 
 ## Find recent results
 
-Library keeps the most recent 50 successful job records. Open it with ⌘2 to return to exported results without finding their folders manually. These entries refer to files on disk; they are not independent backup copies of those files.
+Library keeps the most recent 50 successful job records. A batch in which some files failed is recorded with the files that succeeded. Open it with ⌘2 to return to exported results without finding their folders manually. These entries refer to files on disk; they are not independent backup copies of those files.
 
 ## Search and preview
 

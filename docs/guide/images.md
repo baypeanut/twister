@@ -8,7 +8,7 @@ Common image routes include JPEG, PNG, WebP, HEIC, TIFF, AVIF, BMP and PDF. The 
 
 ## Crop inside the source
 
-Use **Crop Image** to choose the portion of an image to keep. The crop must fit within the source image. For a batch, the requested rectangle must be valid for every image; a crop that fits a large photo may be outside a smaller one, and the failed batch does not publish partial results.
+Use **Crop Image** to choose the portion of an image to keep. The crop must fit within the source image. For a batch, the requested rectangle must be valid for every image; a crop that fits a large photo may be outside a smaller one. That image is reported as failed with its reason while the others are exported.
 
 ## Set the export dimensions
 

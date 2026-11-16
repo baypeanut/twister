@@ -17,7 +17,7 @@ Native file tools for macOS. Convert, edit and prepare images, PDFs, documents, 
 - Download supported public media links and continue editing the downloaded files.
 - Carry files between apps with Float and use optional window arrangement tools.
 
-File conversion and editing run on your Mac. Original files are preserved, output names avoid collisions, and a failed batch removes its unfinished exports. Media downloads and optional tool setup require a network connection.
+File conversion and editing run on your Mac. Original files are preserved and output names avoid collisions. Each file of a batch is exported by itself: a file that fails leaves nothing unfinished behind, and the files that succeeded stay in place. Operations that combine their inputs, such as merging PDFs or joining videos, finish as a whole or not at all. Media downloads and optional tool setup require a network connection.
 
 ## Build and run
 
@@ -40,7 +40,9 @@ Local builds use an ad-hoc signature. There is no notarized installer or configu
 
 Choose files, drop them into the workspace or paste supported clipboard content. Pick a quick conversion or open the tools menu. Available formats must support every selected file, and tools can differ between single-file and batch selections. The output folder appears above the file actions and in editor footers.
 
-Click the menu-bar icon to open Twister. Click it again, press Escape or switch to another app to dismiss the workspace. Background operations continue when the interface is hidden.
+Click the menu-bar icon to open Twister. Click it again, press Escape or switch to another app to dismiss the workspace. Background operations continue when the interface is hidden, and Twister can notify you when one finishes.
+
+A conversion or tool started while another task is running waits in a queue. A batch lists each file as waiting, working, done or failed with its reason; a summary such as "7 of 9 done, 2 failed" offers **Retry failed** for the failed files only. Library records the files that succeeded.
 
 | Action | Shortcut |
 | --- | --- |
