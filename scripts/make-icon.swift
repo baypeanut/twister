@@ -10,20 +10,28 @@ import AppKit
             NSGraphicsContext.saveGraphicsState();NSGraphicsContext.current=NSGraphicsContext(bitmapImageRep:rep)
             draw(NSRect(x:0,y:0,width:width,height:height));NSGraphicsContext.restoreGraphicsState();return rep
         }
-        let mark=bitmap(256,256){rect in TwisterArtwork.draw(in:rect,color:.systemBlue)}
+        let mark=bitmap(256,256){rect in TwisterArtwork.draw(in:rect,rest:NSColor(srgbRed:0.56,green:0.56,blue:0.58,alpha:1),selected:NSColor(srgbRed:1.0,green:0.58,blue:0.0,alpha:1),hub:NSColor(srgbRed:0.56,green:0.56,blue:0.58,alpha:1))}
         for name in ["TwisterMark.png","TwisterMarkHappy.png"] {
             try mark.representation(using:.png,properties:[:])!.write(to:output.appendingPathComponent(name))
         }
         let icon=bitmap(1024,1024) {_ in
             // The standard macOS icon grid: an 824-point body in a 1024 canvas, with the system's soft drop shadow.
-            let body=NSRect(x:100,y:100,width:824,height:824)
-            let background=NSBezierPath(roundedRect:body,xRadius:185,yRadius:185)
-            NSGraphicsContext.saveGraphicsState()
-            let shadow=NSShadow();shadow.shadowColor=NSColor.black.withAlphaComponent(0.3);shadow.shadowBlurRadius=20;shadow.shadowOffset=NSSize(width:0,height:-10);shadow.set()
-            NSColor.white.setFill();background.fill()
-            NSGraphicsContext.restoreGraphicsState()
-            NSGradient(starting:NSColor(srgbRed:0.10,green:0.42,blue:0.92,alpha:1),ending:NSColor(srgbRed:0.31,green:0.66,blue:1.0,alpha:1))!.draw(in:background,angle:90)
-            TwisterArtwork.draw(in:NSRect(x:262,y:222,width:500,height:580),color:.white)
+            let body=NSBezierPath(roundedRect:NSRect(x:100,y:100,width:824,height:824),xRadius:185,yRadius:185)
+            func shadowed(_ alpha:CGFloat,_ blur:CGFloat,_ drop:CGFloat,_ draw:()->Void) {
+                NSGraphicsContext.saveGraphicsState()
+                let shadow=NSShadow();shadow.shadowColor=NSColor.black.withAlphaComponent(alpha);shadow.shadowBlurRadius=blur;shadow.shadowOffset=NSSize(width:0,height:-drop);shadow.set()
+                draw();NSGraphicsContext.restoreGraphicsState()
+            }
+            let top=NSColor(srgbRed:0.36,green:0.36,blue:0.40,alpha:1),bottom=NSColor(srgbRed:0.16,green:0.16,blue:0.19,alpha:1)
+            shadowed(0.3,20,10){bottom.setFill();body.fill()}
+            NSGradient(starting:bottom,ending:top)!.draw(in:body,angle:90)
+            // A graphite wheel with the chosen part in orange, and a pale button for the hub.
+            let wheel=NSRect(x:209,y:209,width:606,height:606)
+            shadowed(0.16,12,6){TwisterArtwork.draw(in:wheel,rest:NSColor(srgbRed:0.51,green:0.51,blue:0.535,alpha:1),selected:NSColor(srgbRed:1.0,green:0.58,blue:0.0,alpha:1),hub:nil)}
+            let radius=TwisterArtwork.hubRadius*wheel.width,hub=NSBezierPath(ovalIn:NSRect(x:512-radius,y:512-radius,width:radius*2,height:radius*2))
+            let pale=NSColor(srgbRed:0.92,green:0.92,blue:0.94,alpha:1),shade=NSColor(srgbRed:0.74,green:0.74,blue:0.78,alpha:1)
+            shadowed(0.2,12,6){shade.setFill();hub.fill()}
+            NSGradient(starting:shade,ending:pale)!.draw(in:hub,angle:90)
         }
         let png=icon.representation(using:.png,properties:[:])!
         try png.write(to:output.appendingPathComponent("TwisterIcon.png"))
