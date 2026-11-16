@@ -1051,6 +1051,7 @@
 "NORMALIZE AUDIO" = "SESİ NORMALİZE ET";
 "NORMALIZE VOLUME" = "SES DÜZEYİNİ EŞİTLE";
 "NOTHING HERE YET. PASTE SOMETHING OR MAKE YOUR FIRST FRESH COPY." = "BURADA HENÜZ BİR ŞEY YOK. BİR DOSYA YAPIŞTIR VEYA İLK KOPYANI OLUŞTUR.";
+"NOTIFY WHEN A TASK FINISHES IN THE BACKGROUND" = "ARKA PLANDA BİTEN İŞLEMLERİ BİLDİR";
 "NUMBER" = "NUMARA";
 "NUMBER OF CLIPS" = "KLİP SAYISI";
 "Native tools for everyday files." = "Günlük dosya işleri için yerel araçlar.";
@@ -1075,6 +1076,7 @@
 "Normalize Audio" = "Sesi Normalize Et";
 "Normalize Volume" = "Ses Düzeyini Eşitle";
 "Nothing here yet. Paste something or make your first fresh copy." = "Burada henüz bir şey yok. Bir dosya yapıştır veya ilk kopyanı oluştur.";
+"Notify when a task finishes in the background" = "Arka planda biten işlemleri bildir";
 "Number" = "Numara";
 "Number of clips" = "Klip sayısı";
 "OFFICE TOOLS" = "OFİS ARAÇLARI";

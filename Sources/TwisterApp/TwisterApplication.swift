@@ -228,6 +228,11 @@ enum TwisterApplication {
         state.onEPUBOptions = { [weak self] in guard let self else { return };let window=self.makeWindow(title:"Convert to EPUB",size:NSSize(width:530,height:390),view:EPUBOptionsView(state:self.state,inputs:self.state.inputs));self.state.retainToolWindow(window);window.makeKeyAndOrderFront(nil);NSApp.activate(ignoringOtherApps:true) }
         state.onJobStarted = { [weak self] in self?.successToast.dismiss();self?.showProgress() }
         state.onSuccess = { [weak self] notice in self?.progressToast.dismiss();self?.successToast.show(notice) }
+        state.onJobFinished = { [weak self] title,report in
+            // The toasts cover an active app with its workspace on screen.
+            guard let self,!NSApp.isActive || self.home?.isVisible != true || self.home?.isMiniaturized == true else { return }
+            JobNotifier.post(title:title,report:report)
+        }
         let loginLaunch=NSAppleEventManager.shared().currentAppleEvent?.paramDescriptor(forKeyword:keyAELaunchedAsLogInItem)?.booleanValue ?? false
         if !loginLaunch,!CommandLine.arguments.contains("--background") {
             if UserDefaults.standard.bool(forKey:"hasCompletedWelcome") { showHome() } else { showWelcome() }

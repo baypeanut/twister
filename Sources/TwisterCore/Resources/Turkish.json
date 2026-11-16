@@ -954,5 +954,6 @@
   "Waiting": "Bekliyor",
   "Failed": "Başarısız",
   "Cancelled": "İptal edildi",
-  "Waiting for the current task to finish.": "Geçerli işlemin bitmesi bekleniyor."
+  "Waiting for the current task to finish.": "Geçerli işlemin bitmesi bekleniyor.",
+  "Notify when a task finishes in the background": "Arka planda biten işlemleri bildir"
 }

@@ -28,6 +28,7 @@ struct SettingsView:View {
     @AppStorage("appAppearance") private var appAppearance="system"
     @AppStorage("appLanguage") private var appLanguage="en"
     @AppStorage("windowManagementEnabled") private var windowManagementEnabled=false
+    @AppStorage(JobNotifier.preferenceKey) private var jobNotifications=true
     @State private var windowAccessibility=AXIsProcessTrusted()
     @Environment(\.accessibilityReduceMotion) private var systemReducedMotion
     init(updater:AppUpdater,showingUpdates:Bool=false,initialSection:SettingsSection = .general) {
@@ -104,6 +105,7 @@ struct SettingsView:View {
                     }
                     Text("Sound follows your Mac’s volume. Haptics need a compatible Force Touch trackpad.")
                         .font(.caption).foregroundStyle(.secondary).frame(maxWidth:.infinity,alignment:.leading)
+                    Toggle("Notify when a task finishes in the background",isOn:$jobNotifications)
                     Toggle("Subtle animations",isOn:Binding(get:{!reduceAnimations},set:{reduceAnimations = !$0}))
                     if systemReducedMotion { Text("macOS Reduce Motion is on. Twister keeps motion off.").font(.caption).foregroundStyle(.secondary) }
                 }.padding(10)

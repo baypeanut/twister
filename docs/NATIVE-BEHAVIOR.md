@@ -16,7 +16,7 @@ Apple's [panel guidance](https://developer.apple.com/design/human-interface-guid
 
 ## Quiet operation and first run
 
-Progress and completion overlays do not appear over an inactive application or follow it into other desktops. In-progress work remains available from the menu-bar workspace. Media previews pause when the application loses focus.
+Progress and completion overlays do not appear over an inactive application or follow it into other desktops. In-progress work remains available from the menu-bar workspace. A task that ends while Twister is inactive or its workspace is hidden posts one macOS notification with the number of files done and failed. Twister asks for notification permission the first time it has such a result; a denied request, or a build macOS cannot deliver notifications for, stays silent. **Notify when a task finishes in the background** in Settings turns this off. Media previews pause when the application loses focus.
 
 Finishing or skipping the welcome tour opens the workspace immediately. Media and Office runtimes are optional downloads available through Finish setup; missing runtimes no longer force the setup window over the workspace.
 
