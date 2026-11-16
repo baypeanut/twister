@@ -11,7 +11,7 @@ public enum PDFEngine {
     public static func create(inputs: [URL], options: OperationOptions, token: CancellationToken, progress: ProgressHandler = {_,_ in}) throws -> [URL] {
         guard let first=inputs.first else { throw TwisterError.invalidInput("Choose images to create a PDF.") }
         let pdf=PDFDocument()
-        for (index,input) in inputs.enumerated() { progress(Double(index)/Double(inputs.count),"Adding image \(index+1) of \(inputs.count)…");try token.check(); let cg=try ImageEngine.load(input); if let page=PDFPage(image:NSImage(cgImage:cg,size:NSSize(width:cg.width,height:cg.height))) { pdf.insert(page,at:pdf.pageCount) } }
+        for (index,input) in inputs.enumerated() { try autoreleasepool { progress(Double(index)/Double(inputs.count),"Adding image \(index+1) of \(inputs.count)…");try token.check(); let cg=try ImageEngine.load(input); if let page=PDFPage(image:NSImage(cgImage:cg,size:NSSize(width:cg.width,height:cg.height))) { pdf.insert(page,at:pdf.pageCount) } } }
         let output=OutputFiles.unique(for:first,extension:"pdf",directory:options.outputDirectory)
         progress(OperationProgress.indeterminate,"Writing PDF…")
         guard pdf.write(to:output) else { throw TwisterError.failed("Could not create PDF.") };return [output]
@@ -69,14 +69,14 @@ public enum PDFEngine {
                 let order=try pageOrder(options.pageRanges,count:pdf.pageCount),chunk=max(1,options.pagesPerFile)
                 let folder=OutputFiles.unique(for:input,extension:"",suffix:" - Pages",directory:options.outputDirectory)
                 try FileManager.default.createDirectory(at:folder,withIntermediateDirectories:true)
-                for start in stride(from:0,to:order.count,by:chunk) {
+                for start in stride(from:0,to:order.count,by:chunk) { try autoreleasepool {
                     try token.check()
                     let selection=Array(order[start..<min(start+chunk,order.count)])
                     let bytes=try pageEditedData([input],selections:[selection],password:options.password,token:token)
                     let output=folder.appendingPathComponent(String(format:"Pages %03d-%03d.pdf",start+1,min(start+chunk,order.count)))
                     try bytes.write(to:output,options:.atomic);outputs.append(output)
                     progress(Double(min(start+chunk,order.count))/Double(order.count),"Saved \(min(start+chunk,order.count)) of \(order.count) pages")
-                }
+                } }
             case .organizePDF:
                 let order=options.pdfPageOrder.isEmpty ? try pageOrder(options.pageRanges,count:pdf.pageCount):options.pdfPageOrder
                 var rotations:[Int:Int]=[:]
@@ -119,15 +119,15 @@ public enum PDFEngine {
                 var complete=false
                 for attempt in 0..<14 {
                     try token.check();let compressed=PDFDocument()
-                    for n in 0..<pdf.pageCount {
+                    for n in 0..<pdf.pageCount { try autoreleasepool {
                         try token.check();progress(Double(n)/Double(pdf.pageCount),"Compressing PDF · attempt \(attempt+1) · page \(n+1) of \(pdf.pageCount)")
-                        guard let page=pdf.page(at:n) else { continue };let bounds=page.bounds(for:.mediaBox)
+                        guard let page=pdf.page(at:n) else { return };let bounds=page.bounds(for:.mediaBox)
                         let thumb=page.thumbnail(of:NSSize(width:bounds.width*dpi/72,height:bounds.height*dpi/72),for:.mediaBox)
-                        guard let cg=thumb.cgImage(forProposedRect:nil,context:nil,hints:nil) else { continue }
+                        guard let cg=thumb.cgImage(forProposedRect:nil,context:nil,hints:nil) else { return }
                         let bitmap=NSBitmapImageRep(cgImage:cg)
-                        guard let data=bitmap.representation(using:.jpeg,properties:[.compressionFactor:quality]),let img=NSImage(data:data),let result=PDFPage(image:img) else { continue }
+                        guard let data=bitmap.representation(using:.jpeg,properties:[.compressionFactor:quality]),let img=NSImage(data:data),let result=PDFPage(image:img) else { return }
                         result.setBounds(bounds,for:.mediaBox);compressed.insert(result,at:compressed.pageCount)
-                    }
+                    } }
                     guard compressed.write(to:output) else { throw TwisterError.failed("Could not compress PDF.") }
                     let bytes=(try FileManager.default.attributesOfItem(atPath:output.path)[.size] as? NSNumber)?.int64Value ?? 0
                     if target == nil || bytes<=target! { complete=true;break };dpi=max(36,dpi*0.8);quality=max(0.05,quality*0.75)
