@@ -30,7 +30,7 @@ struct WheelItem {
         focusObserver=NotificationCenter.default.addObserver(forName:NSApplication.didResignActiveNotification,object:NSApp,queue:.main) { [weak self] _ in Task { @MainActor in if self?.keyboardMode == true { self?.hide() } } }
     }
     func show(inputs:[URL],mode:WheelMode,at point:NSPoint,keyboard:Bool=false) {
-        guard !inputs.isEmpty,!state.working else { return }
+        guard !inputs.isEmpty else { return }
         WheelFeedback.shared.prepare()
         self.inputs=inputs;self.mode=mode;keyboardMode=keyboard
         var items:[WheelItem]=[]

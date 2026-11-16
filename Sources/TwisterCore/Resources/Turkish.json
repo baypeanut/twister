@@ -939,5 +939,20 @@
   "Redo page edit (⇧⌘Z)": "Sayfa düzenlemesini yinele (⇧⌘Z)",
   "These files have moved or been removed. Choose another result.": "Bu dosyalar taşınmış veya silinmiş. Başka bir sonuç seç.",
   "Undo annotation edit (⌘Z)": "İşaretleme düzenlemesini geri al (⌘Z)",
-  "Redo annotation edit (⇧⌘Z)": "İşaretleme düzenlemesini yinele (⇧⌘Z)"
+  "Redo annotation edit (⇧⌘Z)": "İşaretleme düzenlemesini yinele (⇧⌘Z)",
+  "{0} of {1} done": "{0}/{1} tamamlandı",
+  "{0} of {1} done, {2} failed": "{0}/{1} tamamlandı, {2} başarısız",
+  "{0} of {1} done, {2} cancelled": "{0}/{1} tamamlandı, {2} iptal edildi",
+  "{0} of {1} done, {2} failed, {3} cancelled": "{0}/{1} tamamlandı, {2} başarısız, {3} iptal edildi",
+  "1 task waiting": "1 işlem sırada",
+  "{0} tasks waiting": "{0} işlem sırada",
+  "Clear queue": "Sırayı temizle",
+  "Retry failed": "Başarısızları yeniden dene",
+  "Show files": "Dosyaları göster",
+  "Hide files": "Dosyaları gizle",
+  "Dismiss results": "Sonuçları kapat",
+  "Waiting": "Bekliyor",
+  "Failed": "Başarısız",
+  "Cancelled": "İptal edildi",
+  "Waiting for the current task to finish.": "Geçerli işlemin bitmesi bekleniyor."
 }

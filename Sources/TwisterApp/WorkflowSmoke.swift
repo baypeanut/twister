@@ -26,7 +26,7 @@ import TwisterUpdates
         Task {
             var failure:String?
             do {try await run()} catch {failure=error.localizedDescription}
-            let report:[String:Any]=["passed":failure == nil,"checks":checks,"error":failure as Any? ?? NSNull(),"scope":"Generated files through AppState, real image/PDF/audio/video exports, failure/cancel recovery, Library and production SwiftUI editor lifecycle. No global input or third-party service claim."]
+            let report:[String:Any]=["passed":failure == nil,"checks":checks,"error":failure as Any? ?? NSNull(),"scope":"Generated files through AppState, real image/PDF/audio/video exports, per-file failure, retry, queue and cancel recovery, Library and production SwiftUI editor lifecycle. No global input or third-party service claim."]
             if FileManager.default.fileExists(atPath:output.appendingPathComponent(".twister-workflow-qa").path),let data=try? JSONSerialization.data(withJSONObject:report,options:[.prettyPrinted,.sortedKeys]) {try? data.write(to:output.appendingPathComponent("workflow.json"),options:.atomic)}
             print("WORKFLOW \(failure == nil ? "PASS":"FAIL") \(checks.count)")
             if let failure {fputs(failure+"\n",stderr)}
@@ -54,7 +54,7 @@ import TwisterUpdates
     }
     private func finish(_ state:AppState,expectFailure:Bool=false)async throws {
         try await wait("operation finishes") {!state.working}
-        try check(expectFailure ? state.error != nil:state.error == nil,expectFailure ? "Failed batch reports an application error":"Completed job has no stale application error")
+        try check(expectFailure ? state.error != nil:state.error == nil,expectFailure ? "A job that exports nothing reports an application error":"Completed job has no stale application error")
     }
     private func contents(_ folder:URL)throws->Set<String> {Set(try FileManager.default.contentsOfDirectory(atPath:folder.path))}
     private func verifyJPEGWheel(state: AppState, originals: URL, jpegBytes: Data) async throws {
@@ -145,11 +145,22 @@ import TwisterUpdates
         try check(state.outputs[0] != first && (try Data(contentsOf:first))==firstBytes,"Repeating an export preserves the earlier result")
         try check(AppState(defaults:defaults).history.count==2,"Successful exports survive application-state reload")
         let before=try contents(exports),historyCount=state.history.count
-        state.inputs=[image,broken];state.execute(.convert("jpg"),options:options);try await finish(state,expectFailure:true)
-        try check(state.outputs.isEmpty && state.history.count==historyCount && (try contents(exports))==before,"A corrupt item rolls back the complete batch without adding a success record")
+        state.inputs=[broken];state.execute(.convert("jpg"),options:options);try await finish(state,expectFailure:true)
+        try check(state.outputs.isEmpty && state.history.count==historyCount && (try contents(exports))==before,"A corrupt file leaves no export, staging folder or success record")
+        state.inputs=[image,broken];state.execute(.convert("jpg"),options:options);try await finish(state)
+        guard let mixed=state.batch,state.outputs.count==1 else {throw UIAuditError("A corrupt item discarded the finished file of its batch")}
+        try check((try contents(exports)).subtracting(before)==[state.outputs[0].lastPathComponent] && (try ImageEngine.load(state.outputs[0])).width==320,"A corrupt item fails alone: the good file is exported and nothing else is left behind")
+        try check(mixed.finished && mixed.report.summary=="1 of 2 done, 1 failed" && mixed.items[0].outputs==state.outputs && mixed.items[1].failure?.isEmpty==false,"The batch reports each file with the reason for the failed one")
+        try check(state.history.count==historyCount+1 && state.history[0].outputs==state.outputs.map(\.path) && state.history[0].inputs==[image.path],"Library records the files that succeeded")
         try originalBytes.write(to:broken)
-        state.execute(.convert("jpg"),options:options);try await finish(state)
-        try check(state.outputs.count==2 && state.history.count==historyCount+1,"A corrected input can be retried without stale failure state")
+        state.retryFailed(mixed);try await finish(state)
+        try check(state.outputs.count==1 && state.batch?.job.inputs==[broken] && state.history.count==historyCount+2,"Retry exports only the file that failed")
+        let queuedCount=state.history.count
+        state.inputs=[image];state.execute(.convert("png"),options:options)
+        state.execute(.convert("tiff"),options:options);state.execute(.convert("tiff"),options:options)
+        try check(state.working && state.queue.count==1,"A task started during another waits in the queue once")
+        try await finish(state)
+        try check(state.queue.isEmpty && state.history.count==queuedCount+2 && state.history[0].outputs.first?.hasSuffix(".tiff")==true && state.history[1].outputs.first?.hasSuffix(".png")==true,"Queued tasks run in order and reach the Library")
         state.inputs=[image];let countBeforeCancel=state.history.count,filesBeforeCancel=try contents(exports)
         state.execute(.convert("jpg"),options:options);state.token.cancel();try await finish(state)
         try check(state.outputs.isEmpty && state.history.count==countBeforeCancel && (try contents(exports))==filesBeforeCancel,"Cancellation leaves no partial export or false Library success")

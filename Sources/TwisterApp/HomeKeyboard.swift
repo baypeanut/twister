@@ -10,13 +10,13 @@ import AppKit
             case "1":libraryVisible=false;return true
             case "2":libraryVisible=true;return true
             case "f":libraryVisible=true;libraryFocusRequest+=1;return true
-            case "o":if !working {onChooseFiles?()};return true
+            case "o":onChooseFiles?();return true
             case "v":if !editing {pasteContent(pasteboard);return true}
             default:break
             }
-            if [49,36,76].contains(event.keyCode),!editing,!working,!inputs.isEmpty {onOpenWheel?();return true}
+            if [49,36,76].contains(event.keyCode),!editing,!inputs.isEmpty {onOpenWheel?();return true}
         }
-        if !libraryVisible,flags.isEmpty,[36,76].contains(event.keyCode),!editing,!(window.firstResponder is NSButton),!working,!inputs.isEmpty {onOpenWheel?();return true}
+        if !libraryVisible,flags.isEmpty,[36,76].contains(event.keyCode),!editing,!(window.firstResponder is NSButton),!inputs.isEmpty {onOpenWheel?();return true}
         guard libraryVisible,flags.isEmpty else{return false}
         // Down from the Library search transfers focus to the matching results.
         if editing,event.keyCode==125 {window.makeFirstResponder(nil);selectedHistoryID=filteredHistory.first?.id;return true}

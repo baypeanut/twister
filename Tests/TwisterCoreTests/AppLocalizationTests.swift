@@ -32,6 +32,13 @@ final class AppLocalizationTests:XCTestCase {
         XCTAssertEqual(AppLocalization.text("Original size: "+path,language:"tr"),"Orijinal boyut: "+path)
         XCTAssertEqual(AppLocalization.text("Nicely done. 12 files are ready.",language:"tr"),"Hazır! 12 dosyan hazır.")
     }
+    func testBatchSummariesKeepEveryCount() {
+        XCTAssertEqual(AppLocalization.text("9 of 9 done",language:"tr"),"9/9 tamamlandı")
+        XCTAssertEqual(AppLocalization.text("7 of 9 done, 2 failed",language:"tr"),"7/9 tamamlandı, 2 başarısız")
+        XCTAssertEqual(AppLocalization.text("3 of 9 done, 6 cancelled",language:"tr"),"3/9 tamamlandı, 6 iptal edildi")
+        XCTAssertEqual(AppLocalization.text("3 of 9 done, 2 failed, 4 cancelled",language:"tr"),"3/9 tamamlandı, 2 başarısız, 4 iptal edildi")
+        XCTAssertEqual(AppLocalization.text(BatchReport(items:[.init(inputs:[],status:.failed("x")),.init(inputs:[],status:.cancelled)]).summary,language:"tr"),"0/2 tamamlandı, 1 başarısız, 1 iptal edildi")
+    }
     func testCatalogPlaceholdersMatchWithoutChangingFormatsOrShortcuts() {
         let marker=try! NSRegularExpression(pattern:#"\{[0-9]\}"#)
         func tokens(_ value:String)->[String] { marker.matches(in:value,range:NSRange(value.startIndex...,in:value)).compactMap{Range($0.range,in:value).map{String(value[$0])}}.sorted() }

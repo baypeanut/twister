@@ -295,7 +295,6 @@ enum TwisterApplication {
         if let downloadHotKeyHandler { RemoveEventHandler(downloadHotKeyHandler) }
     }
     @objc func chooseFiles() {
-        guard !state.working else { return }
         NSApp.activate(ignoringOtherApps:true)
         let panel=NSOpenPanel();panel.allowsMultipleSelection=true;panel.canChooseDirectories=true;panel.prompt="Choose Files"
         if panel.runModal() == .OK { state.inputs=panel.urls;showHome() }

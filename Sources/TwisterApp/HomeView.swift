@@ -90,6 +90,7 @@ struct HomeView:View {
                 if state.inputs.isEmpty { formatGuide }
                 else { selectionActions }
                 if state.working || state.error != nil || !state.outputs.isEmpty { JobProgressView(state:state) }
+                if JobQueueView.hasContent(state) { JobQueueView(state:state) }
                 if !state.history.isEmpty { historySection }
                 Divider()
                 HStack(spacing:5) {
@@ -154,11 +155,11 @@ struct HomeView:View {
             }
             HStack(spacing:8) {
                 Button { state.onChooseFiles?() } label:{LText(state.inputs.isEmpty ? "Choose files":"Change files")}
-                    .buttonStyle(TwisterButtonStyle(.primary)).disabled(state.working)
-                Button("Paste") {state.pasteContent()}.buttonStyle(TwisterButtonStyle(.secondary)).help("⌘V · Paste files, text, an image or link").disabled(state.working)
+                    .buttonStyle(TwisterButtonStyle(.primary))
+                Button("Paste") {state.pasteContent()}.buttonStyle(TwisterButtonStyle(.secondary)).help("⌘V · Paste files, text, an image or link")
                 Spacer(minLength:0)
                 if !state.inputs.isEmpty {
-                    Button("Clear") { state.inputs=[] }.buttonStyle(TwisterButtonStyle(.quiet,compact:true)).disabled(state.working)
+                    Button("Clear") { state.inputs=[] }.buttonStyle(TwisterButtonStyle(.quiet,compact:true))
                 }
             }
             if !state.inputs.isEmpty {
@@ -169,7 +170,7 @@ struct HomeView:View {
                             Text(url.lastPathComponent).font(.system(size:10)).lineLimit(1)
                             Spacer(minLength:0)
                             Button { state.inputs.removeAll{$0==url} } label:{Image(systemName:"xmark").font(.system(size:8))}
-                                .buttonStyle(.plain).help("Remove \(url.lastPathComponent) from selection").accessibilityLabel("Remove \(url.lastPathComponent)").disabled(state.working)
+                                .buttonStyle(.plain).help("Remove \(url.lastPathComponent) from selection").accessibilityLabel("Remove \(url.lastPathComponent)")
                         }
                     }
                     if state.inputs.count>3 { Text("+\(state.inputs.count-3)").font(.caption).foregroundStyle(.secondary) }
@@ -180,7 +181,7 @@ struct HomeView:View {
                 shortcut(convertKey,"Convert");shortcut(toolsKey,"Tools");shortcut(actionsKey,"Actions")
                 Spacer(minLength:0)
                 Button { state.onOpenWheel?() } label:{ Image(systemName:"circle.hexagongrid").font(.system(size:13)) }
-                    .buttonStyle(.plain).help("Open wheel").accessibilityLabel("Open wheel").disabled(state.inputs.isEmpty || state.working)
+                    .buttonStyle(.plain).help("Open wheel").accessibilityLabel("Open wheel").disabled(state.inputs.isEmpty)
             }
         }.padding(20).background(targeted ? TwisterPalette.sand.opacity(0.35):TwisterPalette.surface,in:RoundedRectangle(cornerRadius:9))
             .overlay(RoundedRectangle(cornerRadius:9).strokeBorder(targeted ? Color.twister:TwisterPalette.border,style:StrokeStyle(lineWidth:targeted ? 1.5:1,dash:targeted ? [5,4]:[])))
@@ -200,9 +201,9 @@ struct HomeView:View {
             OutputDestinationControl(state:state)
             HStack(spacing:12) {
                 Button { HomeActionMenu.show(formats.map{format in (format=="gz" ? "GZIP":format.uppercased(),{state.select(.convert(format))})}) } label:{HomeActionTile(title:"Convert",subtitle:formats.isEmpty ? "No output formats":"\(formats.count) formats",symbol:"arrow.triangle.2.circlepath",color:.twister)}
-                    .buttonStyle(.plain).disabled(formats.isEmpty || state.working)
+                    .buttonStyle(.plain).disabled(formats.isEmpty)
                 Button { HomeActionMenu.show(tools.map{tool in (tool.title,{state.select(.tool(tool))})}) } label:{HomeActionTile(title:"Tools",subtitle:tools.isEmpty ? "No tools for this selection":"Edit, compress, and more",symbol:"slider.horizontal.3",color:TwisterPalette.forest)}
-                    .buttonStyle(.plain).disabled(tools.isEmpty || state.working)
+                    .buttonStyle(.plain).disabled(tools.isEmpty)
                 Button { HomeActionMenu.show(FileAction.allCases.map{action in (action.title,{state.perform(action)})}) } label:{HomeActionTile(title:"Move & share",subtitle:"File actions",symbol:"paperplane",color:Color(red:0.34,green:0.47,blue:0.67))}
                     .buttonStyle(.plain).disabled(state.working)
             }
@@ -211,7 +212,7 @@ struct HomeView:View {
                     Text("QUICK PICKS").font(.system(size:9,weight:.bold,design:.default)).tracking(0.8).foregroundStyle(.secondary)
                     ForEach(Array(formats.prefix(4)),id:\.self) { format in
                         Button { state.select(.convert(format)) } label:{HStack(spacing:5) { Text(format=="gz" ? "GZIP":format.uppercased());Image(systemName:"arrow.up.right").font(.system(size:8,weight:.bold)) }}
-                            .buttonStyle(TwisterButtonStyle(.secondary,compact:true)).disabled(state.working)
+                            .buttonStyle(TwisterButtonStyle(.secondary,compact:true))
                     }
                     Spacer()
                 }
@@ -239,9 +240,7 @@ struct HomeView:View {
         }.twisterAnimation(value:allHistory)
     }
     private func receiveDrop(_ providers:[NSItemProvider])->Bool {
-        guard !state.working else { return false }
         WebLinkPayload.urls(from:providers) { urls in
-            guard !state.working else { return }
             if urls.first?.isFileURL == false { state.onWebDrop?(urls) }
             else if !urls.isEmpty { state.inputs=urls }
         }

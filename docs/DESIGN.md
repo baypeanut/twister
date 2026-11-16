@@ -14,6 +14,6 @@ The main window supports a 700 × 580 content area. Long file names wrap or trun
 
 ## Interaction
 
-Native open panels, drag and drop, clipboard import, Finder gestures, contextual menus and keyboard shortcuts remain available. Selection actions are generated from supported operations rather than decorative placeholders. A disabled action stays disabled while a file job runs. Reduced Motion preferences are respected; hover feedback does not shift content.
+Native open panels, drag and drop, clipboard import, Finder gestures, contextual menus and keyboard shortcuts remain available. Selection actions are generated from supported operations rather than decorative placeholders. A conversion or tool started while another task runs waits in a queue and starts by itself; moving, sharing and Library reuse stay disabled until the running task ends. A batch lists its files with their status, and a file that failed shows its reason beside a retry for the failed files only. Reduced Motion preferences are respected; hover feedback does not shift content.
 
 English and Turkish copy share one catalog. User file names and paths remain verbatim. Icons that accompany text are decorative; icon-only actions retain accessible labels.

@@ -134,6 +134,9 @@ struct ToolEditor:View {
                         LText(compressionResultText).font(.caption).foregroundStyle(.secondary)
                     }
                 }.padding(.horizontal,20).padding(.vertical,10)
+            } else if state.hasJob(tool,inputs:inputs) {
+                Label { LText("Waiting for the current task to finish.") } icon:{ Image(systemName:"clock") }
+                    .font(.caption).foregroundStyle(.secondary).frame(maxWidth:.infinity,alignment:.leading).padding(.horizontal,20).padding(.vertical,10)
             }
             Divider()
             HStack(spacing:12) {
@@ -149,7 +152,7 @@ struct ToolEditor:View {
             .task(id:visualizationKey) { await renderVisualization() }
             .onChange(of:previewKey) { _ in if processedPlayback { playOriginal(play:false) } }
             .background(WindowIdentityReader { ownerWindowID=$0 })
-            .background(EditorKeyboardShortcuts(enabled:!isLoading && readyToApply && !state.working,historyEnabled:tool == .organizePDF || tool == .annotateImage,canUndo:tool == .annotateImage ? annotationEditor.canUndo:pdfEditor.canUndo,canRedo:tool == .annotateImage ? annotationEditor.canRedo:pdfEditor.canRedo,onCommand:handleShortcut))
+            .background(EditorKeyboardShortcuts(enabled:!isLoading && readyToApply && !state.hasJob(tool,inputs:inputs),historyEnabled:tool == .organizePDF || tool == .annotateImage,canUndo:tool == .annotateImage ? annotationEditor.canUndo:pdfEditor.canUndo,canRedo:tool == .annotateImage ? annotationEditor.canRedo:pdfEditor.canRedo,onCommand:handleShortcut))
             .onReceive(NotificationCenter.default.publisher(for:NSWindow.willCloseNotification)) { notification in if let window=notification.object as? NSWindow,ownerWindowID==ObjectIdentifier(window) { disposeMedia() } }
             .onReceive(NotificationCenter.default.publisher(for:NSApplication.didResignActiveNotification)) { _ in player?.pause();isPlaying=false }
             .onReceive(NotificationCenter.default.publisher(for:.AVPlayerItemDidPlayToEndTime).receive(on:DispatchQueue.main)) { notification in if let item=notification.object as? AVPlayerItem,item === player?.currentItem { playerReachedEnd=true } }
@@ -197,7 +200,7 @@ struct ToolEditor:View {
         }
     }
     var canApply:Bool {
-        guard !state.working,!isLoading,readyToApply,input != nil else { return false }
+        guard !state.hasJob(tool,inputs:inputs),!isLoading,readyToApply,input != nil else { return false }
         switch tool {
         case .cropImage,.cropVideo:
             guard !cropInteracting,let crop=options.crop else { return false }
@@ -742,7 +745,7 @@ struct ToolEditor:View {
         options.equalClips=nil;options.splitPoints.append(playhead);options.splitPoints.sort()
     }
     func handleShortcut(_ command:EditorKeyboardCommand)->Bool {
-        guard !isLoading,readyToApply,!state.working else { return false }
+        guard !isLoading,readyToApply,!state.hasJob(tool,inputs:inputs) else { return false }
         if command == .save { guard canApply else { return false };apply();return true }
         if command == .confirmCrop { guard isCropTool,canApply else { return false };apply();return true }
         if command.isHistory {

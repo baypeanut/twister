@@ -10,10 +10,40 @@ struct JobRecord:Codable,Identifiable {
     var date=Date()
 }
 
+/// A conversion or tool request with the destination it captured when it was made.
+struct QueuedJob:Identifiable {
+    let id=UUID()
+    let operation:TwisterCore.Operation
+    /// As requested, before the destination is resolved, so a retry resolves it again.
+    let options:OperationOptions
+    let inputs:[URL]
+    let destination:OutputDestinationSnapshot
+    var tool:ToolKind? { if case .tool(let tool)=operation { return tool };return nil }
+    func repeats(_ other:QueuedJob)->Bool {
+        operation.title==other.operation.title && inputs==other.inputs && (try? JSONEncoder().encode(options)) == (try? JSONEncoder().encode(other.options))
+    }
+}
+
+/// Per-file status of a conversion, kept after it ends so failures can be read and retried.
+struct JobBatch:Identifiable {
+    var id:UUID { job.id }
+    let job:QueuedJob
+    var items:[BatchItem]
+    var finished=false
+    var report:BatchReport { BatchReport(items:items) }
+}
+
 @MainActor final class AppState:NSObject,ObservableObject {
     @Published var inputs:[URL]=[] {
-        didSet { if oldValue != inputs && !working { outputs=[];error=nil } }
+        didSet { if oldValue != inputs && !working { outputs=[];error=nil;batch=nil } }
     }
+    /// Requests made while another task runs. They start in order as each task ends.
+    @Published private(set) var queue:[QueuedJob]=[]
+    /// The running conversion, or the last one that ended.
+    @Published var batch:JobBatch?
+    /// Earlier conversions with failed files that a queued task has since replaced.
+    @Published private(set) var unresolved:[JobBatch]=[]
+    private var running:QueuedJob?
     @Published var working=false
     @Published var progress=0.0
     @Published var progressIsDeterminate=false
@@ -44,7 +74,6 @@ struct JobRecord:Codable,Identifiable {
     }
     func navigateLibrary(_ direction:Int) {let rows=filteredHistory;guard !rows.isEmpty else{return};let old=rows.firstIndex{$0.id==selectedHistoryID};selectedHistoryID=rows[min(rows.count-1,max(0,(old ?? (direction>0 ? -1:1))+direction))].id}
     func pasteContent(_ pasteboard:NSPasteboard = .general) {
-        guard !working else{return}
         do {let result=try ClipboardImport.read(pasteboard)
             if let link=result.link {onWebDownload?(link,.video);return}
             inputs=result.urls;outputs=[];error=nil;libraryVisible=false
@@ -63,6 +92,8 @@ struct JobRecord:Codable,Identifiable {
     var onEPUBOptions:(()->Void)?
     var onJobStarted:(()->Void)?
     var onSuccess:((SuccessNotice)->Void)?
+    /// A conversion ended with at least one file done or failed: its title and result.
+    var onJobFinished:((String,BatchReport)->Void)?
     var toolWindows:[NSWindow]=[]
     var floatShelves:[FloatShelfController]=[]
     private var windowObservers:[ObjectIdentifier:NSObjectProtocol]=[:]
@@ -89,48 +120,93 @@ struct JobRecord:Codable,Identifiable {
         execute(operation,options:settings)
     }
     func execute(_ operation:TwisterCore.Operation,options:TwisterCore.OperationOptions = .init(),inputs:[URL]?=nil) {
-        guard !working else { return }
         let selected=inputs ?? self.inputs
         let destination:OutputDestinationSnapshot
         do { destination=try outputDestination.snapshot(explicitDirectory:options.outputDirectory) }
         catch {
-            activeInputs=selected
-            if case .tool(let tool)=operation { activeTool=tool } else { activeTool=nil }
-            outputs=[];self.error=error.localizedDescription;return
+            if !working {
+                activeInputs=selected
+                if case .tool(let tool)=operation { activeTool=tool } else { activeTool=nil }
+                outputs=[]
+            }
+            self.error=error.localizedDescription;return
         }
+        let job=QueuedJob(operation:operation,options:options,inputs:selected,destination:destination)
+        guard working else { start(job);return }
+        // A second click on the same request must not export everything twice.
+        if running?.repeats(job) != true,!queue.contains(where:{$0.repeats(job)}) { queue.append(job) }
+    }
+    /// True while this exact tool request is running or waiting.
+    func hasJob(_ tool:ToolKind,inputs:[URL])->Bool {
+        ([running].compactMap{$0}+queue).contains { $0.tool==tool && $0.inputs==inputs }
+    }
+    func clearQueue() { queue=[] }
+    func dismiss(_ ended:JobBatch) {
+        unresolved.removeAll{$0.id==ended.id}
+        if batch?.id==ended.id,!working { batch=nil }
+    }
+    /// Runs the same operation again for the files that failed, and only those.
+    func retryFailed(_ ended:JobBatch) {
+        let failed=ended.report.failedInputs
+        guard ended.finished,!failed.isEmpty else { return }
+        dismiss(ended)
+        execute(ended.job.operation,options:ended.job.options,inputs:failed)
+    }
+    private func start(_ job:QueuedJob,queued:Bool=false) {
+        let operation=job.operation,selected=job.inputs,destination=job.destination
+        // Starting a task by hand replaces the last result; a queued start must not hide its failures.
+        if queued,let ended=batch,ended.finished,ended.report.failed>0 { unresolved=Array(([ended]+unresolved).prefix(5)) }
         beginJob(operation.title)
         let cancel=token
-        activeInputs=selected;if case .tool(let tool)=operation { activeTool=tool } else { activeTool=nil }
-        var options=options;options.outputDirectory=destination.directory;options.revealInFinder=historyDefaults.bool(forKey:"reveal")
+        running=job;activeInputs=selected;activeTool=job.tool
+        var options=job.options;options.outputDirectory=destination.directory;options.revealInFinder=historyDefaults.bool(forKey:"reveal")
         let request=ConversionRequest(inputs:selected,operation:operation,options:options)
+        batch=JobBatch(job:job,items:ConversionEngine.units(for:request).map{BatchItem(inputs:$0)})
         Task { [self] in
             // A deferred update may restart the app as soon as working becomes false.
             // Keep the job active until its outputs and recent history are committed.
             defer { finishJob() }
             do {
-                let result=try await Task.detached(priority:.userInitiated) {
+                let report=try await Task.detached(priority:.userInitiated) {
                     try destination.withAccess {
                         try withGrantedFolderAccess(request.inputs + [request.options.outputDirectory].compactMap{$0}) {
-                            try ConversionEngine.run(request,token:cancel) { [weak self] value,label in
+                            try ConversionEngine.runBatch(request,token:cancel,progress:{ [weak self] value,label in
                                 Task { @MainActor in self?.receiveProgress(value,label:label,token:cancel) }
-                            }
+                            },itemChanged:{ [weak self] index,status in
+                                Task { @MainActor in self?.receiveItem(index,status:status,token:cancel) }
+                            })
                         }
                     }
                 }.value
-                stopProgressUpdates();outputs=result;progress=1
-                let record=JobRecord(title:operation.title,inputs:selected.map(\.path),outputs:result.map(\.path))
+                stopProgressUpdates();batch?.items=report.items;batch?.finished=true
+                let result=report.outputs
+                outputs=result;progress=1
+                if report.failed>0,result.isEmpty { error=report.items.count==1 ? report.items[0].failure:report.summary }
+                guard !result.isEmpty else { if report.failed>0 { onJobFinished?(operation.title,report) };return }
+                let record=JobRecord(title:operation.title,inputs:report.items.filter{!$0.outputs.isEmpty}.flatMap(\.inputs).map(\.path),outputs:result.map(\.path))
                 history.insert(record,at:0);history=Array(history.prefix(50))
                 if let data=try? JSONEncoder().encode(history) { historyDefaults.set(data,forKey:"history") }
-                onSuccess?(.filesReady(result))
+                onSuccess?(report.succeeded==report.items.count ? .filesReady(result):SuccessNotice(title:report.summary,detail:result[0].lastPathComponent,files:result))
+                onJobFinished?(operation.title,report)
                 if options.revealInFinder && NSApp.isActive { NSWorkspace.shared.activateFileViewerSelecting(result) }
-            } catch { stopProgressUpdates();if !cancel.isCancelled { self.error=error.localizedDescription } }
+            } catch {
+                stopProgressUpdates()
+                guard !cancel.isCancelled else { batch=nil;return }
+                let reason=error.localizedDescription
+                self.error=reason;batch?.finished=true
+                for index in batch?.items.indices ?? 0..<0 { batch?.items[index].status = .failed(reason) }
+            }
         }
     }
     func beginJob(_ label:String) {
         token=CancellationToken();acceptsProgress=true
         error=nil;outputs=[];progress=0;progressIsDeterminate=false;progressLabel=label
-        activeTool=nil;activeInputs=[];working=true
+        activeTool=nil;activeInputs=[];batch=nil;working=true
         onJobStarted?()
+    }
+    func receiveItem(_ index:Int,status:BatchItem.Status,token:CancellationToken) {
+        guard working,acceptsProgress,self.token === token,batch?.items.indices.contains(index) == true else { return }
+        batch?.items[index].status=status
     }
     func receiveProgress(_ value:Double,label:String,token:CancellationToken) {
         guard working,acceptsProgress,self.token === token,!token.isCancelled else { return }
@@ -139,7 +215,11 @@ struct JobRecord:Codable,Identifiable {
         progressLabel=label
     }
     func stopProgressUpdates() { acceptsProgress=false }
-    func finishJob() { stopProgressUpdates();working=false }
+    func finishJob() {
+        stopProgressUpdates();running=nil
+        // The next request starts without an idle moment in which the app could restart.
+        if queue.isEmpty { working=false } else { start(queue.removeFirst(),queued:true) }
+    }
 
     func perform(_ action:FileAction,urls:[URL]?=nil) {
         guard !working else { return }
