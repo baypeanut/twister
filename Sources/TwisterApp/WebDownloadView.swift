@@ -127,60 +127,49 @@ struct WebDownloadView:View {
     @ObservedObject var state:AppState
     var body:some View {
         VStack(alignment:.leading,spacing:0) {
-            HStack(spacing:14) {
-                WindowCloseButton().frame(width:24,height:24)
-                ZStack {
-                    WindowDragRegion()
-                    HStack(spacing:12) {
-                        Image(systemName:"arrow.down.circle.fill").font(.system(size:26)).foregroundStyle(Color.twister)
-                        VStack(alignment:.leading,spacing:4) { Text("Download from the web").font(.system(size:21,weight:.bold,design:.default));Text("A link. A file. Yours to work with.").font(.caption).foregroundStyle(.secondary) }
-                        Spacer()
-                    }.allowsHitTesting(false)
-                }.frame(height:50)
-            }.padding(22)
-            Divider()
+            WindowHeader(title:"Download from the Web")
             if model.availability == .ready {
             ScrollView {
-                VStack(alignment:.leading,spacing:20) {
-                    HStack(spacing:10) {
+                VStack(alignment:.leading,spacing:16) {
+                    HStack(spacing:8) {
                         TextField("Paste a video share link or image address",text:Binding(get:{model.linkText},set:{ if model.linkText != $0 { model.linkText=$0;model.editedLink() } })).textFieldStyle(.roundedBorder).onSubmit { if model.info != nil { model.download() } else { model.inspect() } }.disabled(model.downloading).accessibilityLabel("Media link")
-                        Button { model.pasteLink() } label:{Label("Paste",systemImage:"doc.on.clipboard")}.disabled(model.downloading)
+                        Button("Paste") { model.pasteLink() }.disabled(model.downloading)
                     }
                     if model.inspecting {
                         HStack { ProgressView().controlSize(.small);Text("Finding the media…").font(.callout);Spacer();Button("Cancel") { model.cancelInspection() } }
                     }
                     if let info=model.info {
-                        HStack(spacing:16) {
-                            Image(systemName:info.kind == .image ? "photo":info.kind == .audio ? "waveform":"play.rectangle").font(.system(size:30)).foregroundStyle(Color.twister).frame(width:66,height:66).background(TwisterPalette.sand,in:RoundedRectangle(cornerRadius:17))
-                            VStack(alignment:.leading,spacing:6) {
-                                Text(info.title).font(.system(size:16,weight:.semibold,design:.default)).lineLimit(3).textSelection(.enabled)
-                                Text(details(info)).font(.caption).foregroundStyle(.secondary)
+                        HStack(spacing:12) {
+                            Image(systemName:info.kind == .image ? "photo":info.kind == .audio ? "waveform":"play.rectangle").font(.title).foregroundStyle(.secondary).frame(width:32).accessibilityHidden(true)
+                            VStack(alignment:.leading,spacing:2) {
+                                Text(info.title).font(.headline).lineLimit(3).textSelection(.enabled)
+                                Text(details(info)).font(.subheadline).foregroundStyle(.secondary)
                             };Spacer(minLength:0)
-                        }.padding(17).twisterCard()
+                        }.padding(12).twisterGroup()
                         if !info.photos.isEmpty {
-                            VStack(alignment:.leading,spacing:12) {
+                            VStack(alignment:.leading,spacing:10) {
                                 HStack {
                                     Text("Select photos").font(.headline);Spacer()
-                                    Button("All") { model.selectPhotos(Set(info.photos.map(\.id))) }
-                                    Button("None") { model.selectPhotos([]) }
+                                    Button("Select All") { model.selectPhotos(Set(info.photos.map(\.id))) }.controlSize(.small)
+                                    Button("Deselect All") { model.selectPhotos([]) }.controlSize(.small)
                                 }
-                                if info.skippedVideoCount>0 { Text("\(info.skippedVideoCount) video items are not included. Only photos will be saved.").font(.caption).foregroundStyle(.secondary) }
-                                Text("Saved in post order in a new Instagram folder.").font(.caption).foregroundStyle(.secondary)
+                                if info.skippedVideoCount>0 { Text("\(info.skippedVideoCount) video items are not included. Only photos will be saved.").font(.subheadline).foregroundStyle(.secondary) }
+                                Text("Saved in post order in a new Instagram folder.").font(.subheadline).foregroundStyle(.secondary)
                                 ForEach(info.photos) { photo in
                                     Toggle(isOn:Binding(get:{model.selectedPhotos.contains(photo.id)},set:{ selected in
                                         var ids=model.selectedPhotos;if selected { ids.insert(photo.id) } else { ids.remove(photo.id) };model.selectPhotos(ids)
                                     })) {
                                         HStack(spacing:12) {
                                             AsyncImage(url:photo.url) { image in image.resizable().scaledToFit() } placeholder:{Image(systemName:"photo").foregroundStyle(.secondary)}
-                                                .frame(width:88,height:76).background(TwisterPalette.sand,in:RoundedRectangle(cornerRadius:8))
+                                                .frame(width:64,height:48).background(.quaternary,in:RoundedRectangle(cornerRadius:4))
                                             VStack(alignment:.leading,spacing:4) {
-                                                Text("Photo \(photo.id)").font(.callout.weight(.semibold))
-                                                if let width=photo.width,let height=photo.height { Text("\(width) × \(height)").font(.caption).foregroundStyle(.secondary) }
+                                                Text("Photo \(photo.id)")
+                                                if let width=photo.width,let height=photo.height { Text("\(width) × \(height)").font(.subheadline).foregroundStyle(.secondary) }
                                             };Spacer()
                                         }
                                     }.toggleStyle(.checkbox)
                                 }
-                            }.padding(17).twisterCard().disabled(model.downloading)
+                            }.padding(12).twisterGroup().disabled(model.downloading)
                         }
                         if info.modes.count>1 {
                             Picker("Save as",selection:$model.mode) { ForEach(info.modes,id:\.self) { LText($0.title).tag($0) } }.pickerStyle(.segmented).disabled(model.downloading)
@@ -193,47 +182,48 @@ struct WebDownloadView:View {
                             }.disabled(model.downloading)
                         }
                     }
-                    HStack(spacing:10) {
-                        Image(systemName:"folder").foregroundStyle(.secondary)
-                        VStack(alignment:.leading,spacing:3) { Text("SAVE TO").font(.system(size:9,weight:.bold,design:.default)).foregroundStyle(.secondary);Text((model.destination.path as NSString).abbreviatingWithTildeInPath).font(.caption).lineLimit(2).textSelection(.enabled) }
-                        Spacer();Button("Change…") { model.chooseDestination() }.disabled(model.downloading)
-                    }.padding(15).twisterCard()
+                    LabeledContent {
+                        HStack(spacing:8) {
+                            Text((model.destination.path as NSString).abbreviatingWithTildeInPath).foregroundStyle(.secondary).lineLimit(1).truncationMode(.middle).textSelection(.enabled)
+                            Button("Change…") { model.chooseDestination() }.disabled(model.downloading)
+                        }
+                    } label:{ Text("Save to") }
                     if model.downloading {
-                        VStack(alignment:.leading,spacing:9) { HStack { LText(state.progressLabel).font(.caption);Spacer();if state.progressIsDeterminate { Text("\(Int(state.progress*100))%").font(.caption.monospacedDigit()) } };JobProgressBar(state:state) }
+                        VStack(alignment:.leading,spacing:6) { HStack { LText(state.progressLabel);Spacer();if state.progressIsDeterminate { Text("\(Int(state.progress*100))%").monospacedDigit() } }.font(.subheadline).foregroundStyle(.secondary);JobProgressBar(state:state) }
                     }
-                    if !model.completed.isEmpty { Label("Ready on your Mac",systemImage:"checkmark.circle.fill").foregroundStyle(TwisterPalette.forest);Text(model.completed.map(\.lastPathComponent).joined(separator:"\n")).font(.caption).textSelection(.enabled) }
-                    if let error=model.error { Label(error,systemImage:"exclamationmark.circle").font(.callout).foregroundStyle(.orange).fixedSize(horizontal:false,vertical:true) }
-                    if state.working,!model.downloading { Text("Another task is running. Your link is ready when it finishes.").font(.caption).foregroundStyle(.secondary) }
-                    VStack(alignment:.leading,spacing:7) {
-                        LText(model.shortcutAvailable ? "Copy a link → ⌃⇧D, or drag it with ⌘.":"Copy a link, then choose Download Link from the Twister menu.").font(.caption)
-                        Text("Instagram photo posts open a photo selection. For videos, use the share link; for other photos, drag the image or use Copy Image Address. Public media only; login-required and protected items may be unavailable.").font(.caption).foregroundStyle(.secondary).fixedSize(horizontal:false,vertical:true)
-                    }
-                }.padding(24)
+                    if !model.completed.isEmpty { Label { Text("Ready on your Mac") } icon:{ Image(systemName:"checkmark.circle.fill").foregroundStyle(.green) };Text(model.completed.map(\.lastPathComponent).joined(separator:"\n")).font(.subheadline).foregroundStyle(.secondary).textSelection(.enabled) }
+                    if let error=model.error { Label { LText(error) } icon:{ Image(systemName:"exclamationmark.triangle.fill").symbolRenderingMode(.multicolor) }.fixedSize(horizontal:false,vertical:true) }
+                    if state.working,!model.downloading { Text("Another task is running. Your link is ready when it finishes.").font(.subheadline).foregroundStyle(.secondary) }
+                    VStack(alignment:.leading,spacing:4) {
+                        LText(model.shortcutAvailable ? "Copy a link → ⌃⇧D, or drag it with ⌘.":"Copy a link, then choose Download Link from the Twister menu.")
+                        Text("Instagram photo posts open a photo selection. For videos, use the share link; for other photos, drag the image or use Copy Image Address. Public media only; login-required and protected items may be unavailable.").fixedSize(horizontal:false,vertical:true)
+                    }.font(.footnote).foregroundStyle(.secondary)
+                }.padding(20)
             }
             Divider()
             HStack {
-                if model.downloading { Button("Cancel download") { state.token.cancel() } }
+                if model.downloading { Button("Cancel Download") { state.token.cancel() } }
                 else if !model.completed.isEmpty { Button("Show in Finder") { NSWorkspace.shared.activateFileViewerSelecting(model.completed) } }
                 Spacer()
-                if !model.completed.isEmpty { Button("Use in Twister") { model.onUseFiles?() }.buttonStyle(TwisterButtonStyle(.primary)) }
-                else if let info=model.info { Button(!info.photos.isEmpty ? "Download \(model.selectedPhotos.count) \(model.selectedPhotos.count==1 ? "photo":"photos")":model.mode == .audioMP3 ? "Download MP3":info.kind == .image ? "Download image":"Download") { model.download() }.buttonStyle(TwisterButtonStyle(.primary)).disabled(model.downloading || state.working || (!info.photos.isEmpty && model.selectedPhotos.isEmpty)) }
-                else { Button("Check link") { model.inspect() }.buttonStyle(TwisterButtonStyle(.primary)).disabled(model.linkText.isEmpty || model.inspecting) }
-            }.padding(20)
+                if !model.completed.isEmpty { Button("Use in Twister") { model.onUseFiles?() }.keyboardShortcut(.defaultAction) }
+                else if let info=model.info { Button { model.download() } label:{ LText(!info.photos.isEmpty ? (model.selectedPhotos.count==1 ? "Download 1 Photo":"Download \(model.selectedPhotos.count) Photos"):model.mode == .audioMP3 ? "Download MP3":info.kind == .image ? "Download Image":"Download") }.keyboardShortcut(.defaultAction).disabled(model.downloading || state.working || (!info.photos.isEmpty && model.selectedPhotos.isEmpty)) }
+                else { Button("Check Link") { model.inspect() }.keyboardShortcut(.defaultAction).disabled(model.linkText.isEmpty || model.inspecting) }
+            }.padding(.horizontal,20).padding(.vertical,12)
             } else { unavailable }
-        }.onChange(of:model.mode) { _ in model.configurationChanged() }.onChange(of:model.maximumHeight) { _ in model.configurationChanged() }.frame(minWidth:620,minHeight:520).background(TwisterPalette.canvas).tint(.twister).buttonStyle(TwisterButtonStyle(.secondary,compact:true))
+        }.onChange(of:model.mode) { _ in model.configurationChanged() }.onChange(of:model.maximumHeight) { _ in model.configurationChanged() }.frame(minWidth:620,minHeight:520).background(Color(nsColor:.windowBackgroundColor))
     }
     /// Shown in place of the link form until the user has opted in and the tools are present.
     private var unavailable:some View {
         let off=model.availability == .off
-        return VStack(alignment:.leading,spacing:14) {
-            Label(LocalizedStringKey(off ? "Web downloads are turned off":"Web downloads need their own tools"),systemImage:"arrow.down.to.line").font(.headline)
+        return VStack(alignment:.leading,spacing:10) {
+            Text(LocalizedStringKey(off ? "Web downloads are turned off":"Web downloads need their own tools")).font(.headline)
             LText(off ? "Turn them on here or in Settings → General → Optional extras.":"Downloading from a link uses extra tools that media conversion does not need. Twister downloads them once from pinned, checksum-verified sources, and you can remove them again in tool setup. Converting and editing files works without them.")
                 .font(.callout).foregroundStyle(.secondary).fixedSize(horizontal:false,vertical:true)
-            if !model.linkText.isEmpty { Text("Your link is kept and checked as soon as web downloads are ready.").font(.caption).foregroundStyle(.secondary) }
-            Button { model.resolveAvailability() } label:{ LText(off ? "Turn on web downloads":"Install web download tools") }
-                .buttonStyle(TwisterButtonStyle(.primary)).keyboardShortcut(.defaultAction).accessibilityIdentifier("WebDownloadSetup")
+            if !model.linkText.isEmpty { Text("Your link is kept and checked as soon as web downloads are ready.").font(.subheadline).foregroundStyle(.secondary) }
+            Button { model.resolveAvailability() } label:{ LText(off ? "Turn On Web Downloads":"Install Web Download Tools…") }
+                .keyboardShortcut(.defaultAction).accessibilityIdentifier("WebDownloadSetup")
             Spacer(minLength:0)
-        }.padding(24).frame(maxWidth:.infinity,maxHeight:.infinity,alignment:.topLeading)
+        }.padding(20).frame(maxWidth:.infinity,maxHeight:.infinity,alignment:.topLeading)
     }
     func details(_ info:WebMediaInfo)->String {
         var details=[info.site,info.kind.rawValue.capitalized]
