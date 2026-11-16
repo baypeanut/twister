@@ -8,7 +8,7 @@ Check the selected source files, requested action and exact error text first. A 
 
 ## Some files of a batch failed
 
-Open the file list of the batch in the workspace to read the reason beside each failed file. The files that succeeded are already saved and recorded in Library. Fix or replace the failed sources, then use **Retry failed**; it does not export the finished files again. From the command line, failed files are reported on standard error and the exit status is 3 when only some of them failed.
+Open the file list of the batch in the workspace to read the reason beside each failed file. The files that succeeded are already saved and recorded in Library. Fix or replace the failed sources, then use **Retry Failed**; it does not export the finished files again. From the command line, failed files are reported on standard error and the exit status is 3 when only some of them failed.
 
 ## An export folder is unavailable
 

@@ -8,7 +8,7 @@ Setup separates optional tools into three groups. Media checks FFmpeg and FFprob
 
 ## Web downloads are opt-in
 
-**Download a link** stays in the workspace, but the Web download tools are not installed with the others. Until they are present, the download window explains what is missing and offers **Install web download tools**; a link you already pasted is kept and checked when the tools are ready. Settings → General → Optional extras has a **Web downloads** switch: it is on when the tools are installed, and turning it off closes the feature without deleting anything.
+**Download Link…** stays in the workspace sidebar, but the Web download tools are not installed with the others. Until they are present, the download window explains what is missing and offers **Install Web Download Tools…**; a link you already pasted is kept and checked when the tools are ready. Settings → General → Optional extras has a **Web downloads** switch: it is on when the tools are installed, and turning it off closes the feature without deleting anything.
 
 ## Remove a tool group
 

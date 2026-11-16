@@ -9,6 +9,7 @@ Twister is a menu-bar file utility. Its workspace should be quick to open and ea
 - Dismissal orders the existing view out; it does not close the view, clear the selection, cancel a job or rewrite Library history.
 - Editors, settings, downloads, onboarding and previews use normal-level native windows that hide on application deactivation. Editors have the standard close, minimize and zoom controls.
 - Window commands include Hide, Hide Others, Show All, Minimize, Zoom, Close and Bring All to Front. Opening a minimized window restores it.
+- Settings is a standard preference window: one toolbar tab per pane, grouped forms, and a title that follows the selected pane.
 - Window positions use stable autosave names and are constrained to a usable display area on restoration.
 - The explicitly invoked Float shelf remains a cross-application file shelf. Ordinary work windows do not use its always-visible behavior.
 
@@ -18,7 +19,7 @@ Apple's [panel guidance](https://developer.apple.com/design/human-interface-guid
 
 Progress and completion overlays do not appear over an inactive application or follow it into other desktops. In-progress work remains available from the menu-bar workspace. A task that ends while Twister is inactive or its workspace is hidden posts one macOS notification with the number of files done and failed. Twister asks for notification permission the first time it has such a result; a denied request, or a build macOS cannot deliver notifications for, stays silent. **Notify when a task finishes in the background** in Settings turns this off. Media previews pause when the application loses focus.
 
-Finishing or skipping the welcome tour opens the workspace immediately. Media and Office runtimes are optional downloads available through Finish setup; missing runtimes no longer force the setup window over the workspace.
+Finishing or skipping the welcome tour opens the workspace immediately. Media and Office runtimes are optional downloads available through **Finish Setup…** in the sidebar; missing runtimes no longer force the setup window over the workspace.
 
 Window arrangement is off by default. Enabling it starts its observer; disabling Twister or window arrangement stops that observer. Existing explicit preferences are respected.
 

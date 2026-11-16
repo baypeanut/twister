@@ -45,11 +45,11 @@ Choose files, drop them into the workspace or paste supported clipboard content.
 
 Click the menu-bar icon to open Twister. Click it again, press Escape or switch to another app to dismiss the workspace. Background operations continue when the interface is hidden, and Twister can notify you when one finishes.
 
-A conversion or tool started while another task is running waits in a queue. A batch lists each file as waiting, working, done or failed with its reason; a summary such as "7 of 9 done, 2 failed" offers **Retry failed** for the failed files only. Library records the files that succeeded.
+A conversion or tool started while another task is running waits in a queue. A batch lists each file as waiting, working, done or failed with its reason; a summary such as "7 of 9 done, 2 failed" offers **Retry Failed** for the failed files only. Library records the files that succeeded.
 
 ### Presets
 
-**Save as preset…**, the bookmark button in an editor footer and in the EPUB options, keeps the tool with the options you chose. Settings → Formats saves a conversion with that format's settings. A preset can follow the current output folder, always save beside the originals or always save to one folder. The workspace lists the presets that fit the selected files under **Presets**; Settings → Presets lists all of them. Each can be run, renamed, duplicated, moved up or down and deleted. A password typed for a protected file is never saved in a preset.
+**Save as Preset…**, the bookmark button in an editor footer and in the EPUB options, keeps the tool with the options you chose. Settings → Formats saves a conversion with that format's settings. A preset can follow the current output folder, always save beside the originals or always save to one folder. The workspace lists the presets that fit the selected files under **Presets**; Settings → Presets lists all of them. Each can be run, renamed, duplicated, moved up or down and deleted. A password typed for a protected file is never saved in a preset.
 
 ### Finder
 

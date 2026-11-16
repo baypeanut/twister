@@ -1,14 +1,19 @@
 # Twister design
 
-Twister is a focused macOS utility. The interface uses a persistent navigation rail, a single file workspace and a separate recent-file library. File selection always comes before tool selection; formats and tools come from the actual selection.
+Twister is a focused macOS utility. The interface uses a persistent sidebar, a single file workspace and a separate recent-file library. File selection always comes before tool selection; formats and tools come from the actual selection.
 
 ## Visual language
 
-- Warm paper surfaces, charcoal text and a restrained burnt-sienna accent.
-- A serif headline gives the workspace its identity; system typography keeps controls familiar.
-- Flat buttons, small corner radii, thin dividers and deliberate spacing replace decorative surfaces.
+Twister looks like the system it runs on. It has no palette, typeface or control style of its own.
+
+- Colour comes from macOS: window, control and separator colours for surfaces, label colours for text, and the accent and highlight colours the user chose in System Settings. Green, yellow and red appear only as status.
+- Text uses the system font at its standard text styles. There are no headline typefaces, uppercase labels or letter-spacing.
+- Controls are the stock ones: push buttons with one default action per window, pull-down menus, pop-up buttons, switches in grouped forms, checkboxes, segmented controls, sliders and steppers. Buttons and menu items use title case; descriptions use sentence case and plain wording.
+- Settings is a preference window with toolbar tabs and grouped forms. Lists of files, presets and batch results use the fill and hairline of a bordered list.
+- Materials appear where AppKit uses them: the sidebar, the Float shelf and the progress and completion overlays.
+- Motion is limited to the default fade of content that appears or leaves, and stops with Reduce Motion.
+- The conversion wheel, the media timeline, the crop and annotation canvas and the PDF page organizer have no stock equivalent. They stay custom and draw with system colours, the accent colour for selection and the system font.
 - A geometric folded-strip mark is drawn from the same vector for the app, menu bar and onboarding. No mascot or generated imagery is used.
-- Dark appearance uses the same hierarchy, with warm dark surfaces and lighter secondary text.
 
 The main window supports a 700 × 580 content area. Long file names wrap or truncate inside their row; they never replace the sidebar. The workspace and library scroll independently of navigation. Editors retain separate preview, options and action regions.
 

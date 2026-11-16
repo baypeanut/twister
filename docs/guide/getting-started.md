@@ -4,7 +4,7 @@
 
 ## Choose a selection
 
-Open Twister from its menu-bar icon, then choose files with **Choose files** or ⌘O. You can also drop files into the workspace. Start with one file while learning a tool; the available actions depend on both its format and the number of selected files.
+Open Twister from its menu-bar icon, then choose files with **Choose Files…** or ⌘O. You can also drop files into the workspace. Start with one file while learning a tool; the available actions depend on both its format and the number of selected files.
 
 ## Paste from the clipboard
 
@@ -20,7 +20,7 @@ Select files in Finder and choose **Services** in the context menu. **Open in Tw
 
 ## Save a preset
 
-Use the bookmark button in an editor footer to save the tool with its current options, or **Save as preset…** in Settings → Formats to save a conversion. Name the preset and choose whether it follows the current output folder, always saves beside the originals or always saves to the current folder. Presets that fit the selection appear under **Presets** in the workspace; **Run** adds the preset to the task queue. Rename, duplicate, reorder or delete presets from the **…** menu there or in Settings → Presets. A preset saved from an editor keeps values that belong to one file as well, such as a crop rectangle, so save presets from options that make sense for other files.
+Use the bookmark button in an editor footer to save the tool with its current options, or **Save as Preset…** in Settings → Formats to save a conversion. Name the preset and choose whether it follows the current output folder, always saves beside the originals or always saves to the current folder. Presets that fit the selection appear under **Presets** in the workspace; **Run** adds the preset to the task queue. Rename, duplicate, reorder or delete presets from the **…** menu there or in Settings → Presets. A preset saved from an editor keeps values that belong to one file as well, such as a crop rectangle, so save presets from options that make sense for other files.
 
 ## Understand exports
 
@@ -34,7 +34,7 @@ Tools that combine a selection into one result, such as **Create PDF**, **Merge 
 
 ## Queue another task
 
-You can change the selection and start another conversion or tool while a task is running. It waits in the queue with the output folder it captured and starts when the running task ends; **Clear queue** removes the waiting tasks. Moving, sharing and Library reuse wait until the running task has finished.
+You can change the selection and start another conversion or tool while a task is running. It waits in the queue with the output folder it captured and starts when the running task ends; **Clear Queue** removes the waiting tasks. Moving, sharing and Library reuse wait until the running task has finished.
 
 ## Choose where results go
 
