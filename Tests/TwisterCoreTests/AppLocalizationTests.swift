@@ -30,7 +30,7 @@ final class AppLocalizationTests:XCTestCase {
         XCTAssertEqual(AppLocalization.text("Home.png",language:"tr"),"Home.png")
         let path="Türkçe {0} $1 \\ image.png"
         XCTAssertEqual(AppLocalization.text("Original size: "+path,language:"tr"),"Orijinal boyut: "+path)
-        XCTAssertEqual(AppLocalization.text("Nicely done. 12 files are ready.",language:"tr"),"Hazır! 12 dosyan hazır.")
+        XCTAssertEqual(AppLocalization.text("12 files are ready",language:"tr"),"12 dosya hazır")
     }
     func testBatchSummariesKeepEveryCount() {
         XCTAssertEqual(AppLocalization.text("9 of 9 done",language:"tr"),"9/9 tamamlandı")
