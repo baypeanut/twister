@@ -48,6 +48,7 @@ struct UIAuditError:LocalizedError { let message:String;init(_ message:String){s
     private var successful=false
     private var validatorChecks:[String]=[]
     private var fixtures:[String:URL]=[:]
+    private var settingsToolbar:SettingsToolbar?
     init(options:UIAuditOptions){self.options=options}
     func applicationDidFinishLaunching(_ notification:Notification) {
         setvbuf(stdout,nil,_IOLBF,0)
@@ -123,7 +124,7 @@ struct UIAuditError:LocalizedError { let message:String;init(_ message:String){s
         }}}
     }
     private func capture(scene:String,appearance:String,language:String,defaults:UserDefaults)async throws {
-        window?.close();window=nil
+        window?.close();window=nil;settingsToolbar=nil
         let state=AppState(defaults:defaults),recorder=UIAuditLayout(),updater=AppUpdater()
         let image=fixtures["image"]!,text=fixtures["text"]!,pdf=fixtures["pdf1"]!
         state.outputDestination.useOriginalFolders()
@@ -158,7 +159,8 @@ struct UIAuditError:LocalizedError { let message:String;init(_ message:String){s
         case "home.empty","home.selected","home.output-folder","library":view=AnyView(HomeView(state:state,updater:updater));size=NSSize(width:700,height:580)
         case "settings.general","settings.formats","settings.updates":
             let section:SettingsSection=scene=="settings.formats" ? .formats:scene=="settings.updates" ? .updates:.general
-            view=AnyView(SettingsView(updater:updater,initialSection:section));size=NSSize(width:790,height:590)
+            let navigation=SettingsNavigation();navigation.section=section;settingsToolbar=SettingsToolbar(navigation:navigation)
+            view=AnyView(SettingsView(updater:updater,navigation:navigation,initialSection:section));size=NSSize(width:790,height:590)
         case "editor.crop-image","editor.annotate-image","editor.frame-image":
             let tool:ToolKind=scene=="editor.crop-image" ? .cropImage:scene=="editor.annotate-image" ? .annotateImage:.frameImage
             view=AnyView(ToolEditor(state:state,tool:tool));size=NSSize(width:900,height:420)
@@ -192,11 +194,19 @@ struct UIAuditError:LocalizedError { let message:String;init(_ message:String){s
         let host:NSWindow
         if isTool {host=ToolPanel(contentRect:NSRect(origin:.zero,size:size),styleMask:[.borderless,.closable],backing:.buffered,defer:false)}
         else {host=NSWindow(contentRect:NSRect(origin:.zero,size:size),styleMask:[.titled,.closable],backing:.buffered,defer:false)}
-        host.isReleasedWhenClosed=false;host.title="Twister UI Audit · "+scene;host.contentView=NSHostingView(rootView:root);host.center();window=host;host.makeKeyAndOrderFront(nil);NSApp.activate(ignoringOtherApps:true)
+        host.isReleasedWhenClosed=false;host.title="Twister UI Audit · "+scene;host.contentView=NSHostingView(rootView:root)
+        // The gallery scenes carry the production preference tabs, so their selection and title are checked.
+        settingsToolbar?.install(in:host)
+        host.center();window=host;host.makeKeyAndOrderFront(nil);NSApp.activate(ignoringOtherApps:true)
         try await settle(recorder:isTool ? recorder:nil)
         guard let content=host.contentView else{throw UIAuditError("Scene has no content view")}
         observedPreferences=try await verifyPreferences(scene:scene,appearance:appearance,language:language,defaults:defaults,view:content,recorder:recorder)
-        let issues=recorder.issues(in:content.bounds,editor:isEditor)
+        var issues=recorder.issues(in:content.bounds,editor:isEditor)
+        if let toolbar=settingsToolbar {
+            let selected=toolbar.navigation.section.rawValue
+            if host.toolbar?.selectedItemIdentifier?.rawValue != selected || host.toolbar?.items.count != SettingsSection.allCases.count { issues.append("Settings toolbar does not show the selected pane") }
+            if host.title != L10n.text(selected) { issues.append("Settings window is not titled after its pane") }
+        }
         try save(scene:scene,appearance:appearance,language:language,view:content,recorder:recorder,issues:issues)
     }
     private func settle(recorder:UIAuditLayout?)async throws {
