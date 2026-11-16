@@ -16,10 +16,11 @@ Native file tools for macOS. Convert, edit and prepare images, PDFs, documents, 
 - Save an operation with its options as a preset and run it again from the workspace, Finder or the command line.
 - Send files from Finder through the Services menu.
 - Search recent results in Library, preview them and use them in another operation.
-- Download supported public media links and continue editing the downloaded files.
-- Carry files between apps with Float and use optional window arrangement tools.
+- Carry files between apps with Float.
 
-File conversion and editing run on your Mac. Original files are preserved and output names avoid collisions. Each file of a batch is exported by itself: a file that fails leaves nothing unfinished behind, and the files that succeeded stay in place. Operations that combine their inputs, such as merging PDFs or joining videos, finish as a whole or not at all. Media downloads and optional tool setup require a network connection.
+Optional extras, both off until you turn them on in Settings → General: web downloads from public media links, which install their own tools, and window arrangement, which keeps working but is no longer being extended.
+
+File conversion and editing run on your Mac. Original files are preserved and output names avoid collisions. Each file of a batch is exported by itself: a file that fails leaves nothing unfinished behind, and the files that succeeded stay in place. Operations that combine their inputs, such as merging PDFs or joining videos, finish as a whole or not at all. Web downloads and optional tool setup require a network connection.
 
 ## Build and run
 
@@ -34,7 +35,7 @@ scripts/build-app.sh release
 open build/Twister.app
 ```
 
-The application is created at `build/Twister.app`. Dependency resources are downloaded from pinned sources and verified with SHA-256. The in-app setup screen can install optional media and Office tools when needed.
+The application is created at `build/Twister.app`. Dependency resources are downloaded from pinned sources and verified with SHA-256. The in-app setup screen installs the Media and Office tools when needed and, separately, the optional Web download tools; each group can be removed again by itself. `TWISTER_WEB_DOWNLOADS=0 scripts/build-app.sh release` builds a copy without the web downloader.
 
 Local builds use an ad-hoc signature. There is no notarized installer or configured automatic update channel yet.
 
@@ -67,7 +68,7 @@ Select files in Finder and open **Services** from the context menu or the Finder
 | Minimize | ⌘M |
 | Dismiss workspace | Escape |
 
-While dragging files in Finder, Shift opens conversions, Command opens tools and Control opens file actions. These shortcuts are configurable. Finder gestures and window arrangement use the relevant macOS permissions; choosing files in the workspace remains available independently.
+While dragging files in Finder, Shift opens conversions, Command opens tools and Control opens file actions. These shortcuts are configurable. Finder gestures and the optional window arrangement use the relevant macOS permissions; choosing files in the workspace remains available independently.
 
 ## Command line
 

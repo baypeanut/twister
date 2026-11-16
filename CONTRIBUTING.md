@@ -14,7 +14,7 @@ scripts/build-app.sh debug
 open build/Twister.app
 ```
 
-`build-app.sh release` produces an optimized local package. Media and Office tools are downloaded on demand through setup. External executable overrides use `TWISTER_` followed by the uppercased tool name. Keep tool downloads, app packages, signing configuration and secrets out of version control.
+`build-app.sh release` produces an optimized local package; `TWISTER_WEB_DOWNLOADS=0` in its environment leaves the web downloader out. Media, Office and the optional Web download tools are downloaded on demand through setup, each group by itself. External executable overrides use `TWISTER_` followed by the uppercased tool name. Keep tool downloads, app packages, signing configuration and secrets out of version control.
 
 ## Source map
 

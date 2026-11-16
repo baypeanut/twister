@@ -24,7 +24,7 @@ Open Twister once, then look under **Services** in Finder's context menu for a s
 
 ## A media link will not download
 
-Check the network connection and whether Media setup is complete. A supported provider may still reject a link because content is unavailable or access is restricted. Keep the error text when reporting a failure, but remove private links, cookies, credentials and personal file paths from a public report.
+Check the network connection and whether both the Media tools and the optional Web download tools are installed in setup; the download window offers to install them when they are missing. A supported provider may still reject a link because content is unavailable or access is restricted. Keep the error text when reporting a failure, but remove private links, cookies, credentials and personal file paths from a public report.
 
 ## Updates are not connected
 
