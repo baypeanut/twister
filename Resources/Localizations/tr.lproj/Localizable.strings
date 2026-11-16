@@ -100,6 +100,7 @@
 "A LITTLE PEAR. A LOT OF POSSIBILITY." = "KÜÇÜK BİR ARMUT. BİR SÜRÜ OLASILIK.";
 "A NEW FORM.\nIN A TAP." = "TEK DOKUNUŞ.\nYENİ BİR BİÇİM.";
 "A PLACE FOR FRESH FILES." = "YENİ DOSYALAR İÇİN BİR YER.";
+"A PRESET KEEPS AN OPERATION WITH ITS OPTIONS. SAVE ONE FROM A TOOL OR FROM FORMATS, THEN RUN IT ON ANY FILES IT FITS, FROM FINDER OR WITH TWISTER-CLI." = "ÖN AYAR, BİR İŞLEMİ SEÇENEKLERİYLE BİRLİKTE SAKLAR. BİR ARAÇTAN VEYA BİÇİMLER BÖLÜMÜNDEN KAYDET; SONRA UYDUĞU DOSYALARDA, FİNDER'DAN YA DA TWİSTER-CLİ İLE ÇALIŞTIR.";
 "A SET OF NATIVE TOOLS FOR CONVERTING, EDITING, AND ORGANIZING FILES. EVERYTHING RUNS ON YOUR MAC." = "DOSYALARINI DÖNÜŞTÜRMEK, DÜZENLEMEK VE ORGANİZE ETMEK İÇİN YEREL ARAÇLAR. HER ŞEY MAC’İNDE ÇALIŞIR.";
 "A few small preferences. A smoother everyday." = "Birkaç küçük tercih. Daha akıcı bir gün.";
 "A few tools. More possibilities." = "Birkaç araç. Daha fazla olanak.";
@@ -117,6 +118,9 @@
 "A little pear. A lot of possibility." = "Küçük bir armut. Bir sürü olasılık.";
 "A new form.\nIn a tap." = "Tek dokunuş.\nYeni bir biçim.";
 "A place for fresh files." = "Yeni dosyalar için bir yer.";
+"A preset keeps an operation with its options. Save one from a tool or from Formats, then run it on any files it fits, from Finder or with twister-cli." = "Ön ayar, bir işlemi seçenekleriyle birlikte saklar. Bir araçtan veya Biçimler bölümünden kaydet; sonra uyduğu dosyalarda, Finder'dan ya da twister-cli ile çalıştır.";
+"A preset named “%@” already exists." = "“%@” adında bir ön ayar zaten var.";
+"A preset named “%lld” already exists." = "“%lld” adında bir ön ayar zaten var.";
 "A set of native tools for converting, editing, and organizing files. Everything runs on your Mac." = "Dosyalarını dönüştürmek, düzenlemek ve organize etmek için yerel araçlar. Her şey Mac’inde çalışır.";
 "ABOUT" = "HAKKINDA";
 "ABOUT TWISTER" = "TWİSTER HAKKINDA";
@@ -145,6 +149,7 @@
 "ALLOW HOME FOLDER ACCESS…" = "ANA KLASÖRE ERİŞİM İZNİ VER…";
 "ALLOW TWISTER IN MACOS LOGIN ITEMS." = "MACOS GİRİŞ ÖĞELERİ BÖLÜMÜNDEN TWİSTER'YE İZİN VER.";
 "ALREADY AVAILABLE ON YOUR COMPUTER" = "BİLGİSAYARINDA ZATEN HAZIR";
+"ALWAYS SAVE BESIDE ORIGINALS" = "HER ZAMAN ORİJİNALLERİN YANINA KAYDET";
 "AN UPDATE IS AVAILABLE." = "BİR GÜNCELLEME VAR.";
 "ANNOTATE" = "İŞARETLE";
 "ANNOTATE IMAGE" = "GÖRSELİ İŞARETLE";
@@ -208,6 +213,9 @@
 "Allow Home Folder Access…" = "Ana Klasöre Erişim İzni Ver…";
 "Allow Twister in macOS Login Items." = "macOS Giriş Öğeleri bölümünden Twister'ye izin ver.";
 "Already available on your computer" = "Bilgisayarında zaten hazır";
+"Always save beside originals" = "Her zaman orijinallerin yanına kaydet";
+"Always save to %@" = "Her zaman %@ klasörüne kaydet";
+"Always save to %lld" = "Her zaman %lld klasörüne kaydet";
 "An update is available." = "Bir güncelleme var.";
 "Annotate" = "İşaretle";
 "Annotate Image" = "Görseli İşaretle";
@@ -320,6 +328,8 @@
 "CHOOSE BACKGROUND IMAGE…" = "ARKA PLAN GÖRSELİ SEÇ…";
 "CHOOSE DOWNLOADS FOLDER…" = "İNDİRME KLASÖRÜNÜ SEÇ…";
 "CHOOSE FILES" = "DOSYA SEÇ";
+"CHOOSE FILES IN THE WORKSPACE TO RUN A PRESET." = "ÖN AYAR ÇALIŞTIRMAK İÇİN ÇALIŞMA ALANINDA DOSYA SEÇ.";
+"CHOOSE FILES TO RUN THIS PRESET." = "BU ÖN AYARI ÇALIŞTIRMAK İÇİN DOSYA SEÇ.";
 "CHOOSE FILES…" = "DOSYA SEÇ…";
 "CHOOSE FIND MEDIA TO INSPECT THIS LINK." = "BU BAĞLANTIYI İNCELEMEK İÇİN MEDYAYI BUL'U SEÇ.";
 "CHOOSE FOLDER AGAIN" = "KLASÖRÜ YENİDEN SEÇ";
@@ -427,6 +437,8 @@
 "Choose background image…" = "Arka plan görseli seç…";
 "Choose downloads folder…" = "İndirme klasörünü seç…";
 "Choose files" = "Dosya seç";
+"Choose files in the workspace to run a preset." = "Ön ayar çalıştırmak için çalışma alanında dosya seç.";
+"Choose files to run this preset." = "Bu ön ayarı çalıştırmak için dosya seç.";
 "Choose files…" = "Dosya seç…";
 "Choose folder again" = "Klasörü yeniden seç";
 "Choose folder…" = "Klasör seç…";
@@ -511,6 +523,7 @@
 "DEHAZE" = "PUS GİDERME";
 "DELETE" = "SİL";
 "DELETE CLIP" = "KLİBİ SİL";
+"DELETE…" = "SİL…";
 "DETACH" = "AYIR";
 "DETAIL" = "AYRINTI";
 "DETECT FACES" = "YÜZLERİ ALGILA";
@@ -562,6 +575,9 @@
 "Dehaze" = "Pus giderme";
 "Delete" = "Sil";
 "Delete Clip" = "Klibi Sil";
+"Delete “%@”?" = "“%@” silinsin mi?";
+"Delete “%lld”?" = "“%lld” silinsin mi?";
+"Delete…" = "Sil…";
 "Detach" = "Ayır";
 "Detail" = "Ayrıntı";
 "Detect Faces" = "Yüzleri Algıla";
@@ -800,6 +816,7 @@
 "GITHUB RELEASE CONNECTION" = "GİTHUB SÜRÜM BAĞLANTISI";
 "GITHUB REPOSITORY" = "GİTHUB DEPOSU";
 "GIVE IT A LITTLE BREATHING ROOM." = "BİRAZ NEFES ALACAK ALAN AÇ.";
+"GIVE THE PRESET A NAME." = "ÖN AYARA BİR AD VER.";
 "GLASS" = "CAM";
 "GRADIENT" = "GEÇİŞ";
 "GRADIENT END" = "GEÇİŞİN BİTİŞ RENGİ";
@@ -811,6 +828,7 @@
 "GitHub release connection" = "GitHub sürüm bağlantısı";
 "GitHub repository" = "GitHub deposu";
 "Give it a little breathing room." = "Biraz nefes alacak alan aç.";
+"Give the preset a name." = "Ön ayara bir ad ver.";
 "Glass" = "Cam";
 "Gradient" = "Geçiş";
 "Gradient end" = "Geçişin bitiş rengi";
@@ -879,12 +897,16 @@
 "KEEP THE GOOD PART." = "İSTEDİĞİN BÖLÜM KALSIN.";
 "KEEP THE ORIGINAL PAGES" = "ORİJİNAL SAYFALARI KORU";
 "KEEP THINGS\nMOVING." = "AKIŞINI\nKORU.";
+"KEEPS THIS OPERATION AND ITS OPTIONS, READY TO RUN ON OTHER FILES." = "BU İŞLEMİ VE SEÇENEKLERİNİ SAKLAR; BAŞKA DOSYALARDA YENİDEN ÇALIŞTIRABİLİRSİN.";
 "Keep dragging\nDrop a file or link" = "Sürüklemeye devam et\nDosya veya bağlantı bırak";
 "Keep original dimensions" = "Orijinal boyutları koru";
 "Keep running in the system tray" = "Sistem tepsisinde çalışmaya devam et";
 "Keep the good part." = "İstediğin bölüm kalsın.";
 "Keep the original pages" = "Orijinal sayfaları koru";
+"Keep these settings as a preset you can run on any files that convert to %@." = "Bu ayarları, %@ biçimine dönüşebilen dosyalarda çalıştırabileceğin bir ön ayar olarak sakla.";
+"Keep these settings as a preset you can run on any files that convert to %lld." = "Bu ayarları, %lld biçimine dönüşebilen dosyalarda çalıştırabileceğin bir ön ayar olarak sakla.";
 "Keep things\nmoving." = "Akışını\nkoru.";
+"Keeps this operation and its options, ready to run on other files." = "Bu işlemi ve seçeneklerini saklar; başka dosyalarda yeniden çalıştırabilirsin.";
 "LANDSCAPE" = "YATAY";
 "LANDSCAPE · 16:9" = "YATAY · 16:9";
 "LANGUAGE" = "DİL";
@@ -951,6 +973,7 @@
 "MAKE SOME SPACE. KEEP WHAT MATTERS." = "YER AÇ. ÖNEMLİ OLANI KORU.";
 "MAKE YOUR POINT." = "ANLATMAK İSTEDİĞİNİ İŞARETLE.";
 "MAKE YOURSELF AT HOME." = "KENDİNE GÖRE AYARLA.";
+"MANAGE PRESETS" = "ÖN AYARLARI YÖNET";
 "MANAGE…" = "YÖNET…";
 "MARKER" = "KALEM";
 "MATCH SOURCE" = "KAYNAKLA AYNI";
@@ -994,6 +1017,7 @@
 "Make some space. Keep what matters." = "Yer aç. Önemli olanı koru.";
 "Make your point." = "Anlatmak istediğini işaretle.";
 "Make yourself at home." = "Kendine göre ayarla.";
+"Manage presets" = "Ön ayarları yönet";
 "Manage…" = "Yönet…";
 "Marker" = "Kalem";
 "Match Source" = "Kaynakla Aynı";
@@ -1018,9 +1042,11 @@
 "Monospaced" = "Eş aralıklı";
 "Move" = "Taşı";
 "Move & share" = "Taşı ve paylaş";
+"Move Down" = "Aşağı Taşı";
 "Move Here" = "Buraya Taşı";
 "Move Left" = "Sola Taşı";
 "Move Right" = "Sağa Taşı";
+"Move Up" = "Yukarı Taşı";
 "Move down" = "Aşağı taşı";
 "Move left" = "Sola taşı";
 "Move right" = "Sağa taşı";
@@ -1042,6 +1068,7 @@
 "NO FOLDERS ALLOWED YET." = "HENÜZ İZİN VERİLEN KLASÖR YOK.";
 "NO MATCHES. TRY A FILE NAME OR TOOL." = "EŞLEŞME BULUNAMADI. DOSYA ADI VEYA ARAÇ ADIYLA ARA.";
 "NO OUTPUT FORMATS" = "ÇIKTI BİÇİMİ YOK";
+"NO PRESETS YET." = "HENÜZ ÖN AYAR YOK.";
 "NO QR CODES THIS TIME." = "QR KODU BULUNAMADI.";
 "NO TOOLS FOR THIS SELECTION" = "BU SEÇİM İÇİN ARAÇ YOK";
 "NO UPDATE CHECKS YET" = "HENÜZ GÜNCELLEME DENETLENMEDİ";
@@ -1068,6 +1095,7 @@
 "No folders allowed yet." = "Henüz izin verilen klasör yok.";
 "No matches. Try a file name or tool." = "Eşleşme bulunamadı. Dosya adı veya araç adıyla ara.";
 "No output formats" = "Çıktı biçimi yok";
+"No presets yet." = "Henüz ön ayar yok.";
 "No tools for this selection" = "Bu seçim için araç yok";
 "No update checks yet" = "Henüz güncelleme denetlenmedi";
 "Noise reduction" = "Gürültü azaltma";
@@ -1179,6 +1207,9 @@
 "PRESERVE METADATA" = "META VERİLERİ KORU";
 "PRESERVE ORIGINAL PAGES" = "ORİJİNAL SAYFALARI KORU";
 "PRESET" = "ÖN AYAR";
+"PRESET NAME" = "ÖN AYAR ADI";
+"PRESET SAVED" = "ÖN AYAR KAYDEDİLDİ";
+"PRESETS" = "ÖN AYARLAR";
 "PREVIEW" = "ÖNİZLEME";
 "PREVIEW LEFT" = "SOLU ÖNİZLE";
 "PREVIEW READY · EXPORT USES YOUR ORIGINAL FILE." = "ÖNİZLEME HAZIR · DIŞA AKTARIRKEN ORİJİNAL DOSYAN KULLANILIR.";
@@ -1233,6 +1264,11 @@
 "Preserve metadata" = "Meta verileri koru";
 "Preserve original pages" = "Orijinal sayfaları koru";
 "Preset" = "Ön ayar";
+"Preset actions for %@" = "%@ ön ayarı için eylemler";
+"Preset actions for %lld" = "%lld ön ayarı için eylemler";
+"Preset name" = "Ön ayar adı";
+"Preset saved" = "Ön ayar kaydedildi";
+"Presets" = "Ön ayarlar";
 "Preview" = "Önizleme";
 "Preview %@" = "%@ dosyasını önizle";
 "Preview %lld" = "%lld dosyasını önizle";
@@ -1300,6 +1336,9 @@
 "REMOVE SELECTED RANGE" = "SEÇİLİ ARALIĞI KALDIR";
 "REMOVE SILENCE AT THE BEGINNING AND END" = "BAŞLANGIÇ VE SONDAKİ SESSİZLİĞİ KALDIR";
 "REMOVE SILENCE FROM BEGINNING AND END" = "BAŞLANGIÇ VE SONDAKİ SESSİZLİĞİ KALDIR";
+"RENAME" = "YENİDEN ADLANDIR";
+"RENAME PRESET" = "ÖN AYARI YENİDEN ADLANDIR";
+"RENAME…" = "YENİDEN ADLANDIR…";
 "REPLACE SELECTED AUDIO WITH" = "SEÇİLİ SESİ ŞUNUNLA DEĞİŞTİR";
 "REPORT SAVED." = "RAPOR KAYDEDİLDİ.";
 "RESET" = "SIFIRLA";
@@ -1324,6 +1363,9 @@
 "ROTATION" = "DÖNDÜRME";
 "ROUNDED" = "YUVARLAK";
 "ROW" = "SATIR";
+"RUN" = "ÇALIŞTIR";
+"RUN ON THE SELECTED FILES" = "SEÇİLİ DOSYALARDA ÇALIŞTIR";
+"RUN USES THE FILES SELECTED IN THE WORKSPACE." = "ÇALIŞTIR, ÇALIŞMA ALANINDA SEÇİLİ DOSYALARI KULLANIR.";
 "Read QR Codes" = "QR Kodlarını Oku";
 "Read QR Codes · Twister" = "QR Kodlarını Oku · Twister";
 "Read QR codes" = "QR kodlarını oku";
@@ -1369,6 +1411,9 @@
 "Remove selected range" = "Seçili aralığı kaldır";
 "Remove silence at the beginning and end" = "Başlangıç ve sondaki sessizliği kaldır";
 "Remove silence from beginning and end" = "Başlangıç ve sondaki sessizliği kaldır";
+"Rename" = "Yeniden Adlandır";
+"Rename preset" = "Ön ayarı yeniden adlandır";
+"Rename…" = "Yeniden Adlandır…";
 "Replace selected audio with" = "Seçili sesi şununla değiştir";
 "Report saved." = "Rapor kaydedildi.";
 "Reset" = "Sıfırla";
@@ -1394,6 +1439,11 @@
 "Rotation" = "Döndürme";
 "Rounded" = "Yuvarlak";
 "Row" = "Satır";
+"Run" = "Çalıştır";
+"Run on the selected files" = "Seçili dosyalarda çalıştır";
+"Run preset %@" = "%@ ön ayarını çalıştır";
+"Run preset %lld" = "%lld ön ayarını çalıştır";
+"Run uses the files selected in the workspace." = "Çalıştır, çalışma alanında seçili dosyaları kullanır.";
 "SAMPLE DEPTH" = "ÖRNEK DERİNLİĞİ";
 "SATURATION" = "DOYGUNLUK";
 "SAVE" = "KAYDET";
@@ -1402,6 +1452,8 @@
 "SAVE A COPY (⌘S)" = "BİR KOPYA KAYDET (⌘S)";
 "SAVE ANNOTATED COPY" = "İŞARETLENMİŞ KOPYAYI KAYDET";
 "SAVE AS" = "FARKLI KAYDET";
+"SAVE AS PRESET" = "ÖN AYAR OLARAK KAYDET";
+"SAVE AS PRESET…" = "ÖN AYAR OLARAK KAYDET…";
 "SAVE AUDIO COPY" = "SES KOPYASINI KAYDET";
 "SAVE BLEEPED COPY" = "BİP EKLENMİŞ KOPYAYI KAYDET";
 "SAVE CONNECTION" = "BAĞLANTIYI KAYDET";
@@ -1424,6 +1476,7 @@
 "SAVE SPEED COPY" = "HIZI DEĞİŞTİRİLMİŞ KOPYAYI KAYDET";
 "SAVE TO" = "KAYIT YERİ";
 "SAVE TRIMMED COPY" = "KIRPILMIŞ KOPYAYI KAYDET";
+"SAVE WHERE TWISTER IS SET TO SAVE" = "TWİSTER'IN AYARLI OLDUĞU KONUMA KAYDET";
 "SAVE WITH BACKGROUND" = "ARKA PLANLA KAYDET";
 "SAVED 1 NEW FILE. ORIGINALS KEPT." = "1 YENİ DOSYA KAYDEDİLDİ. ORİJİNAL KORUNDU.";
 "SAVED IN POST ORDER IN A NEW INSTAGRAM FOLDER." = "GÖNDERİ SIRASIYLA YENİ BİR INSTAGRAM KLASÖRÜNE KAYDEDİLİR.";
@@ -1516,6 +1569,8 @@
 "Save a copy (⌘S)" = "Bir kopya kaydet (⌘S)";
 "Save annotated copy" = "İşaretlenmiş kopyayı kaydet";
 "Save as" = "Farklı kaydet";
+"Save as preset" = "Ön ayar olarak kaydet";
+"Save as preset…" = "Ön ayar olarak kaydet…";
 "Save audio copy" = "Ses kopyasını kaydet";
 "Save bleeped copy" = "Bip eklenmiş kopyayı kaydet";
 "Save copy" = "Kopyayı kaydet";
@@ -1537,6 +1592,7 @@
 "Save speed copy" = "Hızı değiştirilmiş kopyayı kaydet";
 "Save to" = "Kayıt konumu";
 "Save trimmed copy" = "Kırpılmış kopyayı kaydet";
+"Save where Twister is set to save" = "Twister'ın ayarlı olduğu konuma kaydet";
 "Save with background" = "Arka planla kaydet";
 "Saved %@ new files. Originals kept." = "%@ yeni dosya kaydedildi. Orijinaller korundu.";
 "Saved %lld new files. Originals kept." = "%lld yeni dosya kaydedildi. Orijinaller korundu.";
@@ -1639,6 +1695,7 @@
 "TEXTURE" = "DOKU";
 "THE DOWNLOADED TOOLS ARE INCOMPLETE. PLEASE TRY SETUP AGAIN." = "İNDİRİLEN ARAÇLAR EKSİK. KURULUMU TEKRAR DENE.";
 "THE OUTPUT FOLDER IS NOT WRITABLE. CHOOSE ANOTHER FOLDER, OR SAVE BESIDE THE ORIGINALS." = "KAYIT KLASÖRÜNE YAZILAMIYOR. BAŞKA BİR KLASÖR SEÇ VEYA ORİJİNALLERİN YANINA KAYDET.";
+"THE PRESET IS REMOVED. FILES IT MADE STAY WHERE THEY ARE." = "ÖN AYAR KALDIRILIR. OLUŞTURDUĞU DOSYALAR YERİNDE KALIR.";
 "THE SAME CONVERSION AND TOOL CATALOG AS MACOS." = "MACOS İLE AYNI DÖNÜŞTÜRME VE ARAÇ SEÇENEKLERİ.";
 "THE SAVED OUTPUT-FOLDER PERMISSION NEEDS TO BE RENEWED. CHOOSE THE FOLDER AGAIN." = "KAYIT KLASÖRÜ İZNİNİN YENİLENMESİ GEREKİYOR. KLASÖRÜ YENİDEN SEÇ.";
 "THE UPDATE COULD NOT BE COMPLETED" = "GÜNCELLEME TAMAMLANAMADI";
@@ -1650,6 +1707,7 @@
 "THIS FORMAT USES ITS ORIGINAL DOCUMENT STRUCTURE. NO EXPORT DEFAULTS ARE NEEDED." = "BU BİÇİM ORİJİNAL BELGE YAPISINI KULLANIR. DIŞA AKTARMA TERCİHİ GEREKMEZ.";
 "THIS IMAGE IS TOO LARGE TO PASTE. CHOOSE THE IMAGE FILE INSTEAD." = "BU GÖRSEL YAPIŞTIRILAMAYACAK KADAR BÜYÜK. GÖRSEL DOSYASINI SEÇ.";
 "THIS OUTPUT FORMAT HAS NO ADJUSTABLE CONVERSION DEFAULTS." = "BU ÇIKTI BİÇİMİNİN AYARLANABİLİR DÖNÜŞTÜRME TERCİHİ YOK.";
+"THIS PRESET DOES NOT FIT THE SELECTED FILES." = "BU ÖN AYAR SEÇİLİ DOSYALARA UYMUYOR.";
 "THIS REPOSITORY IS PRIVATE" = "BU DEPO GİZLİ";
 "THIS TEXT IS TOO LARGE TO PASTE. CHOOSE A TEXT FILE INSTEAD." = "BU METİN YAPIŞTIRILAMAYACAK KADAR BÜYÜK. METİN DOSYASINI SEÇ.";
 "THIS WINDOWS CODEC CANNOT PLAY DIRECTLY. SET UP MEDIA TOOLS TO CREATE A LOCAL PREVIEW." = "BU WİNDOWS CODEC'İ DOĞRUDAN OYNATILAMIYOR. YEREL ÖNİZLEME OLUŞTURMAK İÇİN MEDYA ARAÇLARINI KUR.";
@@ -1694,6 +1752,11 @@
 "Texture" = "Doku";
 "The downloaded tools are incomplete. Please try setup again." = "İndirilen araçlar eksik. Kurulumu tekrar dene.";
 "The output folder is not writable. Choose another folder, or save beside the originals." = "Kayıt klasörüne yazılamıyor. Başka bir klasör seç veya orijinallerin yanına kaydet.";
+"The preset is removed. Files it made stay where they are." = "Ön ayar kaldırılır. Oluşturduğu dosyalar yerinde kalır.";
+"The presets file could not be read and was kept as %@." = "Ön ayar dosyası okunamadı ve %@ adıyla saklandı.";
+"The presets file could not be read and was kept as %lld." = "Ön ayar dosyası okunamadı ve %lld adıyla saklandı.";
+"The preset’s folder is no longer available: %@" = "Ön ayarın klasörü artık kullanılamıyor: %@";
+"The preset’s folder is no longer available: %lld" = "Ön ayarın klasörü artık kullanılamıyor: %lld";
 "The same conversion and tool catalog as macOS." = "macOS ile aynı dönüştürme ve araç seçenekleri.";
 "The saved output-folder permission needs to be renewed. Choose the folder again." = "Kayıt klasörü izninin yenilenmesi gerekiyor. Klasörü yeniden seç.";
 "The update could not be completed" = "Güncelleme tamamlanamadı";
@@ -1706,6 +1769,7 @@
 "This format uses its original document structure. No export defaults are needed." = "Bu biçim orijinal belge yapısını kullanır. Dışa aktarma tercihi gerekmez.";
 "This image is too large to paste. Choose the image file instead." = "Bu görsel yapıştırılamayacak kadar büyük. Görsel dosyasını seç.";
 "This output format has no adjustable conversion defaults." = "Bu çıktı biçiminin ayarlanabilir dönüştürme tercihi yok.";
+"This preset does not fit the selected files." = "Bu ön ayar seçili dosyalara uymuyor.";
 "This repository is private" = "Bu depo gizli";
 "This text is too large to paste. Choose a text file instead." = "Bu metin yapıştırılamayacak kadar büyük. Metin dosyasını seç.";
 "Those files are no longer available." = "Bu dosyalara artık ulaşılamıyor.";

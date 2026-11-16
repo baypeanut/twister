@@ -8,6 +8,8 @@ import ApplicationServices
 
 struct SettingsView:View {
     @ObservedObject var updater:AppUpdater
+    /// The workspace whose presets and selection the Presets page uses.
+    private let state:AppState?
     @State private var section=SettingsSection.general
     @State private var selectedFormat="jpg"
     @State private var formatSearch=""
@@ -31,8 +33,8 @@ struct SettingsView:View {
     @AppStorage(JobNotifier.preferenceKey) private var jobNotifications=true
     @State private var windowAccessibility=AXIsProcessTrusted()
     @Environment(\.accessibilityReduceMotion) private var systemReducedMotion
-    init(updater:AppUpdater,showingUpdates:Bool=false,initialSection:SettingsSection = .general) {
-        self.updater=updater
+    init(updater:AppUpdater,state:AppState?=nil,showingUpdates:Bool=false,initialSection:SettingsSection = .general) {
+        self.updater=updater;self.state=state
         _section=State(initialValue:showingUpdates ? .updates:initialSection)
     }
     private var terminalApplications:[(String,String)] {
@@ -49,6 +51,7 @@ struct SettingsView:View {
                 switch section {
                 case .general:general
                 case .formats:formats
+                case .presets:presetsPage
                 case .compatibility:CompatibilitySettingsView { format in selectedFormat=format;section = .formats }
                 case .folders:FolderSettingsView()
                 case .updates:UpdateSettingsView(updater:updater)
@@ -60,6 +63,7 @@ struct SettingsView:View {
         .buttonStyle(TwisterButtonStyle()).toggleStyle(.switch).groupBoxStyle(TwisterGroupBoxStyle()).twisterAnimation(value:section)
         .onAppear(perform:readLaunchStatus)
         .onReceive(NotificationCenter.default.publisher(for:.showUpdateSettings)) { _ in section = .updates }
+        .onReceive(NotificationCenter.default.publisher(for:.showPresetSettings)) { _ in section = .presets }
         .onChange(of:feedback) { UserDefaults.standard.set($0,forKey:"sound") }
         .onChange(of:appAppearance) { TwisterAppearance.apply($0) }
         .onChange(of:appLanguage) { _ in NotificationCenter.default.post(name:.twisterLanguageChanged,object:nil) }
@@ -67,6 +71,7 @@ struct SettingsView:View {
         .onChange(of:enabled) { _ in NotificationCenter.default.post(name:.windowManagementPreferencesChanged,object:nil) }
         .onChange(of:terminalApplication) { UserDefaults.standard.set($0=="com.googlecode.iterm2" ? "iTerm2":"Terminal",forKey:"terminalApp") }
     }
+    @ViewBuilder private var presetsPage:some View { if let state { PresetSettingsView(state:state) } }
     private var sidebar:some View {
             VStack(alignment:.leading,spacing:24) {
                 HStack(spacing:9) { TwisterMark(size:32);Text("Settings").font(.system(size:14,weight:.bold,design:.default)) }.padding(.top,20)
@@ -165,7 +170,7 @@ struct SettingsView:View {
                 }.listStyle(.sidebar)
             }.frame(width:154).background(TwisterPalette.surface)
             Divider()
-            FormatSettingsDetail(format:FormatPreferenceItem.all.first{$0.id==selectedFormat} ?? FormatPreferenceItem.all[0],preferences:preferences).frame(maxWidth:.infinity,maxHeight:.infinity)
+            FormatSettingsDetail(format:FormatPreferenceItem.all.first{$0.id==selectedFormat} ?? FormatPreferenceItem.all[0],preferences:preferences,state:state).frame(maxWidth:.infinity,maxHeight:.infinity)
         }
     }
     private func shortcut(_ wheel:WheelShortcut)->Binding<UInt> {
@@ -182,14 +187,15 @@ struct SettingsView:View {
 }
 
 enum SettingsSection:String,CaseIterable,Identifiable {
-    case general="General",formats="Formats",compatibility="Compatibility",folders="Folders",updates="Updates",about="About"
+    case general="General",formats="Formats",presets="Presets",compatibility="Compatibility",folders="Folders",updates="Updates",about="About"
     var id:String { rawValue }
-    var symbol:String { switch self { case .general:return "gearshape";case .formats:return "doc.on.doc";case .compatibility:return "square.grid.3x3";case .folders:return "folder";case .updates:return "arrow.triangle.2.circlepath";case .about:return "info.circle" } }
+    var symbol:String { switch self { case .general:return "gearshape";case .formats:return "doc.on.doc";case .presets:return "bookmark";case .compatibility:return "square.grid.3x3";case .folders:return "folder";case .updates:return "arrow.triangle.2.circlepath";case .about:return "info.circle" } }
 }
 
 private struct FormatSettingsDetail:View {
     let format:FormatPreferenceItem
     @ObservedObject var preferences:FormatPreferences
+    let state:AppState?
     private var isVideo:Bool { ["mp4","mov","mkv","webm","avi","wmv"].contains(format.id) }
     private var hasQuality:Bool { ["jpg","webp","heic","avif"].contains(format.id) || isVideo }
     private var hasMetadata:Bool { ["jpg","png","webp","heic","tiff","avif"].contains(format.id) }
@@ -222,6 +228,9 @@ private struct FormatSettingsDetail:View {
                     if format.id=="epub" { row("PDF layout") { Picker("EPUB layout",selection:profile(\.epubLayout)) { Text("Reflowable text").tag("reflowable");Text("Preserve original pages").tag("fixed") }.labelsHidden() } }
                 }.padding(12) }
             } else { Text("This output format has no adjustable conversion defaults.").foregroundStyle(.secondary).padding(.vertical,14) }
+            if let state,!format.isInputOnly {
+                HStack { LText("Keep these settings as a preset you can run on any files that convert to \(format.title).").font(.caption).foregroundStyle(.secondary).fixedSize(horizontal:false,vertical:true);Spacer(minLength:8);Button { PresetPrompt.save(.convert(format.id),options:preferences.options(for:format.id),state:state) } label:{ LText("Save as preset…").lineLimit(1).fixedSize() }.controlSize(.small) }
+            }
             if ["jpg","png"].contains(format.id) { imageCompression }
             if isVideo || format.id=="gif" { videoCompression }
             Spacer(minLength:12)

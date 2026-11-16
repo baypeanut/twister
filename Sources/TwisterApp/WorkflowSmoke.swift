@@ -126,8 +126,9 @@ import TwisterUpdates
         try manager.createDirectory(at:output,withIntermediateDirectories:true);try Data("Twister own-process workflow QA\n".utf8).write(to:marker)
         let suite="Twister.WorkflowQA."+UUID().uuidString;self.suite=suite
         let defaults=UserDefaults(suiteName:suite)!;defaults.set(false,forKey:"reveal")
-        let state=AppState(defaults:defaults);retainedState=state
         let fixture=try OutputFiles.temporaryDirectory();self.fixture=fixture
+        let presetStore=PresetStore(url:fixture.appendingPathComponent("Presets.json"))
+        let state=AppState(defaults:defaults,presets:presetStore);retainedState=state
         let originals=fixture.appendingPathComponent("Originals",isDirectory:true),exports=fixture.appendingPathComponent("Exports",isDirectory:true)
         for folder in [originals,exports] {try manager.createDirectory(at:folder,withIntermediateDirectories:true)}
         let context=CGContext(data:nil,width:320,height:180,bitsPerComponent:8,bytesPerRow:0,space:CGColorSpaceCreateDeviceRGB(),bitmapInfo:CGImageAlphaInfo.premultipliedLast.rawValue)!
@@ -166,6 +167,20 @@ import TwisterUpdates
         try check(state.outputs.isEmpty && state.history.count==countBeforeCancel && (try contents(exports))==filesBeforeCancel,"Cancellation leaves no partial export or false Library success")
         state.execute(.convert("png"),options:options);try await finish(state)
         try check(state.outputs.count==1 && state.history.count==countBeforeCancel+1,"The next export succeeds after cancellation")
+        var small=options;small.width=32;small.height=18
+        let beside=try state.presets.save(name:"Small copy",operation:.tool(.editImage),options:small,destination:.besideOriginals)
+        let archive=try state.presets.save(name:"Archive TIFF",operation:.convert("tiff"),options:options,destination:nil)
+        let join=try state.presets.save(name:"Join",operation:.tool(.joinVideos),options:options,destination:nil)
+        try check(state.presets.library.applicable(to:state.inputs).map(\.id)==[beside.id,archive.id] && AppState(defaults:defaults,presets:presetStore).presets.presets.map(\.name)==["Small copy","Archive TIFF","Join"],"Saved presets survive a reload and are offered only for the files they fit")
+        let presetHistory=state.history.count
+        state.run(beside);try await finish(state)
+        let presetResult=try ImageEngine.load(state.outputs[0])
+        try check(presetResult.width==32 && presetResult.height==18 && state.outputs[0].deletingLastPathComponent().resolvingSymlinksInPath().path==originals.resolvingSymlinksInPath().path && state.history.count==presetHistory+1,"A preset runs through the application with its own options and saves beside the originals despite the output folder")
+        state.run(archive);try await finish(state)
+        try check(state.outputs.first?.pathExtension=="tiff" && state.outputs[0].deletingLastPathComponent().resolvingSymlinksInPath().path==exports.resolvingSymlinksInPath().path,"A preset without a destination follows the output folder")
+        state.run(join)
+        try check(!state.working && state.queue.isEmpty && state.error != nil && state.history.count==presetHistory+2,"A preset that does not fit the selection starts nothing and says why")
+        state.error=nil
         let validSelection=state.inputs,missing=JobRecord(title:"Removed",inputs:[],outputs:[fixture.appendingPathComponent("Missing.png").path])
         state.history.insert(missing,at:0);state.selectedHistoryID=missing.id;state.libraryVisible=true
         let keyboardWindow=NSWindow(contentRect:.zero,styleMask:.titled,backing:.buffered,defer:false);keyboardWindow.isReleasedWhenClosed=false
@@ -213,7 +228,7 @@ import TwisterUpdates
             }
             let wheel=WheelController(state:state);state.onOpenWheel={wheel.show(inputs:state.inputs,mode:.tools,at:NSEvent.mouseLocation,keyboard:true)}
             state.onSettings={
-                let window=self.makeWindow(title:"Workflow QA Settings",view:SettingsView(updater:AppUpdater()).defaultAppStorage(defaults));self.windows.append(window);NativeWindowBehavior.present(window)
+                let window=self.makeWindow(title:"Workflow QA Settings",view:SettingsView(updater:AppUpdater(),state:state).defaultAppStorage(defaults));self.windows.append(window);NativeWindowBehavior.present(window)
             }
             state.onSuccess={ _ in
                 if let data=try? JSONEncoder().encode(state.history) {try? data.write(to:self.output.appendingPathComponent("live-history.json"),options:.atomic)}

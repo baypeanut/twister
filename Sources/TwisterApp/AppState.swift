@@ -18,6 +18,8 @@ struct QueuedJob:Identifiable {
     let options:OperationOptions
     let inputs:[URL]
     let destination:OutputDestinationSnapshot
+    /// A preset that saves beside the originals whatever the app's own folder is.
+    var besideOriginals=false
     var tool:ToolKind? { if case .tool(let tool)=operation { return tool };return nil }
     func repeats(_ other:QueuedJob)->Bool {
         operation.title==other.operation.title && inputs==other.inputs && (try? JSONEncoder().encode(options)) == (try? JSONEncoder().encode(other.options))
@@ -85,6 +87,7 @@ struct JobBatch:Identifiable {
     var onOpenWheel:(()->Void)?
     var onChooseFiles:(()->Void)?
     var onSettings:(()->Void)?
+    var onPresetSettings:(()->Void)?
     var onWebDownload:((URL?,WebDownloadMode)->Void)?
     var onWebDrop:(([URL])->Void)?
     @Published var webShortcutAvailable=false
@@ -101,8 +104,11 @@ struct JobBatch:Identifiable {
 
     private let historyDefaults:UserDefaults
     let outputDestination:OutputDestinationPreferences
-    init(defaults:UserDefaults = .standard) {
-        historyDefaults=defaults;outputDestination=OutputDestinationPreferences(defaults:defaults);super.init()
+    let presets:PresetCenter
+    /// Private preferences are a QA run; it keeps its presets in memory unless it names a file.
+    init(defaults:UserDefaults = .standard,presets:PresetStore?=nil) {
+        historyDefaults=defaults;outputDestination=OutputDestinationPreferences(defaults:defaults)
+        self.presets=PresetCenter(store:presets ?? (defaults === UserDefaults.standard ? .standard:nil));super.init()
         if let data=historyDefaults.data(forKey:"history"),let items=try? JSONDecoder().decode([JobRecord].self,from:data) { history=items }
     }
     func retainToolWindow(_ window:NSWindow) {
@@ -119,10 +125,17 @@ struct JobBatch:Identifiable {
         }
         execute(operation,options:settings)
     }
-    func execute(_ operation:TwisterCore.Operation,options:TwisterCore.OperationOptions = .init(),inputs:[URL]?=nil) {
+    /// Queues a preset for the files, with its own options and destination.
+    func run(_ preset:Preset,inputs:[URL]?=nil) {
+        let selected=inputs ?? self.inputs
+        guard preset.applies(to:selected) else { error="This preset does not fit the selected files.";return }
+        do { execute(preset.operation,options:try preset.request(for:selected).options,inputs:selected,besideOriginals:preset.destination == .besideOriginals) }
+        catch { self.error=error.localizedDescription }
+    }
+    func execute(_ operation:TwisterCore.Operation,options:TwisterCore.OperationOptions = .init(),inputs:[URL]?=nil,besideOriginals:Bool=false) {
         let selected=inputs ?? self.inputs
         let destination:OutputDestinationSnapshot
-        do { destination=try outputDestination.snapshot(explicitDirectory:options.outputDirectory) }
+        do { destination=besideOriginals ? .besideOriginals:try outputDestination.snapshot(explicitDirectory:options.outputDirectory) }
         catch {
             if !working {
                 activeInputs=selected
@@ -131,7 +144,7 @@ struct JobBatch:Identifiable {
             }
             self.error=error.localizedDescription;return
         }
-        let job=QueuedJob(operation:operation,options:options,inputs:selected,destination:destination)
+        let job=QueuedJob(operation:operation,options:options,inputs:selected,destination:destination,besideOriginals:besideOriginals)
         guard working else { start(job);return }
         // A second click on the same request must not export everything twice.
         if running?.repeats(job) != true,!queue.contains(where:{$0.repeats(job)}) { queue.append(job) }
@@ -150,7 +163,7 @@ struct JobBatch:Identifiable {
         let failed=ended.report.failedInputs
         guard ended.finished,!failed.isEmpty else { return }
         dismiss(ended)
-        execute(ended.job.operation,options:ended.job.options,inputs:failed)
+        execute(ended.job.operation,options:ended.job.options,inputs:failed,besideOriginals:ended.job.besideOriginals)
     }
     private func start(_ job:QueuedJob,queued:Bool=false) {
         let operation=job.operation,selected=job.inputs,destination=job.destination

@@ -28,6 +28,7 @@ struct OutputDestinationSnapshot:Sendable {
     let directory:URL?
     private let scopedURL:URL?
     fileprivate init(directory:URL?,scopedURL:URL?=nil) { self.directory=directory;self.scopedURL=scopedURL }
+    static let besideOriginals=OutputDestinationSnapshot(directory:nil)
     func withAccess<T>(_ action:() throws->T)throws->T {
         let started=scopedURL?.startAccessingSecurityScopedResource() ?? false
         defer { if started { scopedURL?.stopAccessingSecurityScopedResource() } }

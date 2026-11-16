@@ -23,5 +23,5 @@ report = output / 'checks/workflow.json'
 if result.returncode or not report.exists():
     raise AssertionError(result.stdout[-2000:] + result.stderr[-5000:])
 report = json.loads(report.read_text())
-assert report['passed'] and len(report['checks']) >= 50, report
+assert report['passed'] and len(report['checks']) >= 56, report
 print(f"PASS: {len(report['checks'])} application export, recovery and editor lifecycle checks")

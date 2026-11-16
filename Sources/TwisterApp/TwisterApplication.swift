@@ -224,6 +224,7 @@ enum TwisterApplication {
         }
         state.onChooseFiles = { [weak self] in self?.chooseFiles() }
         state.onSettings = { [weak self] in self?.showSettings() }
+        state.onPresetSettings = { [weak self] in self?.presentSettings(updates:false,presets:true) }
         state.onShowTool = { [weak self] tool in self?.showTool(tool) }
         state.onEPUBOptions = { [weak self] in guard let self else { return };let window=self.makeWindow(title:"Convert to EPUB",size:NSSize(width:530,height:390),view:EPUBOptionsView(state:self.state,inputs:self.state.inputs));self.state.retainToolWindow(window);window.makeKeyAndOrderFront(nil);NSApp.activate(ignoringOtherApps:true) }
         state.onJobStarted = { [weak self] in self?.successToast.dismiss();self?.showProgress() }
@@ -307,11 +308,12 @@ enum TwisterApplication {
     @objc func showSettings() {
         presentSettings(updates:false)
     }
-    private func presentSettings(updates:Bool) {
-        if settings == nil { settings=makeWindow(title:"Twister Settings",size:NSSize(width:860,height:700),view:SettingsView(updater:updater,showingUpdates:updates)) }
+    private func presentSettings(updates:Bool,presets:Bool=false) {
+        if settings == nil { settings=makeWindow(title:"Twister Settings",size:NSSize(width:860,height:700),view:SettingsView(updater:updater,state:state,showingUpdates:updates,initialSection:presets ? .presets:.general)) }
         settings?.contentMinSize=NSSize(width:790,height:590)
         if let settings { NativeWindowBehavior.present(settings) }
         if updates { NotificationCenter.default.post(name:.showUpdateSettings,object:nil) }
+        if presets { NotificationCenter.default.post(name:.showPresetSettings,object:nil) }
     }
     @objc func showWelcome() {
         if welcome == nil {

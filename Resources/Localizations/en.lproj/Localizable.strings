@@ -100,6 +100,7 @@
 "A LITTLE PEAR. A LOT OF POSSIBILITY." = "A LITTLE PEAR. A LOT OF POSSIBILITY.";
 "A NEW FORM.\nIN A TAP." = "A NEW FORM.\nIN A TAP.";
 "A PLACE FOR FRESH FILES." = "A PLACE FOR FRESH FILES.";
+"A PRESET KEEPS AN OPERATION WITH ITS OPTIONS. SAVE ONE FROM A TOOL OR FROM FORMATS, THEN RUN IT ON ANY FILES IT FITS, FROM FINDER OR WITH TWISTER-CLI." = "A PRESET KEEPS AN OPERATION WITH ITS OPTIONS. SAVE ONE FROM A TOOL OR FROM FORMATS, THEN RUN IT ON ANY FILES IT FITS, FROM FINDER OR WITH TWISTER-CLI.";
 "A SET OF NATIVE TOOLS FOR CONVERTING, EDITING, AND ORGANIZING FILES. EVERYTHING RUNS ON YOUR MAC." = "A SET OF NATIVE TOOLS FOR CONVERTING, EDITING, AND ORGANIZING FILES. EVERYTHING RUNS ON YOUR MAC.";
 "A few small preferences. A smoother everyday." = "A few small preferences. A smoother everyday.";
 "A few tools. More possibilities." = "A few tools. More possibilities.";
@@ -117,6 +118,9 @@
 "A little pear. A lot of possibility." = "A little pear. A lot of possibility.";
 "A new form.\nIn a tap." = "A new form.\nIn a tap.";
 "A place for fresh files." = "A place for fresh files.";
+"A preset keeps an operation with its options. Save one from a tool or from Formats, then run it on any files it fits, from Finder or with twister-cli." = "A preset keeps an operation with its options. Save one from a tool or from Formats, then run it on any files it fits, from Finder or with twister-cli.";
+"A preset named “%@” already exists." = "A preset named “%@” already exists.";
+"A preset named “%lld” already exists." = "A preset named “%lld” already exists.";
 "A set of native tools for converting, editing, and organizing files. Everything runs on your Mac." = "A set of native tools for converting, editing, and organizing files. Everything runs on your Mac.";
 "ABOUT" = "ABOUT";
 "ABOUT TWISTER" = "ABOUT TWISTER";
@@ -145,6 +149,7 @@
 "ALLOW HOME FOLDER ACCESS…" = "ALLOW HOME FOLDER ACCESS…";
 "ALLOW TWISTER IN MACOS LOGIN ITEMS." = "ALLOW TWISTER IN MACOS LOGIN ITEMS.";
 "ALREADY AVAILABLE ON YOUR COMPUTER" = "ALREADY AVAILABLE ON YOUR COMPUTER";
+"ALWAYS SAVE BESIDE ORIGINALS" = "ALWAYS SAVE BESIDE ORIGINALS";
 "AN UPDATE IS AVAILABLE." = "AN UPDATE IS AVAILABLE.";
 "ANNOTATE" = "ANNOTATE";
 "ANNOTATE IMAGE" = "ANNOTATE IMAGE";
@@ -208,6 +213,9 @@
 "Allow Home Folder Access…" = "Allow Home Folder Access…";
 "Allow Twister in macOS Login Items." = "Allow Twister in macOS Login Items.";
 "Already available on your computer" = "Already available on your computer";
+"Always save beside originals" = "Always save beside originals";
+"Always save to %@" = "Always save to %@";
+"Always save to %lld" = "Always save to %lld";
 "An update is available." = "An update is available.";
 "Annotate" = "Annotate";
 "Annotate Image" = "Annotate Image";
@@ -320,6 +328,8 @@
 "CHOOSE BACKGROUND IMAGE…" = "CHOOSE BACKGROUND IMAGE…";
 "CHOOSE DOWNLOADS FOLDER…" = "CHOOSE DOWNLOADS FOLDER…";
 "CHOOSE FILES" = "CHOOSE FILES";
+"CHOOSE FILES IN THE WORKSPACE TO RUN A PRESET." = "CHOOSE FILES IN THE WORKSPACE TO RUN A PRESET.";
+"CHOOSE FILES TO RUN THIS PRESET." = "CHOOSE FILES TO RUN THIS PRESET.";
 "CHOOSE FILES…" = "CHOOSE FILES…";
 "CHOOSE FIND MEDIA TO INSPECT THIS LINK." = "CHOOSE FIND MEDIA TO INSPECT THIS LINK.";
 "CHOOSE FOLDER AGAIN" = "CHOOSE FOLDER AGAIN";
@@ -427,6 +437,8 @@
 "Choose background image…" = "Choose background image…";
 "Choose downloads folder…" = "Choose downloads folder…";
 "Choose files" = "Choose files";
+"Choose files in the workspace to run a preset." = "Choose files in the workspace to run a preset.";
+"Choose files to run this preset." = "Choose files to run this preset.";
 "Choose files…" = "Choose files…";
 "Choose folder again" = "Choose folder again";
 "Choose folder…" = "Choose folder…";
@@ -511,6 +523,7 @@
 "DEHAZE" = "DEHAZE";
 "DELETE" = "DELETE";
 "DELETE CLIP" = "DELETE CLIP";
+"DELETE…" = "DELETE…";
 "DETACH" = "DETACH";
 "DETAIL" = "DETAIL";
 "DETECT FACES" = "DETECT FACES";
@@ -562,6 +575,9 @@
 "Dehaze" = "Dehaze";
 "Delete" = "Delete";
 "Delete Clip" = "Delete Clip";
+"Delete “%@”?" = "Delete “%@”?";
+"Delete “%lld”?" = "Delete “%lld”?";
+"Delete…" = "Delete…";
 "Detach" = "Detach";
 "Detail" = "Detail";
 "Detect Faces" = "Detect Faces";
@@ -800,6 +816,7 @@
 "GITHUB RELEASE CONNECTION" = "GITHUB RELEASE CONNECTION";
 "GITHUB REPOSITORY" = "GITHUB REPOSITORY";
 "GIVE IT A LITTLE BREATHING ROOM." = "GIVE IT A LITTLE BREATHING ROOM.";
+"GIVE THE PRESET A NAME." = "GIVE THE PRESET A NAME.";
 "GLASS" = "GLASS";
 "GRADIENT" = "GRADIENT";
 "GRADIENT END" = "GRADIENT END";
@@ -811,6 +828,7 @@
 "GitHub release connection" = "GitHub release connection";
 "GitHub repository" = "GitHub repository";
 "Give it a little breathing room." = "Give it a little breathing room.";
+"Give the preset a name." = "Give the preset a name.";
 "Glass" = "Glass";
 "Gradient" = "Gradient";
 "Gradient end" = "Gradient end";
@@ -879,12 +897,16 @@
 "KEEP THE GOOD PART." = "KEEP THE GOOD PART.";
 "KEEP THE ORIGINAL PAGES" = "KEEP THE ORIGINAL PAGES";
 "KEEP THINGS\nMOVING." = "KEEP THINGS\nMOVING.";
+"KEEPS THIS OPERATION AND ITS OPTIONS, READY TO RUN ON OTHER FILES." = "KEEPS THIS OPERATION AND ITS OPTIONS, READY TO RUN ON OTHER FILES.";
 "Keep dragging\nDrop a file or link" = "Keep dragging\nDrop a file or link";
 "Keep original dimensions" = "Keep original dimensions";
 "Keep running in the system tray" = "Keep running in the system tray";
 "Keep the good part." = "Keep the good part.";
 "Keep the original pages" = "Keep the original pages";
+"Keep these settings as a preset you can run on any files that convert to %@." = "Keep these settings as a preset you can run on any files that convert to %@.";
+"Keep these settings as a preset you can run on any files that convert to %lld." = "Keep these settings as a preset you can run on any files that convert to %lld.";
 "Keep things\nmoving." = "Keep things\nmoving.";
+"Keeps this operation and its options, ready to run on other files." = "Keeps this operation and its options, ready to run on other files.";
 "LANDSCAPE" = "LANDSCAPE";
 "LANDSCAPE · 16:9" = "LANDSCAPE · 16:9";
 "LANGUAGE" = "LANGUAGE";
@@ -951,6 +973,7 @@
 "MAKE SOME SPACE. KEEP WHAT MATTERS." = "MAKE SOME SPACE. KEEP WHAT MATTERS.";
 "MAKE YOUR POINT." = "MAKE YOUR POINT.";
 "MAKE YOURSELF AT HOME." = "MAKE YOURSELF AT HOME.";
+"MANAGE PRESETS" = "MANAGE PRESETS";
 "MANAGE…" = "MANAGE…";
 "MARKER" = "MARKER";
 "MATCH SOURCE" = "MATCH SOURCE";
@@ -994,6 +1017,7 @@
 "Make some space. Keep what matters." = "Make some space. Keep what matters.";
 "Make your point." = "Make your point.";
 "Make yourself at home." = "Make yourself at home.";
+"Manage presets" = "Manage presets";
 "Manage…" = "Manage…";
 "Marker" = "Marker";
 "Match Source" = "Match Source";
@@ -1018,9 +1042,11 @@
 "Monospaced" = "Monospaced";
 "Move" = "Move";
 "Move & share" = "Move & share";
+"Move Down" = "Move Down";
 "Move Here" = "Move Here";
 "Move Left" = "Move Left";
 "Move Right" = "Move Right";
+"Move Up" = "Move Up";
 "Move down" = "Move down";
 "Move left" = "Move left";
 "Move right" = "Move right";
@@ -1042,6 +1068,7 @@
 "NO FOLDERS ALLOWED YET." = "NO FOLDERS ALLOWED YET.";
 "NO MATCHES. TRY A FILE NAME OR TOOL." = "NO MATCHES. TRY A FILE NAME OR TOOL.";
 "NO OUTPUT FORMATS" = "NO OUTPUT FORMATS";
+"NO PRESETS YET." = "NO PRESETS YET.";
 "NO QR CODES THIS TIME." = "NO QR CODES THIS TIME.";
 "NO TOOLS FOR THIS SELECTION" = "NO TOOLS FOR THIS SELECTION";
 "NO UPDATE CHECKS YET" = "NO UPDATE CHECKS YET";
@@ -1068,6 +1095,7 @@
 "No folders allowed yet." = "No folders allowed yet.";
 "No matches. Try a file name or tool." = "No matches. Try a file name or tool.";
 "No output formats" = "No output formats";
+"No presets yet." = "No presets yet.";
 "No tools for this selection" = "No tools for this selection";
 "No update checks yet" = "No update checks yet";
 "Noise reduction" = "Noise reduction";
@@ -1179,6 +1207,9 @@
 "PRESERVE METADATA" = "PRESERVE METADATA";
 "PRESERVE ORIGINAL PAGES" = "PRESERVE ORIGINAL PAGES";
 "PRESET" = "PRESET";
+"PRESET NAME" = "PRESET NAME";
+"PRESET SAVED" = "PRESET SAVED";
+"PRESETS" = "PRESETS";
 "PREVIEW" = "PREVIEW";
 "PREVIEW LEFT" = "PREVIEW LEFT";
 "PREVIEW READY · EXPORT USES YOUR ORIGINAL FILE." = "PREVIEW READY · EXPORT USES YOUR ORIGINAL FILE.";
@@ -1233,6 +1264,11 @@
 "Preserve metadata" = "Preserve metadata";
 "Preserve original pages" = "Preserve original pages";
 "Preset" = "Preset";
+"Preset actions for %@" = "Preset actions for %@";
+"Preset actions for %lld" = "Preset actions for %lld";
+"Preset name" = "Preset name";
+"Preset saved" = "Preset saved";
+"Presets" = "Presets";
 "Preview" = "Preview";
 "Preview %@" = "Preview %@";
 "Preview %lld" = "Preview %lld";
@@ -1300,6 +1336,9 @@
 "REMOVE SELECTED RANGE" = "REMOVE SELECTED RANGE";
 "REMOVE SILENCE AT THE BEGINNING AND END" = "REMOVE SILENCE AT THE BEGINNING AND END";
 "REMOVE SILENCE FROM BEGINNING AND END" = "REMOVE SILENCE FROM BEGINNING AND END";
+"RENAME" = "RENAME";
+"RENAME PRESET" = "RENAME PRESET";
+"RENAME…" = "RENAME…";
 "REPLACE SELECTED AUDIO WITH" = "REPLACE SELECTED AUDIO WITH";
 "REPORT SAVED." = "REPORT SAVED.";
 "RESET" = "RESET";
@@ -1324,6 +1363,9 @@
 "ROTATION" = "ROTATION";
 "ROUNDED" = "ROUNDED";
 "ROW" = "ROW";
+"RUN" = "RUN";
+"RUN ON THE SELECTED FILES" = "RUN ON THE SELECTED FILES";
+"RUN USES THE FILES SELECTED IN THE WORKSPACE." = "RUN USES THE FILES SELECTED IN THE WORKSPACE.";
 "Read QR Codes" = "Read QR Codes";
 "Read QR Codes · Twister" = "Read QR Codes · Twister";
 "Read QR codes" = "Read QR codes";
@@ -1369,6 +1411,9 @@
 "Remove selected range" = "Remove selected range";
 "Remove silence at the beginning and end" = "Remove silence at the beginning and end";
 "Remove silence from beginning and end" = "Remove silence from beginning and end";
+"Rename" = "Rename";
+"Rename preset" = "Rename preset";
+"Rename…" = "Rename…";
 "Replace selected audio with" = "Replace selected audio with";
 "Report saved." = "Report saved.";
 "Reset" = "Reset";
@@ -1394,6 +1439,11 @@
 "Rotation" = "Rotation";
 "Rounded" = "Rounded";
 "Row" = "Row";
+"Run" = "Run";
+"Run on the selected files" = "Run on the selected files";
+"Run preset %@" = "Run preset %@";
+"Run preset %lld" = "Run preset %lld";
+"Run uses the files selected in the workspace." = "Run uses the files selected in the workspace.";
 "SAMPLE DEPTH" = "SAMPLE DEPTH";
 "SATURATION" = "SATURATION";
 "SAVE" = "SAVE";
@@ -1402,6 +1452,8 @@
 "SAVE A COPY (⌘S)" = "SAVE A COPY (⌘S)";
 "SAVE ANNOTATED COPY" = "SAVE ANNOTATED COPY";
 "SAVE AS" = "SAVE AS";
+"SAVE AS PRESET" = "SAVE AS PRESET";
+"SAVE AS PRESET…" = "SAVE AS PRESET…";
 "SAVE AUDIO COPY" = "SAVE AUDIO COPY";
 "SAVE BLEEPED COPY" = "SAVE BLEEPED COPY";
 "SAVE CONNECTION" = "SAVE CONNECTION";
@@ -1424,6 +1476,7 @@
 "SAVE SPEED COPY" = "SAVE SPEED COPY";
 "SAVE TO" = "SAVE TO";
 "SAVE TRIMMED COPY" = "SAVE TRIMMED COPY";
+"SAVE WHERE TWISTER IS SET TO SAVE" = "SAVE WHERE TWISTER IS SET TO SAVE";
 "SAVE WITH BACKGROUND" = "SAVE WITH BACKGROUND";
 "SAVED 1 NEW FILE. ORIGINALS KEPT." = "SAVED 1 NEW FILE. ORIGINALS KEPT.";
 "SAVED IN POST ORDER IN A NEW INSTAGRAM FOLDER." = "SAVED IN POST ORDER IN A NEW INSTAGRAM FOLDER.";
@@ -1516,6 +1569,8 @@
 "Save a copy (⌘S)" = "Save a copy (⌘S)";
 "Save annotated copy" = "Save annotated copy";
 "Save as" = "Save as";
+"Save as preset" = "Save as preset";
+"Save as preset…" = "Save as preset…";
 "Save audio copy" = "Save audio copy";
 "Save bleeped copy" = "Save bleeped copy";
 "Save copy" = "Save copy";
@@ -1537,6 +1592,7 @@
 "Save speed copy" = "Save speed copy";
 "Save to" = "Save to";
 "Save trimmed copy" = "Save trimmed copy";
+"Save where Twister is set to save" = "Save where Twister is set to save";
 "Save with background" = "Save with background";
 "Saved %@ new files. Originals kept." = "Saved %@ new files. Originals kept.";
 "Saved %lld new files. Originals kept." = "Saved %lld new files. Originals kept.";
@@ -1639,6 +1695,7 @@
 "TEXTURE" = "TEXTURE";
 "THE DOWNLOADED TOOLS ARE INCOMPLETE. PLEASE TRY SETUP AGAIN." = "THE DOWNLOADED TOOLS ARE INCOMPLETE. PLEASE TRY SETUP AGAIN.";
 "THE OUTPUT FOLDER IS NOT WRITABLE. CHOOSE ANOTHER FOLDER, OR SAVE BESIDE THE ORIGINALS." = "THE OUTPUT FOLDER IS NOT WRITABLE. CHOOSE ANOTHER FOLDER, OR SAVE BESIDE THE ORIGINALS.";
+"THE PRESET IS REMOVED. FILES IT MADE STAY WHERE THEY ARE." = "THE PRESET IS REMOVED. FILES IT MADE STAY WHERE THEY ARE.";
 "THE SAME CONVERSION AND TOOL CATALOG AS MACOS." = "THE SAME CONVERSION AND TOOL CATALOG AS MACOS.";
 "THE SAVED OUTPUT-FOLDER PERMISSION NEEDS TO BE RENEWED. CHOOSE THE FOLDER AGAIN." = "THE SAVED OUTPUT-FOLDER PERMISSION NEEDS TO BE RENEWED. CHOOSE THE FOLDER AGAIN.";
 "THE UPDATE COULD NOT BE COMPLETED" = "THE UPDATE COULD NOT BE COMPLETED";
@@ -1650,6 +1707,7 @@
 "THIS FORMAT USES ITS ORIGINAL DOCUMENT STRUCTURE. NO EXPORT DEFAULTS ARE NEEDED." = "THIS FORMAT USES ITS ORIGINAL DOCUMENT STRUCTURE. NO EXPORT DEFAULTS ARE NEEDED.";
 "THIS IMAGE IS TOO LARGE TO PASTE. CHOOSE THE IMAGE FILE INSTEAD." = "THIS IMAGE IS TOO LARGE TO PASTE. CHOOSE THE IMAGE FILE INSTEAD.";
 "THIS OUTPUT FORMAT HAS NO ADJUSTABLE CONVERSION DEFAULTS." = "THIS OUTPUT FORMAT HAS NO ADJUSTABLE CONVERSION DEFAULTS.";
+"THIS PRESET DOES NOT FIT THE SELECTED FILES." = "THIS PRESET DOES NOT FIT THE SELECTED FILES.";
 "THIS REPOSITORY IS PRIVATE" = "THIS REPOSITORY IS PRIVATE";
 "THIS TEXT IS TOO LARGE TO PASTE. CHOOSE A TEXT FILE INSTEAD." = "THIS TEXT IS TOO LARGE TO PASTE. CHOOSE A TEXT FILE INSTEAD.";
 "THIS WINDOWS CODEC CANNOT PLAY DIRECTLY. SET UP MEDIA TOOLS TO CREATE A LOCAL PREVIEW." = "THIS WINDOWS CODEC CANNOT PLAY DIRECTLY. SET UP MEDIA TOOLS TO CREATE A LOCAL PREVIEW.";
@@ -1694,6 +1752,11 @@
 "Texture" = "Texture";
 "The downloaded tools are incomplete. Please try setup again." = "The downloaded tools are incomplete. Please try setup again.";
 "The output folder is not writable. Choose another folder, or save beside the originals." = "The output folder is not writable. Choose another folder, or save beside the originals.";
+"The preset is removed. Files it made stay where they are." = "The preset is removed. Files it made stay where they are.";
+"The presets file could not be read and was kept as %@." = "The presets file could not be read and was kept as %@.";
+"The presets file could not be read and was kept as %lld." = "The presets file could not be read and was kept as %lld.";
+"The preset’s folder is no longer available: %@" = "The preset’s folder is no longer available: %@";
+"The preset’s folder is no longer available: %lld" = "The preset’s folder is no longer available: %lld";
 "The same conversion and tool catalog as macOS." = "The same conversion and tool catalog as macOS.";
 "The saved output-folder permission needs to be renewed. Choose the folder again." = "The saved output-folder permission needs to be renewed. Choose the folder again.";
 "The update could not be completed" = "The update could not be completed";
@@ -1706,6 +1769,7 @@
 "This format uses its original document structure. No export defaults are needed." = "This format uses its original document structure. No export defaults are needed.";
 "This image is too large to paste. Choose the image file instead." = "This image is too large to paste. Choose the image file instead.";
 "This output format has no adjustable conversion defaults." = "This output format has no adjustable conversion defaults.";
+"This preset does not fit the selected files." = "This preset does not fit the selected files.";
 "This repository is private" = "This repository is private";
 "This text is too large to paste. Choose a text file instead." = "This text is too large to paste. Choose a text file instead.";
 "Those files are no longer available." = "Those files are no longer available.";

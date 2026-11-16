@@ -7,6 +7,8 @@ import TwisterUpdates
 struct HomeView:View {
     @ObservedObject var state:AppState
     @ObservedObject var updater:AppUpdater
+    @ObservedObject private var presets:PresetCenter
+    init(state:AppState,updater:AppUpdater) { self.state=state;self.updater=updater;presets=state.presets }
     @AppStorage("convertKey") private var convertKey="shift"
     @AppStorage("toolsKey") private var toolsKey="command"
     @AppStorage("actionsKey") private var actionsKey="control"
@@ -43,7 +45,7 @@ struct HomeView:View {
             .twisterAnimation(value:updater.availableVersion)
             .onChange(of:state.libraryFocusRequest) { _ in librarySearchFocused=true }
             .onReceive(NotificationCenter.default.publisher(for:.toolSetupChanged)) { _ in toolsReady=ExternalToolSetup.status.ready }
-            .onReceive(NotificationCenter.default.publisher(for:NSApplication.didBecomeActiveNotification)) { _ in toolsReady=ExternalToolSetup.status.ready }
+            .onReceive(NotificationCenter.default.publisher(for:NSApplication.didBecomeActiveNotification)) { _ in toolsReady=ExternalToolSetup.status.ready;presets.reload() }
     }
     private var navigation:some View {
         VStack(alignment:.leading,spacing:0) {
@@ -216,6 +218,14 @@ struct HomeView:View {
                     }
                     Spacer()
                 }
+            }
+            if !presets.library.applicable(to:state.inputs).isEmpty || presets.issue != nil {
+                HStack(spacing:7) {
+                    Text("PRESETS").font(.system(size:9,weight:.bold,design:.default)).tracking(0.8).foregroundStyle(.secondary)
+                    Spacer()
+                    Button { state.onPresetSettings?() } label:{ LText("Manage presets") }.buttonStyle(TwisterButtonStyle(.quiet,compact:true))
+                }
+                PresetListView(state:state)
             }
         }
     }

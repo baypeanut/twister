@@ -142,6 +142,7 @@ struct ToolEditor:View {
             HStack(spacing:12) {
                 Button { reset() } label:{Label("Reset",systemImage:"arrow.counterclockwise")}.buttonStyle(TwisterButtonStyle(.quiet)).uiAuditProbe("editor.reset").accessibilityIdentifier("editor.reset")
                 Spacer()
+                if tool != .organizePDF { SavePresetButton { if let applied=appliedOptions() { PresetPrompt.save(.tool(tool),options:applied,state:state) } }.disabled(!canApply) }
                 OutputDestinationControl(state:state,compact:true)
                 Button { apply() } label:{Label { LText(primaryTitle) } icon:{ Image(systemName:"arrow.up.right") }.uiAuditProbe("editor.primary.label")}.buttonStyle(TwisterButtonStyle(.primary)).uiAuditProbe("editor.primary").accessibilityIdentifier("editor.primary").disabled(!canApply).help(isCropTool ? "Save a cropped copy (Return or ⌘S)":"Save a copy (⌘S)")
             }.padding(.horizontal,20).padding(.vertical,15).uiAuditProbe("editor.footer")
@@ -655,6 +656,11 @@ struct ToolEditor:View {
     func apply(joinedSplit:Bool=false) {
         guard canApply else { return }
         if tool == .organizePDF { saveOrganizedPDF();return }
+        guard let applied=appliedOptions(joinedSplit:joinedSplit) else { return }
+        state.execute(.tool(tool),options:applied,inputs:inputs)
+    }
+    /// The options as Apply would send them, or nil after reporting an invalid entry.
+    func appliedOptions(joinedSplit:Bool=false)->OperationOptions? {
         var applied=options
         if tool == .annotateImage { annotationEditor.endInteraction();applied.imageAnnotations=annotationEditor.annotations }
         if tool == .splitVideo { applied.joinSplitClips=joinedSplit }
@@ -664,13 +670,13 @@ struct ToolEditor:View {
         if tool == .compress {
             applied.quality=preset=="Balanced" ? 0.8:0.45
             if targetEnabled {
-                guard targetValue.isFinite,targetValue>0 else { previewError="Enter a positive, finite target size.";return }
+                guard targetValue.isFinite,targetValue>0 else { previewError="Enter a positive, finite target size.";return nil }
                 if targetMode=="percent" {
-                    guard targetValue<100 else { previewError="Enter a reduction greater than 0% and less than 100%.";return }
+                    guard targetValue<100 else { previewError="Enter a reduction greater than 0% and less than 100%.";return nil }
                     applied.percentage=targetValue
                 } else {
                     let bytes=targetValue*(targetMode=="MB" ? 1_000_000:1_000)
-                    guard bytes.isFinite,bytes>=1,bytes<Double(Int64.max) else { previewError="Enter a target of at least one byte and less than \(Int64.max) bytes.";return }
+                    guard bytes.isFinite,bytes>=1,bytes<Double(Int64.max) else { previewError="Enter a target of at least one byte and less than \(Int64.max) bytes.";return nil }
                     applied.targetBytes=Int64(bytes)
                 }
             }
@@ -682,7 +688,7 @@ struct ToolEditor:View {
             applied.metadataRemoveAll=metadataRemoveAll
             if usesImageMetadata { var edit=ImageMetadataOptions();edit.removeAll=metadataRemoveAll;edit.updates=metadata.filter{originalMetadata[$0.key] != $0.value};edit.removals=metadataRemoveAll ? []:originalMetadata.keys.filter{metadata[$0]==nil};applied.imageMetadata=edit }
         }
-        state.execute(.tool(tool),options:applied,inputs:inputs)
+        return applied
     }
     func saveOrganizedPDF() {
         guard canApply,!pdfEditor.pages.isEmpty else { return }
