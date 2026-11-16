@@ -10,7 +10,7 @@ import ApplicationServices
 @main
 enum TwisterApplication {
     @MainActor static func main() {
-        if CommandLine.arguments.count>1,["convert","tool","inspect","catalog","dependencies"].contains(CommandLine.arguments[1]) { exit(TwisterCommandLine.run()) }
+        if CommandLine.arguments.count>1,["convert","tool","preset","inspect","catalog","dependencies"].contains(CommandLine.arguments[1]) { exit(TwisterCommandLine.run()) }
         let app=NSApplication.shared
         UserDefaults.standard.register(defaults:["enabled":true,"reveal":false,"sound":true,"convertKey":"shift","toolsKey":"command","actionsKey":"control","wheelScale":1.0,"windowManagementEnabled":false])
         if let index=CommandLine.arguments.firstIndex(of:"--workflow-smoke"),CommandLine.arguments.count>index+1 {

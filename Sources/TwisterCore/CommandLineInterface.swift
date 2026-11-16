@@ -2,10 +2,10 @@ import Foundation
 import Darwin
 
 public enum TwisterCommandLine {
-    static let usage="Usage: twister-cli convert FORMAT [--options JSON] [--json] [--] FILE...\n       twister-cli tool TOOL_ID [--options JSON] [--json] [--] FILE...\n       twister-cli catalog\nExit status: 0 every file was exported, 1 nothing was exported, 3 some files failed and the other exports were kept, 64 usage error."
+    static let usage="Usage: twister-cli convert FORMAT [--options JSON] [--json] [--] FILE...\n       twister-cli tool TOOL_ID [--options JSON] [--json] [--] FILE...\n       twister-cli preset list [--json]\n       twister-cli preset run NAME [--options JSON] [--json] [--] FILE...\n       twister-cli preset export NAME\n       twister-cli preset import FILE\n       twister-cli catalog\nExit status: 0 every file was exported, 1 nothing was exported, 3 some files failed and the other exports were kept, 64 usage error."
     /// Some files failed; the exports of the others were kept and printed.
     public static let partialFailureExitCode:Int32=3
-    public static func run(arguments args:[String] = CommandLine.arguments,token:CancellationToken = .init(),output:(String)->Void={ print($0) },errorOutput:(String)->Void={ fputs($0+"\n",stderr) }) -> Int32 {
+    public static func run(arguments args:[String] = CommandLine.arguments,token:CancellationToken = .init(),presets:PresetStore = .standard,output:(String)->Void={ print($0) },errorOutput:(String)->Void={ fputs($0+"\n",stderr) }) -> Int32 {
 do {
     if args.count==2,args[1]=="catalog" {
         let data=try JSONSerialization.data(withJSONObject:["conversionMatrix":FeatureCatalog.conversionMatrix,"tools":ToolKind.allCases.map(\.rawValue)],options:[.prettyPrinted,.sortedKeys]);output(String(decoding:data,as:UTF8.self));return 0
@@ -24,39 +24,71 @@ do {
     if args.count==2,args[1]=="dependencies" {
         var result:[String:String]=[:];for name in ["ffmpeg","ffprobe","soffice","exiftool"] { result[name]=try Dependencies.executable(name).path };output(String(decoding:try JSONSerialization.data(withJSONObject:result,options:.sortedKeys),as:UTF8.self));return 0
     }
+    if args.count>=2,args[1]=="preset" { return try preset(Array(args.dropFirst(2)),store:presets,token:token,output:output,errorOutput:errorOutput) }
     guard args.count>=4 else { output(usage);return 64 }
     guard let invocation=invocation(Array(args.dropFirst(3))) else { errorOutput("--options requires a JSON value.\n\(usage)");return 64 }
-    var options=OperationOptions()
-    let paths=invocation.paths,jsonOutput=invocation.json
-    if let suppliedOptions=invocation.options {
-        // Missing keys keep defaults via a JSON overlay encoded from defaults.
-        guard var supplied=try JSONSerialization.jsonObject(with:Data(suppliedOptions.utf8)) as? [String:Any] else { throw TwisterError.invalidInput("Options must be a JSON object.") }
-        normalizeFileURLs(&supplied)
-        var defaults=try JSONSerialization.jsonObject(with:JSONEncoder().encode(options)) as! [String:Any]
-        let optionalDefaults:[String:Data]=[
-            "imageMetadata":try JSONEncoder().encode(ImageMetadataOptions()),
-            "imageFrame":try JSONEncoder().encode(ImageFrameOptions()),
-            "imageRedaction":try JSONEncoder().encode(ImageRedactionOptions()),
-            "collage":try JSONEncoder().encode(CollageOptions())
-        ]
-        for (key,data) in optionalDefaults where supplied[key] is [String:Any] { defaults[key]=try JSONSerialization.jsonObject(with:data) }
-        options=try JSONDecoder().decode(OperationOptions.self,from:JSONSerialization.data(withJSONObject:mergeDefaults(defaults,with:supplied)))
-    }
     let operation:Operation
     if args[1]=="convert" { operation = .convert(args[2]) }
     else if args[1]=="tool",let kind=ToolKind(rawValue:args[2]) { operation = .tool(kind) }
     else { throw TwisterError.invalidInput("Unknown operation.") }
-    let report=try ConversionEngine.runBatch(ConversionRequest(inputs:paths.map{URL(fileURLWithPath:$0)},operation:operation,options:options),token:token)
-    // Finished files stay on stdout so a script can use them even when others failed.
-    for item in report.items { if let reason=item.failure { errorOutput(item.inputs.count==1 ? "\(item.inputs[0].path): \(reason)":reason) } }
-    if report.cancelled>0 { errorOutput(TwisterError.cancelled.localizedDescription) }
-    let outputs=report.outputs
-    if outputs.isEmpty { return 1 }
-    if jsonOutput { output(String(decoding:try JSONEncoder().encode(outputs.map(\.path)),as:UTF8.self)) }
-    else { for url in outputs { output(url.path) } }
-    return report.succeeded==report.items.count ? 0:partialFailureExitCode
+    let request=ConversionRequest(inputs:invocation.paths.map{URL(fileURLWithPath:$0)},operation:operation,options:try options(invocation.options))
+    return try export(request,json:invocation.json,token:token,output:output,errorOutput:errorOutput)
 } catch { errorOutput(error.localizedDescription);return 1 }
 
+    }
+
+    /// Missing keys keep the values of `base` via a JSON overlay.
+    private static func options(_ supplied:String?,on base:OperationOptions = .init()) throws -> OperationOptions {
+        guard let supplied else { return base }
+        guard var object=try JSONSerialization.jsonObject(with:Data(supplied.utf8)) as? [String:Any] else { throw TwisterError.invalidInput("Options must be a JSON object.") }
+        normalizeFileURLs(&object)
+        return try OperationOptions.overlay(object,on:base)
+    }
+
+    private static func export(_ request:ConversionRequest,json:Bool,token:CancellationToken,output:(String)->Void,errorOutput:(String)->Void) throws -> Int32 {
+        let report=try ConversionEngine.runBatch(request,token:token)
+        // Finished files stay on stdout so a script can use them even when others failed.
+        for item in report.items { if let reason=item.failure { errorOutput(item.inputs.count==1 ? "\(item.inputs[0].path): \(reason)":reason) } }
+        if report.cancelled>0 { errorOutput(TwisterError.cancelled.localizedDescription) }
+        let outputs=report.outputs
+        if outputs.isEmpty { return 1 }
+        if json { output(String(decoding:try JSONEncoder().encode(outputs.map(\.path)),as:UTF8.self)) }
+        else { for url in outputs { output(url.path) } }
+        return report.succeeded==report.items.count ? 0:partialFailureExitCode
+    }
+
+    private static func preset(_ words:[String],store:PresetStore,token:CancellationToken,output:(String)->Void,errorOutput:(String)->Void) throws -> Int32 {
+        func load() throws -> PresetLibrary {
+            let library=try store.load()
+            if let moved=library.preservedCorruptFile { errorOutput("The presets file could not be read and was kept as \(moved.path).") }
+            return library
+        }
+        switch words.first {
+        case "list":
+            guard words.count==1 || words.dropFirst()==["--json"] else { break }
+            let presets=try load().presets
+            if words.count==2 { output(String(decoding:try PresetLibrary.exportData(presets),as:UTF8.self)) }
+            else { for preset in presets { output("\(preset.name)\t\(preset.operation.title)") } }
+            return 0
+        case "export":
+            guard words.count==2 else { break }
+            output(String(decoding:try PresetLibrary.exportData([try load().find(words[1])]),as:UTF8.self));return 0
+        case "import":
+            guard words.count==2 else { break }
+            let data=try Data(contentsOf:URL(fileURLWithPath:words[1]))
+            for preset in try store.update({ try $0.importPresets(from:data) }) { output(preset.name) }
+            return 0
+        case "run":
+            guard words.count>=2 else { break }
+            guard let invocation=invocation(Array(words.dropFirst(2))) else { errorOutput("--options requires a JSON value.\n\(usage)");return 64 }
+            guard !invocation.paths.isEmpty else { break }
+            let preset=try load().find(words[1])
+            var request=try preset.request(for:invocation.paths.map{URL(fileURLWithPath:$0)})
+            request.options=try options(invocation.options,on:request.options)
+            return try export(request,json:invocation.json,token:token,output:output,errorOutput:errorOutput)
+        default:break
+        }
+        output(usage);return 64
     }
 
     struct Invocation:Equatable { var paths:[String]=[],json=false,options:String? }
@@ -76,12 +108,6 @@ do {
         return result
     }
 
-    private static func mergeDefaults(_ defaults:[String:Any],with supplied:[String:Any])->[String:Any] {
-        defaults.merging(supplied) { old,new in
-            if let old=old as? [String:Any],let new=new as? [String:Any] { return mergeDefaults(old,with:new) }
-            return new
-        }
-    }
     private static func normalizeFileURLs(_ options:inout [String:Any]) {
         func fileURL(_ value:Any?)->Any? {
             guard let value=value as? String,URL(string:value)?.scheme==nil else { return value }
