@@ -4,7 +4,6 @@ import AppKit
 /// The same vector is used in the menu bar, app icon and first-run experience.
 enum TwisterArtwork {
     static let gold=NSColor(srgbRed:0.69,green:0.29,blue:0.18,alpha:1)
-    static let ink=NSColor.white
 
     private static func ribbon(_ upper:Bool)->CGPath {
         let p=CGMutablePath()
@@ -19,14 +18,14 @@ enum TwisterArtwork {
         }
         p.closeSubpath();return p
     }
-    static func draw(in rect:NSRect,happy:Bool=false,monochrome:Bool=false) {
+    static func draw(in rect:NSRect,monochrome:Bool=false) {
         guard let c=NSGraphicsContext.current?.cgContext else{return}
         c.saveGState();defer{c.restoreGState()}
         c.translateBy(x:rect.minX,y:rect.maxY);c.scaleBy(x:rect.width,y:-rect.height)
         c.setFillColor((monochrome ? NSColor.black:gold).cgColor)
         c.addPath(ribbon(true));c.fillPath();c.addPath(ribbon(false));c.fillPath()
     }
-    static func mark(size:CGFloat,happy:Bool=false)->NSImage {
+    static func mark(size:CGFloat)->NSImage {
         NSImage(size:NSSize(width:size,height:size),flipped:false) {rect in draw(in:rect);return true}
     }
     static func menuIcon(updateAvailable:Bool=false)->NSImage {
