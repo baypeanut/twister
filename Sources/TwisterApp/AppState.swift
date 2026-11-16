@@ -21,8 +21,10 @@ struct QueuedJob:Identifiable {
     /// A preset that saves beside the originals whatever the app's own folder is.
     var besideOriginals=false
     var tool:ToolKind? { if case .tool(let tool)=operation { return tool };return nil }
+    /// Sorted keys: two equal option sets must encode to the same bytes.
+    private static func canonical(_ options:OperationOptions)->Data? { let encoder=JSONEncoder();encoder.outputFormatting = .sortedKeys;return try? encoder.encode(options) }
     func repeats(_ other:QueuedJob)->Bool {
-        operation.title==other.operation.title && inputs==other.inputs && (try? JSONEncoder().encode(options)) == (try? JSONEncoder().encode(other.options))
+        operation.title==other.operation.title && inputs==other.inputs && Self.canonical(options)==Self.canonical(other.options)
     }
 }
 

@@ -159,7 +159,7 @@ import TwisterUpdates
         let queuedCount=state.history.count
         state.inputs=[image];state.execute(.convert("png"),options:options)
         state.execute(.convert("tiff"),options:options);state.execute(.convert("tiff"),options:options)
-        try check(state.working && state.queue.count==1,"A task started during another waits in the queue once")
+        if !(state.working && state.queue.count==1){fputs("Queue check: working=\(state.working) queued=\(state.queue.count) error=\(state.error ?? "none")\n",stderr)};try check(state.working && state.queue.count==1,"A task started during another waits in the queue once")
         try await finish(state)
         try check(state.queue.isEmpty && state.history.count==queuedCount+2 && state.history[0].outputs.first?.hasSuffix(".tiff")==true && state.history[1].outputs.first?.hasSuffix(".png")==true,"Queued tasks run in order and reach the Library")
         state.inputs=[image];let countBeforeCancel=state.history.count,filesBeforeCancel=try contents(exports)
