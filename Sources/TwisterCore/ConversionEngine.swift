@@ -1,16 +1,58 @@
 import Foundation
 
 public enum ConversionEngine {
+    /// Operations that turn the whole selection into one result.
+    private static let combining:[ToolKind]=[.createPDF,.mergePDF,.createCollage,.joinVideos,.readQRCode]
+
+    /// The independent units of a request. A combining operation is one unit;
+    /// every other input is exported, published and cleaned up by itself.
+    public static func units(for request: ConversionRequest) -> [[URL]] {
+        if case .tool(let tool)=request.operation,combining.contains(tool) { return request.inputs.isEmpty ? []:[request.inputs] }
+        return request.inputs.map{[$0]}
+    }
+
+    /// All or nothing: one transaction covers every input, so a failure or a
+    /// cancellation publishes no output at all. Use runBatch to keep the
+    /// files that did finish.
     public static func run(_ request: ConversionRequest, token: CancellationToken = .init(), progress: @escaping ProgressHandler = {_,_ in}) throws -> [URL] {
         guard !request.inputs.isEmpty else { throw TwisterError.invalidInput("Choose at least one file.") }
-        for url in request.inputs { guard url.isFileURL,FileManager.default.fileExists(atPath:url.path) else { throw TwisterError.invalidInput("File not found: \(url.lastPathComponent)") } }
+        let outputs=try export(units(for:request),of:request,token:token,progress:progress)
+        progress(1,"Done")
+        return outputs
+    }
+
+    /// Each unit has its own transaction. A failed unit leaves the finished
+    /// outputs of the others in place and nothing of its own. Cancel stops the
+    /// remaining units and keeps what was already published. Units run one at
+    /// a time: later names depend on earlier publications, and image exports
+    /// can start ffmpeg or ExifTool. Throws only for an empty request.
+    public static func runBatch(_ request: ConversionRequest, token: CancellationToken = .init(), progress: @escaping ProgressHandler = {_,_ in}, itemChanged: @escaping BatchItemHandler = {_,_ in}) throws -> BatchReport {
+        guard !request.inputs.isEmpty else { throw TwisterError.invalidInput("Choose at least one file.") }
+        let units=units(for:request)
+        var items=units.map{BatchItem(inputs:$0)}
+        for (index,inputs) in units.enumerated() {
+            if token.isCancelled { items[index].status = .cancelled }
+            else {
+                itemChanged(index,.running)
+                let start=Double(index)/Double(units.count),end=Double(index+1)/Double(units.count)
+                do {
+                    items[index].status = .succeeded(try export([inputs],of:request,token:token) { value,label in
+                        progress(OperationProgress.map(value,from:start,to:end),units.count>1 ? "File \(index+1) of \(units.count) · \(label)":label)
+                    })
+                } catch { items[index].status = token.isCancelled ? .cancelled:.failed(error.localizedDescription) }
+            }
+            itemChanged(index,items[index].status)
+        }
+        if !token.isCancelled { progress(1,"Done") }
+        return BatchReport(items:items)
+    }
+
+    /// Stages every group, then publishes them together or not at all.
+    private static func export(_ groups:[[URL]],of request:ConversionRequest,token:CancellationToken,progress:@escaping ProgressHandler) throws -> [URL] {
+        for url in groups.joined() { guard url.isFileURL,FileManager.default.fileExists(atPath:url.path) else { throw TwisterError.invalidInput("File not found: \(url.lastPathComponent)") } }
         try token.check()
         let transaction=ExportTransaction()
         defer { transaction.cleanUp() }
-        let groups:[[URL]]
-        if case .tool(let tool)=request.operation,[ToolKind.createPDF,.mergePDF,.createCollage,.joinVideos,.readQRCode].contains(tool) {
-            groups=[request.inputs]
-        } else { groups=request.inputs.map{[$0]} }
         for (index,inputs) in groups.enumerated() {
             try token.check()
             let destination=request.options.outputDirectory ?? inputs[0].deletingLastPathComponent()
@@ -22,12 +64,10 @@ public enum ConversionEngine {
                 progress(OperationProgress.map(value, from: Double(index)/Double(groups.count)*0.98, to: Double(index+1)/Double(groups.count)*0.98),detail)
             }
             try transaction.record(outputs,in:area)
-            progress(Double(index+1)/Double(groups.count)*0.98,"Prepared \(index+1) of \(groups.count) files")
+            if groups.count>1 { progress(Double(index+1)/Double(groups.count)*0.98,"Prepared \(index+1) of \(groups.count) files") }
         }
         progress(0.98,"Saving your files…")
-        let outputs=try transaction.publish(token:token)
-        progress(1,"Done")
-        return outputs
+        return try transaction.publish(token:token)
     }
 
     private static func perform(_ request:ConversionRequest,token:CancellationToken,progress:@escaping ProgressHandler) throws -> [URL] {
