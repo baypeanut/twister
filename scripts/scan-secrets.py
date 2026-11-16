@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Pinned official gitleaks; redact all findings. No token or external service."""
-import hashlib,io,platform,subprocess,tarfile,urllib.request
+import hashlib,io,platform,shutil,subprocess,tarfile,urllib.request
 from pathlib import Path
 root=Path(__file__).resolve().parents[1]
 if platform.system()=='Darwin' and platform.machine()=='arm64':
@@ -9,7 +9,10 @@ elif platform.system()=='Linux' and platform.machine() in ['x86_64','AMD64']:
  name='gitleaks_8.30.1_linux_x64.tar.gz';expected='551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb'
 else:raise SystemExit('Use gitleaks 8.30.1 from its official release for this architecture')
 url='https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/'+name
-with urllib.request.urlopen(url,timeout=90) as r:data=r.read()
+curl='/usr/bin/curl' if Path('/usr/bin/curl').is_file() else shutil.which('curl')
+if curl:data=subprocess.check_output([curl,'--fail','--silent','--show-error','--location','--proto','=https','--proto-redir','=https','--tlsv1.2','--max-time','120',url])
+else:
+ with urllib.request.urlopen(url,timeout=90) as r:data=r.read()
 assert hashlib.sha256(data).hexdigest()==expected,'Scanner checksum mismatch'
 work=root/'build/security';work.mkdir(parents=True,exist_ok=True)
 with tarfile.open(fileobj=io.BytesIO(data),mode='r:gz') as t:(work/'gitleaks').write_bytes(t.extractfile('gitleaks').read())
