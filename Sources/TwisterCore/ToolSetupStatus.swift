@@ -1,23 +1,43 @@
 import Foundation
 
+/// Each group is installed, reported and removed by itself. Media and Office
+/// back the conversions; Web only serves link downloads and is opt-in.
 public enum ToolGroup: String, CaseIterable, Sendable {
-    case media, office
+    case media, web, office
+    public var tools: [String] {
+        switch self {
+        case .media: return ["ffmpeg", "ffprobe"]
+        case .web: return ["yt-dlp", "deno"]
+        case .office: return ["soffice"]
+        }
+    }
+    /// Setup counts as finished without the optional groups.
+    public var isOptional: Bool { self == .web }
 }
 
 /// Readiness follows the same executable resolution as conversions, including
 /// tools already installed on the user's computer.
 public struct ToolSetupStatus: Equatable, Sendable {
     public var mediaReady: Bool
+    public var webReady: Bool
     public var officeReady: Bool
-    public init(mediaReady: Bool, officeReady: Bool) {
-        self.mediaReady = mediaReady; self.officeReady = officeReady
+    public init(mediaReady: Bool, webReady: Bool = false, officeReady: Bool) {
+        self.mediaReady = mediaReady; self.webReady = webReady; self.officeReady = officeReady
     }
     public init(resolve: (String) -> URL?) {
-        mediaReady = ["ffmpeg", "ffprobe", "yt-dlp", "deno"].allSatisfy { resolve($0) != nil }
-        officeReady = resolve("soffice") != nil
+        func found(_ group: ToolGroup) -> Bool { group.tools.allSatisfy { resolve($0) != nil } }
+        mediaReady = found(.media); webReady = found(.web); officeReady = found(.office)
     }
-    public var ready: Bool { mediaReady && officeReady }
-    public var missing: [ToolGroup] { ToolGroup.allCases.filter { $0 == .media ? !mediaReady : !officeReady } }
+    public func isReady(_ group: ToolGroup) -> Bool {
+        switch group {
+        case .media: return mediaReady
+        case .web: return webReady
+        case .office: return officeReady
+        }
+    }
+    /// Conversions need Media and Office only.
+    public var ready: Bool { missing.isEmpty }
+    public var missing: [ToolGroup] { ToolGroup.allCases.filter { !$0.isOptional && !isReady($0) } }
 }
 
 /// Replace an incomplete installation only after the new directory is complete.

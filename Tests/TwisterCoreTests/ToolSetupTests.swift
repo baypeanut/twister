@@ -14,14 +14,24 @@ final class ToolSetupTests:XCTestCase {
         }
     }
     func testReadinessRequiresEveryMediaExecutableAndOffice() {
-        let names=["ffmpeg","ffprobe","yt-dlp","deno","soffice"]
-        for missing in names {
+        for missing in ["ffmpeg","ffprobe","soffice"] {
             let status=ToolSetupStatus { $0 == missing ? nil:URL(fileURLWithPath:"/fixture/"+$0) }
             XCTAssertFalse(status.ready)
             XCTAssertEqual(status.missing,missing == "soffice" ? [.office]:[.media])
+            XCTAssertTrue(status.webReady)
         }
         XCTAssertEqual(ToolSetupStatus(resolve:{_ in nil}).missing,[.media,.office])
         XCTAssertTrue(ToolSetupStatus(resolve:{URL(fileURLWithPath:"/already-installed/"+$0)}).ready)
+    }
+    func testWebToolsAreNotPartOfMediaOrSetupReadiness() {
+        for missing in ["yt-dlp","deno"] {
+            let status=ToolSetupStatus { $0 == missing ? nil:URL(fileURLWithPath:"/fixture/"+$0) }
+            XCTAssertTrue(status.ready,missing);XCTAssertTrue(status.mediaReady,missing);XCTAssertEqual(status.missing,[],missing)
+            XCTAssertFalse(status.webReady,missing);XCTAssertFalse(status.isReady(.web),missing)
+        }
+        XCTAssertEqual(ToolGroup.media.tools,["ffmpeg","ffprobe"])
+        XCTAssertEqual(ToolGroup.web.tools,["yt-dlp","deno"])
+        XCTAssertEqual(ToolGroup.allCases.filter(\.isOptional),[.web])
     }
     func testRepairPublishesCompleteDirectoryAndKeepsHealthyInstall() throws {
         try temporary { root in
