@@ -110,8 +110,10 @@ import TwisterUpdates
         window.orderOut(nil);try await Task.sleep(nanoseconds:180_000_000)
         NativeWindowBehavior.present(window);try await Task.sleep(nanoseconds:180_000_000)
         try check(recorder.status == "ready" && window.contentView === content,tool.title+" stays ready after hide and reopen")
-        window.miniaturize(nil);try await Task.sleep(nanoseconds:100_000_000)
-        NativeWindowBehavior.present(window);try await Task.sleep(nanoseconds:180_000_000)
+        // Minimizing is animated: restoring before it has finished would leave the window in the Dock.
+        window.miniaturize(nil);try await wait(tool.title+" minimizes") {window.isMiniaturized}
+        NativeWindowBehavior.present(window);try await wait(tool.title+" restores") {!window.isMiniaturized}
+        try await Task.sleep(nanoseconds:180_000_000)
         try check(recorder.status == "ready" && !window.isMiniaturized,tool.title+" stays usable after minimize and restore")
         window.close();windows.removeAll{$0 === window}
     }
