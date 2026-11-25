@@ -13,12 +13,45 @@ import SwiftUI
         window.titleVisibility = .visible
         window.titlebarAppearsTransparent=false
         if let autosaveName { window.setFrameAutosaveName(autosaveName) }
+        observeMinimizing()
     }
 
     static func present(_ window:NSWindow) {
+        observeMinimizing()
+        // A window on its way into the Dock is not minimized yet; bring it back once it has arrived.
+        if minimizing.contains(ObjectIdentifier(window)) { restoring.insert(ObjectIdentifier(window)) }
         if window.isMiniaturized { window.deminiaturize(nil) }
         window.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps:true)
+    }
+
+    /// False while a minimize animation, or the restore that follows it, is still in flight.
+    static func isSettled(_ window:NSWindow)->Bool {
+        !minimizing.contains(ObjectIdentifier(window)) && !restoring.contains(ObjectIdentifier(window))
+    }
+
+    private static var minimizing=Set<ObjectIdentifier>(),restoring=Set<ObjectIdentifier>(),observing=false
+    private static func observeMinimizing() {
+        guard !observing else { return }
+        observing=true
+        let center=NotificationCenter.default
+        center.addObserver(forName:NSWindow.willMiniaturizeNotification,object:nil,queue:.main) { note in
+            guard let window=note.object as? NSWindow else { return }
+            MainActor.assumeIsolated { _ = minimizing.insert(ObjectIdentifier(window)) }
+        }
+        center.addObserver(forName:NSWindow.didMiniaturizeNotification,object:nil,queue:.main) { note in
+            guard let window=note.object as? NSWindow else { return }
+            MainActor.assumeIsolated {
+                let id=ObjectIdentifier(window)
+                minimizing.remove(id)
+                guard restoring.remove(id) != nil else { return }
+                window.deminiaturize(nil);window.makeKeyAndOrderFront(nil)
+            }
+        }
+        center.addObserver(forName:NSWindow.willCloseNotification,object:nil,queue:.main) { note in
+            guard let window=note.object as? NSWindow else { return }
+            MainActor.assumeIsolated { minimizing.remove(ObjectIdentifier(window));restoring.remove(ObjectIdentifier(window)) }
+        }
     }
 }
 

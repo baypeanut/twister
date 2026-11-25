@@ -115,6 +115,11 @@ import TwisterUpdates
         NativeWindowBehavior.present(window);try await wait(tool.title+" restores") {!window.isMiniaturized}
         try await Task.sleep(nanoseconds:180_000_000)
         try check(recorder.status == "ready" && !window.isMiniaturized,tool.title+" stays usable after minimize and restore")
+        // Reopening while the minimize animation is still running must not leave the window in the Dock.
+        window.miniaturize(nil);NativeWindowBehavior.present(window)
+        try await wait(tool.title+" settles after an interrupted minimize") {NativeWindowBehavior.isSettled(window) && !window.isMiniaturized}
+        try await Task.sleep(nanoseconds:180_000_000)
+        try check(recorder.status == "ready" && !window.isMiniaturized && window.isVisible,tool.title+" reopens when shown during its minimize animation")
         window.close();windows.removeAll{$0 === window}
     }
     private func makeWindow<V:View>(title:String,view:V)->NSWindow {
