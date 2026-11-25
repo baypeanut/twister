@@ -51,7 +51,7 @@ jobs:
         run: python3 scripts/test-product-identity.py
       - name: Isolated native UI, accessibility and artwork checks
         run: python3 scripts/test-native-ui.py
-      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         if: always()
         with:
           name: mac-native-ui
@@ -79,7 +79,7 @@ jobs:
       - name: Archive local macOS package
         if: github.event_name != 'pull_request'
         run: python3 scripts/archive-app.py build/Twister.app build/Twister-macOS-arm64.zip
-      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         if: github.event_name != 'pull_request'
         with:
           name: Twister-macOS-arm64
