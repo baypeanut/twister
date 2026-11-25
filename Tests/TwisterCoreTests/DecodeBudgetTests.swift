@@ -57,6 +57,7 @@ final class DecodeBudgetTests: XCTestCase {
 
     /// A medium-format camera frame, 11648 × 8736, is above the earlier limit.
     func testLargeCameraFramesStillConvert() throws {
+        guard (try? Dependencies.executable("exiftool")) != nil else { throw XCTSkip("ExifTool is not available") }
         let image = root.appendingPathComponent("camera.png")
         try Self.compressedPNG(width: 11_648, height: 8_736).write(to: image)
         var options = OperationOptions(); options.outputDirectory = root.appendingPathComponent("camera", isDirectory: true)
