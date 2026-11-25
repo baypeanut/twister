@@ -1,30 +1,62 @@
-# Twister
+<p align="center">
+  <img src="Resources/Brand/TwisterIcon.png" width="128" height="128" alt="Twister icon">
+</p>
 
-Native file tools for macOS. Convert, edit and prepare images, PDFs, documents, audio and video without moving between separate apps.
+<h1 align="center">Twister</h1>
 
-**Apple Silicon · macOS 13 or later · English and Turkish**
+<p align="center"><strong>Native file tools for macOS.</strong></p>
 
-![Twister workspace](docs/screenshots/workspace-light.png)
+<p align="center">Apple silicon · macOS 13 or later · English and Turkish</p>
 
-## Features
+Twister converts and edits images, PDFs, documents, audio and video in one place. Drop files on it, pick what you want, and the result appears beside the originals or in a folder you choose. Everything runs on your Mac.
 
-- Convert individual files or batches using formats supported by the current selection.
-- Crop, resize, annotate and frame images, create collages and remove metadata.
-- Organize, merge and split PDFs. Undo and redo up to 50 page or annotation edits.
-- Preview and trim audio and video, adjust selection endpoints and export clips.
-- Choose a saved output folder or keep results beside the original files.
-- Save an operation with its options as a preset and run it again from the workspace, Finder or the command line.
-- Send files from Finder through the Services menu.
-- Search recent results in Library, preview them and use them in another operation.
-- Carry files between apps with Float.
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/workspace-dark.png">
+  <img src="docs/screenshots/workspace-light.png" alt="The Twister workspace">
+</picture>
 
-Optional extras, both off until you turn them on in Settings → General: web downloads from public media links, which install their own tools, and window arrangement, which keeps working but is no longer being extended.
+## What it does
 
-File conversion and editing run on your Mac. Original files are preserved and output names avoid collisions. Each file of a batch is exported by itself: a file that fails leaves nothing unfinished behind, and the files that succeeded stay in place. Operations that combine their inputs, such as merging PDFs or joining videos, finish as a whole or not at all. Web downloads and optional tool setup require a network connection.
+| | |
+| --- | --- |
+| **Images** | Convert, crop, resize, annotate and frame images, make collages and remove metadata. |
+| **PDFs** | Organize, merge, split and compress PDFs, with up to 50 steps of undo. |
+| **Audio and video** | Preview and trim clips, adjust the start and end, and export. |
+| **Documents** | Convert office documents, EPUB and Pages files. |
+| **Batches** | Convert many files at once; each file is handled on its own. |
+| **Presets** | Save an operation with its options and run it again from the app, Finder or Terminal. |
+| **Library and Float** | Find recent results, and carry files between apps. |
 
-## Build and run
+Choose a tool from the wheel. Twister only offers what fits every selected file.
 
-Install Xcode with Swift 6, Python 3 and Node.js 22 or later. Run the setup commands from the repository folder:
+<p align="center">
+  <img src="docs/screenshots/tools-wheel.png" width="320" alt="The tools wheel for a selection of PDFs">
+</p>
+
+Editors keep their options on the side and save a copy, never over the original.
+
+![Annotating an image](docs/screenshots/annotate.png)
+
+![Organizing the pages of a PDF](docs/screenshots/pdf-organizer.png)
+
+### Safe with your files
+
+- Original files are never changed, and output names never overwrite an existing file.
+- In a batch, a file that fails leaves nothing half-finished behind, and the files that succeeded stay in place.
+- Operations that combine their inputs, such as merging PDFs or joining videos, finish as a whole or not at all.
+
+### Optional extras
+
+Both are off until you turn them on in **Settings → General**:
+
+- **Web downloads** save media from public links and install their own tools.
+- **Window arrangement** still works but is no longer being extended.
+
+Web downloads and optional tool setup need a network connection; everything else works offline.
+
+## Install
+
+You need Xcode with Swift 6, Python 3 and Node.js 22 or later.
 
 ```sh
 git clone https://github.com/baypeanut/twister.git
@@ -35,25 +67,34 @@ scripts/build-app.sh release
 open build/Twister.app
 ```
 
-The application is created at `build/Twister.app`. Dependency resources are downloaded from pinned sources and verified with SHA-256. The in-app setup screen installs the Media and Office tools when needed and, separately, the optional Web download tools; each group can be removed again by itself. `TWISTER_WEB_DOWNLOADS=0 scripts/build-app.sh release` builds a copy without the web downloader.
+The app is built at `build/Twister.app`; move it to your Applications folder to keep it. Build resources come from pinned sources and are checked with SHA-256. The media and office tools are installed from inside the app the first time you need them, and each group can be removed again by itself. To build without the web downloader, run `TWISTER_WEB_DOWNLOADS=0 scripts/build-app.sh release`.
 
-Local builds use an ad-hoc signature. There is no notarized installer or configured automatic update channel yet.
+> [!NOTE]
+> This is a local build signed only for your Mac. It is not notarized and does not update itself; to update, pull the latest changes and build again.
 
 ## Daily use
 
-Choose files, drop them into the workspace or paste supported clipboard content. Pick a quick conversion or open the tools menu. Available formats must support every selected file, and tools can differ between single-file and batch selections. The output folder appears above the file actions and in editor footers.
+Click the menu bar icon to open Twister. Choose files with ⌘O, drop them on the workspace or paste with ⌘V, then pick a quick conversion or open the tools. Click the icon again, press Escape or switch apps to hide it; work keeps running in the background, and Twister can notify you when it finishes.
 
-Click the menu-bar icon to open Twister. Click it again, press Escape or switch to another app to dismiss the workspace. Background operations continue when the interface is hidden, and Twister can notify you when one finishes.
-
-A conversion or tool started while another task is running waits in a queue. A batch lists each file as waiting, working, done or failed with its reason; a summary such as "7 of 9 done, 2 failed" offers **Retry Failed** for the failed files only. Library records the files that succeeded.
+A task started while another is running waits its turn. A batch shows each file as waiting, working, done or failed with a reason, and **Retry Failed** runs again only the files that failed.
 
 ### Presets
 
-**Save as Preset…**, the bookmark button in an editor footer and in the EPUB options, keeps the tool with the options you chose. Settings → Formats saves a conversion with that format's settings. A preset can follow the current output folder, always save beside the originals or always save to one folder. The workspace lists the presets that fit the selected files under **Presets**; Settings → Presets lists all of them. Each can be run, renamed, duplicated, moved up or down and deleted. A password typed for a protected file is never saved in a preset.
+Use **Save as Preset…**, the bookmark button in an editor, to keep a tool with the options you chose. A preset can save beside the originals, to the current output folder or always to one folder. The workspace shows the presets that fit your selection; **Settings → Presets** lists all of them. Passwords typed for protected files are never saved.
 
-### Finder
+### From Finder
 
-Select files in Finder and open **Services** from the context menu or the Finder menu: **Open in Twister** sends them to the workspace, **Convert with Twister…** opens the conversion wheel for them and **Run Twister Preset…** lists the presets that fit. macOS lists the entries once it has registered the app, normally the first time Twister is opened. If they are missing or you want a keyboard shortcut for one, turn them on in System Settings → Keyboard → Keyboard Shortcuts → Services → Files and Folders.
+Select files in Finder and open **Services**:
+
+- **Open in Twister** sends them to the workspace.
+- **Convert with Twister…** opens the conversion wheel.
+- **Run Twister Preset…** lists the presets that fit.
+
+The entries appear after Twister has been opened once. To give one a keyboard shortcut, go to **System Settings → Keyboard → Keyboard Shortcuts → Services → Files and Folders**.
+
+While dragging files in Finder, hold **Shift** for conversions, **Command** for tools or **Control** for file actions. These gestures can be changed in Settings.
+
+### Keyboard shortcuts
 
 | Action | Shortcut |
 | --- | --- |
@@ -65,12 +106,11 @@ Select files in Finder and open **Services** from the context menu or the Finder
 | Play / pause media preview | Space |
 | Mark selection start / end | I / O |
 | Settings | ⌘, |
-| Minimize | ⌘M |
 | Dismiss workspace | Escape |
 
-While dragging files in Finder, Shift opens conversions, Command opens tools and Control opens file actions. These shortcuts are configurable. Finder gestures and the optional window arrangement use the relevant macOS permissions; choosing files in the workspace remains available independently.
-
 ## Command line
+
+`twister-cli` runs the same conversions, tools and presets from Terminal.
 
 ```sh
 swift build --product twister-cli
@@ -79,15 +119,9 @@ swift build --product twister-cli
 .build/debug/twister-cli inspect photo.png
 ```
 
-The CLI supports `convert`, `tool`, `preset`, `inspect`, `dependencies`, `catalog` and JSON options. With the optional runtimes installed, `twister-cli dependencies` prints the resolved conversion-tool paths; a missing dependency returns an error. The app and CLI have separate executable names so both can be built on the default macOS filesystem. Add `--json` to a conversion or tool command to print the output paths as a JSON array:
+Commands: `convert`, `tool`, `preset`, `inspect`, `dependencies` and `catalog`. Add `--json` to print the output paths as a JSON array. Finished files go to standard output; each failed file is reported on standard error as `PATH: reason`.
 
-```sh
-.build/debug/twister-cli convert png photo.jpg --json
-```
-
-Each file of a batch is exported by itself. The paths of the finished files go to standard output, and each failed file is reported on standard error as `PATH: reason`.
-
-Presets are shared with the app. They are stored in `~/Library/Application Support/Twister/Presets.json`; set `TWISTER_PRESETS_FILE` to use another file.
+Presets are shared with the app and stored in `~/Library/Application Support/Twister/Presets.json` (set `TWISTER_PRESETS_FILE` to use another file).
 
 ```sh
 .build/debug/twister-cli preset list
@@ -96,41 +130,43 @@ Presets are shared with the app. They are stored in `~/Library/Application Suppo
 .build/debug/twister-cli preset import web-jpeg.json
 ```
 
-`preset list` prints each name with its operation, and `preset list --json` prints every preset in the format `export` and `import` use. `preset run` accepts `--options`, `--json` and `--` like `convert`, uses the same exit statuses and saves where the preset says; `--options` changes the saved options for that run only. `import` adds presets without replacing any: a name that is already taken gets a number. A preset is not run when its name is unknown or its folder is missing, and the command exits with 1.
+`preset run` takes the same options as `convert`; `--options` changes the saved options for that run only. `import` never replaces a preset: a name that is taken gets a number.
 
 | Exit status | Meaning |
 | --- | --- |
 | 0 | Every file was exported |
 | 1 | Nothing was exported |
-| 3 | Some files failed; the other exports were kept and printed |
+| 3 | Some files failed; the others were kept and printed |
 | 64 | Usage error |
-| 130, 143 | Interrupted by Ctrl-C or `kill`; exports that had already finished are kept |
+| 130, 143 | Interrupted; finished exports are kept |
 
 ## Guides
 
-- [Getting started](docs/guide/getting-started.md)
-- [Working with images](docs/guide/images.md)
-- [Working with PDFs](docs/guide/pdfs.md)
-- [Working with media](docs/guide/media.md)
-- [Working with documents](docs/guide/documents.md)
-- [Working with archives](docs/guide/archives.md)
-- [Library and Float](docs/guide/library.md)
-- [Optional tools](docs/guide/setup.md)
-- [Troubleshooting](docs/guide/troubleshooting.md)
+| Using Twister | Working on Twister |
+| --- | --- |
+| [Getting started](docs/guide/getting-started.md) | [Contributing](CONTRIBUTING.md) |
+| [Images](docs/guide/images.md) | [Dependencies](docs/dependencies.md) |
+| [PDFs](docs/guide/pdfs.md) | [Native verification](docs/testing/UI-AUDIT.md) |
+| [Audio and video](docs/guide/media.md) | |
+| [Documents](docs/guide/documents.md) | |
+| [Archives](docs/guide/archives.md) | |
+| [Library and Float](docs/guide/library.md) | |
+| [Optional tools](docs/guide/setup.md) | |
+| [Troubleshooting](docs/guide/troubleshooting.md) | |
 
-## Development and verification
+## Development
 
 ```sh
 swift build --product Twister
 python3 scripts/setup-test-fixtures.py
 swift test --parallel
-python3 scripts/test-product-identity.py
 python3 scripts/test-native-ui.py
 python3 scripts/test-workflows.py
-python3 scripts/test-web-download-integration.py
 python3 scripts/generate-localizations.py --check
 ```
 
-The full conversion suite requires FFmpeg, FFprobe, ExifTool and LibreOffice. Native interface tests need a logged-in macOS desktop. Provider-specific live tests are opt-in.
+The full conversion suite needs FFmpeg, FFprobe, ExifTool and LibreOffice. Interface tests need a logged-in macOS desktop. Tests against live websites are opt-in.
 
-See the [development guide](CONTRIBUTING.md), [dependency setup](docs/dependencies.md) and [native verification guide](docs/testing/UI-AUDIT.md) for details.
+## License
+
+Copyright © 2026 baypeanut. All rights reserved. See [LICENSE](LICENSE).
