@@ -169,4 +169,4 @@ The full conversion suite needs FFmpeg, FFprobe, ExifTool and LibreOffice. Inter
 
 ## License
 
-Copyright © 2026 baypeanut. All rights reserved. See [LICENSE](LICENSE).
+Released under the [MIT License](LICENSE). Bundled third-party components keep their own licenses; see [Dependencies](docs/dependencies.md).
