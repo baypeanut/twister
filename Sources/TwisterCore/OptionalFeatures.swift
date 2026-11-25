@@ -29,6 +29,10 @@ public enum WebDownloadGate {
         return needed.isEmpty ? .ready : .needsTools(needed)
     }
     public static func preference(in defaults: UserDefaults) -> Bool? { defaults.object(forKey: preferenceKey) as? Bool }
+    /// Links to this Mac or the local network are refused unless the user
+    /// stored `true` for this key, for example with `defaults write`.
+    public static let localNetworkKey = "webDownloadsAllowLocalNetwork"
+    public static func allowsLocalNetwork(in defaults: UserDefaults) -> Bool { defaults.object(forKey: localNetworkKey) as? Bool == true }
 }
 
 /// Window arrangement is an optional extra that stays off until the user

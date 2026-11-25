@@ -33,8 +33,13 @@ try:
  run(['swift','build','-c','release','--product','Twister'])
  binary_dir=Path(subprocess.check_output(['swift','build','-c','release','--show-bin-path'],cwd=ROOT,text=True).strip())
  binary=OUTPUT/'verify-web-download'
- objects=sorted((binary_dir/'TwisterCore.build').glob('*.o'))
+ # SwiftPM's native build system keeps one object per source file and the
+ # modules in Modules/; the Swift Build system links one TwisterCore.o and
+ # keeps the module beside it.
+ objects=sorted((binary_dir/'TwisterCore.build').glob('*.o')) or ([binary_dir/'TwisterCore.o'] if (binary_dir/'TwisterCore.o').is_file() else [])
  assert objects,'SwiftPM did not produce the core engine object files'
- run(['swiftc','-parse-as-library','-I',binary_dir/'Modules',*objects,ROOT/'scripts/verify-web-download.swift','-o',binary])
+ modules=binary_dir/'Modules' if (binary_dir/'Modules/TwisterCore.swiftmodule').exists() else binary_dir
+ assert (modules/'TwisterCore.swiftmodule').exists(),'SwiftPM did not produce the core engine module'
+ run(['swiftc','-parse-as-library','-I',modules,*objects,ROOT/'scripts/verify-web-download.swift','-o',binary])
  run([binary,OUTPUT,f'http://127.0.0.1:{server.server_port}'])
 finally:server.shutdown();server.server_close();worker.join()

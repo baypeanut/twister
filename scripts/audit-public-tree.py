@@ -6,7 +6,10 @@ root=Path(__file__).resolve().parents[1]
 files=subprocess.check_output(['git','ls-files','-z'],cwd=root).decode().split('\0')
 issues=[];count=0
 for name in filter(None,files):
- p=root/name;count+=1
+ p=root/name
+ # A file deleted in the working tree is not part of the tree being checked.
+ if not p.exists() and not p.is_symlink():continue
+ count+=1
  if p.is_symlink():issues.append((name,'tracked symlink'));continue
  if p.name.startswith('.env') and p.name!='.env.example':issues.append((name,'environment file'))
  if p.suffix.lower() in {'.p12','.pfx','.key','.mobileprovision'}:issues.append((name,'signing/credential material'))

@@ -1,5 +1,6 @@
 import Foundation
 import CryptoKit
+import Security
 
 /// Public packages keep large upstream runtimes outside the signed app bundle.
 /// Setup acquires exact upstream versions, verifies hashes, stages them and only
@@ -11,20 +12,22 @@ public enum ExternalToolSetup {
     public static var store:ToolStore { ToolStore(root:root) }
     public static func executable(_ name:String)->URL? { store.executable(name) }
     private static func usable(_ url:URL)->Bool { ToolStore.usable(url) }
-    public static var status:ToolSetupStatus { ToolSetupStatus { try? Dependencies.executable($0) } }
+    public static var status:ToolSetupStatus { ToolSetupStatus { try? Dependencies.locate($0) } }
     public static var mediaReady:Bool { status.mediaReady }
     public static var webReady:Bool { status.webReady }
     public static var officeReady:Bool { status.officeReady }
     /// Where each tool of a group resolves from and whether setup can remove it.
     public static func report(_ group:ToolGroup)->ToolGroupReport {
-        store.report(group,environment:ProcessInfo.processInfo.environment,bundle:Bundle.main.resourceURL) { try? Dependencies.executable($0) }
+        store.report(group,environment:overrideEnvironment,bundle:Bundle.main.resourceURL) { try? Dependencies.locate($0) }
     }
     public static func installedSize(_ group:ToolGroup)->Int64 { store.size(group) }
     /// Deletes the files setup installed for one group. Tools from Homebrew,
     /// the application bundle or a `TWISTER_` override stay where they are.
     public static func remove(_ group:ToolGroup) throws {
-        try store.remove(group,protected:ToolStore.overrides(group,environment:ProcessInfo.processInfo.environment))
+        try store.remove(group,protected:ToolStore.overrides(group,environment:overrideEnvironment))
     }
+    /// The environment as far as tool overrides apply to this process.
+    static var overrideEnvironment:[String:String] { Dependencies.honorsOverrides ? ProcessInfo.processInfo.environment:[:] }
     public static func install(_ group:ToolGroup,token:CancellationToken,progress:@escaping @Sendable (Double?,String)->Void) async throws {
         switch group {
         case .media:try await installMedia(token:token,progress:progress)
@@ -56,6 +59,8 @@ public enum ExternalToolSetup {
         try await install(mediaPackages,stagePrefix:".media-",target:target,token:token,progress:progress) { stage in
             // An earlier setup kept the web tools in this directory; a repair keeps them.
             for name in ToolGroup.web.tools where usable(target.appendingPathComponent(name)) {
+                // Kept only while it is still the verified download.
+                guard (try? verifyPinned(target.appendingPathComponent(name),tool:name)) != nil else { continue }
                 try FileManager.default.copyItem(at:target.appendingPathComponent(name),to:stage.appendingPathComponent(name))
             }
         }
@@ -100,6 +105,8 @@ public enum ExternalToolSetup {
             try fm.moveItem(at:candidate,to:output);try fm.removeItem(at:unpack)
         } else { try fm.moveItem(at:download,to:output) }
         try fm.setAttributes([.posixPermissions:0o755],ofItemAtPath:output.path)
+        // The executable matched its pinned hash; Twister runs it itself.
+        Quarantine.remove(from:output)
         if fm.fileExists(atPath:download.path) { try fm.removeItem(at:download) }
     }
     public static func installOffice(token:CancellationToken,progress:@escaping @Sendable (Double?,String)->Void) async throws {
@@ -109,8 +116,8 @@ public enum ExternalToolSetup {
         let stage=root.appendingPathComponent(".office-\(UUID().uuidString)",isDirectory:true)
         try fm.createDirectory(at:stage,withIntermediateDirectories:false);defer { try? fm.removeItem(at:stage) }
         let image=stage.appendingPathComponent("LibreOffice.dmg")
-        try await CheckedToolDownload.fetch(URL(string:"https://download.documentfoundation.org/libreoffice/stable/26.8.1/mac/aarch64/LibreOffice_26.8.1_MacOS_aarch64.dmg")!,to:image,maximum:400*1024*1024) { progress($0.map{$0*0.8},"Downloading LibreOffice 26.8.1…") }
-        try verify(image,digest:"ca074e0b13571efb30a31fc531c5f95e997030637325e5d5de92d67aefdf0dfc")
+        try await CheckedToolDownload.fetch(URL(string:officePackage.url)!,to:image,maximum:400*1024*1024) { progress($0.map{$0*0.8},"Downloading LibreOffice \(officeVersion)…") }
+        try verify(image,digest:officePackage.download)
         try token.check();try Task.checkCancellation();progress(nil,"Verifying and preparing office tools…")
         let mount=stage.appendingPathComponent("mount",isDirectory:true);try fm.createDirectory(at:mount,withIntermediateDirectories:false)
         try ProcessRunner.run(URL(fileURLWithPath:"/usr/bin/hdiutil"),["attach","-nobrowse","-readonly","-mountpoint",mount.path,image.path],token:token)
@@ -118,16 +125,83 @@ public enum ExternalToolSetup {
         let content=stage.appendingPathComponent("content",isDirectory:true);try fm.createDirectory(at:content,withIntermediateDirectories:false)
         try ProcessRunner.run(URL(fileURLWithPath:"/usr/bin/ditto"),[mount.appendingPathComponent("LibreOffice.app").path,content.appendingPathComponent("LibreOffice.app").path],token:token)
         try token.check();try Task.checkCancellation()
+        try verifySignature(content.appendingPathComponent("LibreOffice.app"),team:officeTeam)
+        Quarantine.remove(from:content)
         let target=root.appendingPathComponent(ToolStore.officeDirectory,isDirectory:true)
         try ToolInstallation.publish(content,to:target) { usable($0.appendingPathComponent("LibreOffice.app/Contents/MacOS/soffice")) }
         progress(1,"Office tools are ready.")
     }
+    static let officeVersion="26.8.3"
+    /// From the checksum The Document Foundation publishes beside the image.
+    static let officePackage=Package(name:"soffice",url:"https://download.documentfoundation.org/libreoffice/stable/26.8.3/mac/aarch64/LibreOffice_26.8.3_MacOS_aarch64.dmg",
+                                     download:"de943203795e5057785f65515063e2db5eb60b0bb6d8e2534fec59e5cc5fb988",member:nil)
+    /// The Document Foundation's Developer ID team.
+    static let officeTeam="7P5S3ZLCN7"
+
+    /// The SHA-256 an installed executable must have.
+    static func pinnedDigest(_ tool:String)->String? {
+        (mediaPackages+webPackages).first { $0.name == tool }.map { $0.member ?? $0.download }
+    }
+    static func verifyPinned(_ file:URL,tool:String) throws {
+        guard let digest=pinnedDigest(tool) else { throw TwisterError.failed("\(tool) is not a tool that setup installs.") }
+        try verify(file,digest:digest)
+    }
+    /// A Developer ID signature of the given team, valid for the whole bundle.
+    static func verifySignature(_ bundle:URL,team:String) throws {
+        let failure=TwisterError.failed("The office tools are not signed by their publisher. Nothing was installed or opened.")
+        var code:SecStaticCode?
+        guard SecStaticCodeCreateWithPath(bundle as CFURL,[],&code)==errSecSuccess,let code else { throw failure }
+        var requirement:SecRequirement?
+        let text="anchor apple generic and certificate 1[field.1.2.840.113635.100.6.2.6] exists and certificate leaf[field.1.2.840.113635.100.6.1.13] exists and certificate leaf[subject.OU] = \"\(team)\""
+        guard SecRequirementCreateWithString(text as CFString,[],&requirement)==errSecSuccess else { throw failure }
+        let flags=SecCSFlags(rawValue:kSecCSCheckAllArchitectures | kSecCSCheckNestedCode | kSecCSStrictValidate)
+        guard SecStaticCodeCheckValidity(code,flags,requirement)==errSecSuccess else { throw failure }
+    }
+
+    /// Tools in Twister's own folder are checked before their first use in a
+    /// session and again after the file changes. The office tools are a whole
+    /// bundle whose other files can change without touching the executable,
+    /// so their signature is checked before every use.
+    static func verifyInstalled(_ executable:URL,tool:String) throws {
+        let resolved=executable.resolvingSymlinksInPath()
+        let item=tool == "soffice" ? resolved.deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent():resolved
+        var info=stat()
+        guard stat(resolved.path,&info)==0 else { throw TwisterError.missingDependency(tool) }
+        let identity=VerifiedTools.Identity(info)
+        if tool != "soffice",VerifiedTools.shared.contains(item.path,identity) { return }
+        do {
+            if tool == "soffice" { try verifySignature(item,team:officeTeam) } else { try verifyPinned(resolved,tool:tool) }
+        } catch {
+            throw TwisterError.failed("The installed \(tool) no longer matches the verified download. Open tool setup and download it again.")
+        }
+        if tool != "soffice" { VerifiedTools.shared.insert(item.path,identity) }
+    }
+
     static func verify(_ file:URL,digest:String) throws {
         let input=try FileHandle(forReadingFrom:file);defer{try? input.close()};var hasher=SHA256()
         while let bytes=try input.read(upToCount:1024*1024),!bytes.isEmpty {hasher.update(data:bytes)}
         let actual=hasher.finalize().map{String(format:"%02x",$0)}.joined()
         guard actual == digest else {throw TwisterError.failed("The upstream download checksum did not match. Nothing was installed.")}
     }
+}
+
+/// Per-session record of installed tools that passed verification.
+final class VerifiedTools:@unchecked Sendable {
+    /// Any write to the file, and any change of its mode or owner, moves its
+    /// change time, which cannot be set back like the modification time.
+    struct Identity:Equatable {
+        let device:Int64,inode:UInt64,size:Int64,modified:Int64,changed:Int64
+        init(_ info:stat) {
+            device=Int64(info.st_dev);inode=UInt64(info.st_ino);size=Int64(info.st_size)
+            modified=Int64(info.st_mtimespec.tv_sec)*1_000_000_000+Int64(info.st_mtimespec.tv_nsec)
+            changed=Int64(info.st_ctimespec.tv_sec)*1_000_000_000+Int64(info.st_ctimespec.tv_nsec)
+        }
+    }
+    static let shared=VerifiedTools()
+    private let lock=NSLock();private var verified:[String:Identity]=[:]
+    func contains(_ path:String,_ identity:Identity)->Bool { lock.lock();defer { lock.unlock() };return verified[path]==identity }
+    func insert(_ path:String,_ identity:Identity) { lock.lock();verified[path]=identity;lock.unlock() }
+    func removeAll() { lock.lock();verified=[:];lock.unlock() }
 }
 
 private final class CheckedToolDownload:NSObject,URLSessionDownloadDelegate,@unchecked Sendable {

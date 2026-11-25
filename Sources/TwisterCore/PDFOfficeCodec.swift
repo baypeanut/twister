@@ -16,21 +16,8 @@ enum PDFOfficeCodec {
     }
 
     static func rasterPNG(_ page: PDFPage, rect crop: CGRect? = nil, dpi: Int = 144, token: CancellationToken) throws -> Data {
-        try token.check()
-        let bounds = crop ?? visualBounds(page)
-        let scale = CGFloat(max(36, min(600, dpi))) / 72
-        let width = max(1, Int(ceil(bounds.width * scale))), height = max(1, Int(ceil(bounds.height * scale)))
-        guard width <= 32000, height <= 32000, let cgPage = page.pageRef,
-              let context = CGContext(data: nil, width: width, height: height, bitsPerComponent: 8, bytesPerRow: 0, space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else {
-            throw TwisterError.failed("The PDF page is too large to render at this resolution.")
-        }
-        context.setFillColor(CGColor(gray: 1, alpha: 1)); context.fill(CGRect(x: 0, y: 0, width: width, height: height))
-        context.scaleBy(x: scale, y: scale)
-        if crop != nil { context.translateBy(x: -bounds.minX, y: -bounds.minY) }
-        else { context.concatenate(cgPage.getDrawingTransform(.mediaBox, rect: bounds, rotate: 0, preserveAspectRatio: true)) }
-        context.drawPDFPage(cgPage)
-        try token.check()
-        guard let image = context.makeImage(), let data = NSBitmapImageRep(cgImage: image).representation(using: .png, properties: [:]) else { throw TwisterError.failed("The PDF page image could not be written.") }
+        let image = try PDFEngine.raster(page, region: crop, dpi: Double(max(36, min(600, dpi))), annotations: false, token: token)
+        guard let data = NSBitmapImageRep(cgImage: image).representation(using: .png, properties: [:]) else { throw TwisterError.failed("The PDF page image could not be written.") }
         return data
     }
 
@@ -67,10 +54,8 @@ enum PDFOfficeCodec {
     static func recognizedCells(_ page: PDFPage, token: CancellationToken) throws -> [TextCell] {
         try token.check()
         let bounds = page.bounds(for: .mediaBox)
-        let size = NSSize(width: max(1, bounds.width * 2), height: max(1, bounds.height * 2))
-        let image = page.thumbnail(of: size, for: .mediaBox)
-        var rect = CGRect(origin: .zero, size: size)
-        guard let cgImage = image.cgImage(forProposedRect: &rect, context: nil, hints: nil) else { return [] }
+        // Unrotated, so the recognized boxes map straight back to page space.
+        guard let cgImage = try? PDFEngine.raster(page, region: bounds, dpi: 144, annotations: true, token: token) else { return [] }
         let request = VNRecognizeTextRequest()
         request.recognitionLevel = .accurate
         request.usesLanguageCorrection = true
@@ -102,10 +87,8 @@ enum PDFOfficeCodec {
             guard bounds.width.isFinite, bounds.height.isFinite, bounds.width > 0, bounds.height > 0 else {
                 throw TwisterError.invalidInput("PDF page \(index + 1) has an invalid size.")
             }
-            let size = NSSize(width: max(1, bounds.width * 2), height: max(1, bounds.height * 2))
-            let image = page.thumbnail(of: size, for: .mediaBox)
-            var rect = CGRect(origin: .zero, size: size)
-            guard let cg = image.cgImage(forProposedRect: &rect, context: nil, hints: nil), let png = NSBitmapImageRep(cgImage: cg).representation(using: .png, properties: [:]) else {
+            let cg = try PDFEngine.raster(page, dpi: 144, annotations: true, token: token)
+            guard let png = NSBitmapImageRep(cgImage: cg).representation(using: .png, properties: [:]) else {
                 throw TwisterError.failed("PDF page \(index + 1) could not be rendered.")
             }
             // A presentation has one shared canvas. Match the first displayed

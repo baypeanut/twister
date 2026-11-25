@@ -46,7 +46,9 @@ final class CommandLinePresetTests:XCTestCase {
         XCTAssertEqual(run("list","--json"),0)
         var copy=PresetLibrary()
         XCTAssertEqual(try copy.importPresets(from:Data(try XCTUnwrap(out.first).utf8)).map(\.name),["Web JPEG","Small"])
-        XCTAssertEqual(copy.presets[0].destination,.folder(exports))
+        // An imported preset saves where the user chooses, never in a folder the file names.
+        XCTAssertNil(copy.presets[0].destination)
+        XCTAssertEqual(copy.presets[1].destination,.besideOriginals)
     }
 
     func testRunUsesThePresetOptionsAndDestinationWithTheConvertExitCodes() throws {
@@ -154,8 +156,9 @@ final class CommandLinePresetTests:XCTestCase {
         result=try launch(["preset","list"])
         XCTAssertEqual(result.1,"To TIFF\tConvert to TIFF\n")
         result=try launch(["preset","run","To TIFF","--",good.path])
-        XCTAssertEqual(result.0,0);XCTAssertEqual(result.1,exports.appendingPathComponent("Good.tiff").path+"\n");XCTAssertEqual(result.2,"")
-        XCTAssertEqual(try ImageEngine.load(exports.appendingPathComponent("Good.tiff")).width,40)
+        // The imported preset does not keep the folder named in the file.
+        XCTAssertEqual(result.0,0);XCTAssertEqual(result.1,root.appendingPathComponent("Good.tiff").path+"\n");XCTAssertEqual(result.2,"")
+        XCTAssertEqual(try ImageEngine.load(root.appendingPathComponent("Good.tiff")).width,40)
         result=try launch(["preset","run","Missing",good.path])
         XCTAssertEqual(result.0,1);XCTAssertEqual(result.1,"");XCTAssertTrue(result.2.contains("Missing"))
         XCTAssertEqual(try launch(["preset","run"]).0,64)

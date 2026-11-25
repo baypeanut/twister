@@ -371,7 +371,7 @@ enum TwisterApplication {
         state.retainToolWindow(window);window.makeKeyAndOrderFront(nil);NSApp.activate(ignoringOtherApps:true)
     }
     func application(_ application:NSApplication,open urls:[URL]) {
-        if let web=urls.first(where:{!$0.isFileURL}),let valid=try? WebDownloadEngine.link(web.absoluteString) { showWebDownload(valid,mode:.video) }
+        if let web=urls.first(where:{!$0.isFileURL}),let valid=try? WebDownloadEngine.link(web.absoluteString,allowLocalNetwork:WebDownloadGate.allowsLocalNetwork(in:.standard)) { showWebDownload(valid,mode:.video) }
         else { state.inputs=urls;showHome();state.onOpenWheel?() }
     }
     func applicationShouldTerminate(_ sender:NSApplication)->NSApplication.TerminateReply {

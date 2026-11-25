@@ -63,6 +63,8 @@ public enum ConversionEngine {
                 let detail = groups.count>1 ? "File \(index+1) of \(groups.count) · \(label)" : label
                 progress(OperationProgress.map(value, from: Double(index)/Double(groups.count)*0.98, to: Double(index+1)/Double(groups.count)*0.98),detail)
             }
+            // Published by rename, so the label stays with every staged item.
+            try Quarantine.propagate(from:inputs,to:outputs)
             try transaction.record(outputs,in:area)
             if groups.count>1 { progress(Double(index+1)/Double(groups.count)*0.98,"Prepared \(index+1) of \(groups.count) files") }
         }

@@ -49,8 +49,10 @@ public struct ToolStore: Sendable {
     public let root: URL
     public init(root: URL) { self.root = root }
 
-    static let mediaDirectory = "media-v1", webDirectory = "web-v1", officeDirectory = "office-26.8.1"
-    static let pinnedVersions: [ToolGroup: String] = [.media: "FFmpeg 9.0", .web: "yt-dlp 2026.08.19 · Deno 2.9.7", .office: "LibreOffice 26.8.1"]
+    static let mediaDirectory = "media-v1", webDirectory = "web-v1", officeDirectory = "office-26.8.3"
+    /// An earlier setup's office folder stays usable and removable.
+    static let legacyOfficeDirectories = ["office-26.8.1"]
+    static let pinnedVersions: [ToolGroup: String] = [.media: "FFmpeg 9.0", .web: "yt-dlp 2026.08.19 · Deno 2.9.7", .office: "LibreOffice 26.8.3"]
 
     /// Earlier setups stored the web tools beside FFmpeg; those files still
     /// belong to the Web group.
@@ -58,14 +60,14 @@ public struct ToolStore: Sendable {
         switch group {
         case .media: return [mediaDirectory + "/ffmpeg", mediaDirectory + "/ffprobe"]
         case .web: return [webDirectory, mediaDirectory + "/yt-dlp", mediaDirectory + "/deno"]
-        case .office: return [officeDirectory]
+        case .office: return [officeDirectory] + legacyOfficeDirectories
         }
     }
     static func executablePaths(_ name: String) -> [String] {
         switch name {
         case "ffmpeg", "ffprobe": return [mediaDirectory + "/" + name]
         case "yt-dlp", "deno": return [webDirectory + "/" + name, mediaDirectory + "/" + name]
-        case "soffice": return [officeDirectory + "/LibreOffice.app/Contents/MacOS/soffice"]
+        case "soffice": return ([officeDirectory] + legacyOfficeDirectories).map { $0 + "/LibreOffice.app/Contents/MacOS/soffice" }
         default: return []
         }
     }

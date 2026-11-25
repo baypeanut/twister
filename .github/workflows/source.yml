@@ -66,7 +66,9 @@ jobs:
       - name: Application export, recovery and editor lifecycle workflows
         run: python3 scripts/test-workflows.py
       - name: Security, file operations, update trust and native regressions
-        run: swift test --filter 'TwisterUpdatesTests|ArchiveSymlinkBoundaryTests|ArchiveResourceLimitsTests|ProcessDiagnosticLimitTests|FileMoveBatchTests|PDFPageEditorStateTests|ImageAnnotationEditorStateTests|HTMLResourceBoundaryTests|WebMediaDragPayloadTests|InstagramPhotosTests|YouTubeThumbnailTests|WindowPlacementTests|AppLocalizationTests|ToolSetupTests'
+        run: swift test --filter 'TwisterUpdatesTests|ArchiveSymlinkBoundaryTests|ArchiveResourceLimitsTests|ArchiveLinkResolutionTests|QuarantinePropagationTests|DecodeBudgetTests|WebDownloadSafetyTests|WebDownloadProxyTests|PresetImportSafetyTests|ToolVerificationTests|ProcessDiagnosticLimitTests|FileMoveBatchTests|PDFPageEditorStateTests|ImageAnnotationEditorStateTests|HTMLResourceBoundaryTests|WebMediaDragPayloadTests|InstagramPhotosTests|YouTubeThumbnailTests|WindowPlacementTests|AppLocalizationTests|ToolSetupTests'
+      # Pull request code is built and checked, but never packaged or
+      # published as this repository's app artifact.
       - name: Build local macOS package
         run: |
           scripts/setup-exiftool.sh
@@ -74,8 +76,11 @@ jobs:
           python3 scripts/audit-release.py build/Twister.app
           python3 scripts/test-native-ui.py --app build/Twister.app/Contents/MacOS/Twister --output build/packaged-native-ui
           python3 scripts/test-workflows.py --app build/Twister.app/Contents/MacOS/Twister --output build/packaged-workflows
-          python3 scripts/archive-app.py build/Twister.app build/Twister-macOS-arm64.zip
+      - name: Archive local macOS package
+        if: github.event_name != 'pull_request'
+        run: python3 scripts/archive-app.py build/Twister.app build/Twister-macOS-arm64.zip
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        if: github.event_name != 'pull_request'
         with:
           name: Twister-macOS-arm64
           path: build/Twister-macOS-arm64.zip

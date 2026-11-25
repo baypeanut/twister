@@ -14,7 +14,7 @@ scripts/build-app.sh debug
 open build/Twister.app
 ```
 
-`build-app.sh release` produces an optimized local package; `TWISTER_WEB_DOWNLOADS=0` in its environment leaves the web downloader out. Media, Office and the optional Web download tools are downloaded on demand through setup, each group by itself. External executable overrides use `TWISTER_` followed by the uppercased tool name. Keep tool downloads, app packages, signing configuration and secrets out of version control.
+`build-app.sh release` produces an optimized local package; `TWISTER_WEB_DOWNLOADS=0` in its environment leaves the web downloader out. A package whose update configuration carries no update signing key neither links nor embeds the updater framework and keeps library validation on; only update-enabled ad-hoc or locally signed packages relax it for that framework. Media, Office and the optional Web download tools are downloaded on demand through setup, each group by itself. External executable overrides use `TWISTER_` followed by the uppercased tool name; debug builds and `twister-cli` honor them, packaged apps ignore them. Keep tool downloads, app packages, signing configuration and secrets out of version control.
 
 ## Source map
 
@@ -41,7 +41,9 @@ python3 scripts/audit-public-tree.py
 python3 scripts/scan-secrets.py
 ```
 
-Install FFmpeg, FFprobe, ExifTool and LibreOffice to exercise the complete conversion suite. Set `TWISTER_SOFFICE` when LibreOffice is outside the supported system paths. Live provider tests require their explicit environment opt-in. UI checks require a GUI login session and operate on the app's own generated fixtures. Do not automate a user's real windows or files for regression tests.
+Install FFmpeg, FFprobe, ExifTool and LibreOffice to exercise the complete conversion suite.
+
+Packages with bundled tools (an update configuration with `ExternalTools` set to false) copy `Tools/LibreOffice.app` only when it is LibreOffice 26.8.3 (`twister_libreoffice_version` in `scripts/tool-pins.sh`) with The Document Foundation's signature. To refresh it, download the 26.8.3 disk image for Apple Silicon from The Document Foundation, check it against the published SHA-256 (the same value as `officePackage` in `ExternalToolSetup.swift`), copy `LibreOffice.app` out of it to a folder of your choice, remove `Tools/LibreOffice.app`, and run `TWISTER_LIBREOFFICE_SOURCE=/path/to/LibreOffice.app scripts/setup-tools.sh`. `TWISTER_BUNDLED_OFFICE=0 scripts/build-app.sh` leaves LibreOffice out of such a package to check the other tools in the meantime. Set `TWISTER_SOFFICE` when LibreOffice is outside the supported system paths. Live provider tests require their explicit environment opt-in. UI checks require a GUI login session and operate on the app's own generated fixtures. Do not automate a user's real windows or files for regression tests.
 
 After changing `Sources/TwisterCore/Resources/Turkish.json`, regenerate native string tables with `python3 scripts/generate-localizations.py`.
 

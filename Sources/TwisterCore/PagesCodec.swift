@@ -26,6 +26,7 @@ enum PagesCodec {
         guard let size = try input.resourceValues(forKeys: [.fileSizeKey]).fileSize, size <= 200_000_000 else { throw TwisterError.invalidInput("This Pages file is too large or is not a regular document file.") }
         let data = try Data(contentsOf: input)
         guard data.count > 16, data.starts(with: [0x50, 0x4b]) else { throw TwisterError.invalidInput("This is not a modern Pages document.") }
+        try ArchiveCodec.checkLimits(input, limits: .document, token: token)
         let engine = try Runtime(token: token)
         let json = try engine.call("read", data.base64EncodedString())
         try token.check()
@@ -166,7 +167,7 @@ private enum PagesDOCXReader {
         let work = try OutputFiles.temporaryDirectory()
         defer { try? FileManager.default.removeItem(at: work) }
         let package = work.appendingPathComponent("DOCX", isDirectory: true)
-        try ArchiveCodec.extract(input, into: package, password: "", token: token)
+        try ArchiveCodec.extract(input, into: package, password: "", token: token, limits: .document)
         let document = try xml(package.appendingPathComponent("word/document.xml"))
         guard let body = document.rootElement()?.first("body") else { throw TwisterError.invalidInput("This Word document has no editable body.") }
         let stylesDocument = try? xml(package.appendingPathComponent("word/styles.xml"))

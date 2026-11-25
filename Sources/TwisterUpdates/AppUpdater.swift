@@ -1,3 +1,4 @@
+#if !TWISTER_WITHOUT_UPDATES
 import AppKit
 import Combine
 import Sparkle
@@ -390,3 +391,4 @@ import Sparkle
         return true
     }
 }
+#endif

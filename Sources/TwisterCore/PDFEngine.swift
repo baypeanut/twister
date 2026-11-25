@@ -23,18 +23,10 @@ public enum PDFEngine {
         var outputs:[URL]=[]
         do {
             for index in 0..<pdf.pageCount {
-                try token.check();guard let page=pdf.page(at:index),let ref=page.pageRef else { throw TwisterError.failed("A PDF page could not be read.") }
-                let bounds=PDFOfficeCodec.visualBounds(page),scale=Double(max(36,min(1200,options.dpi)))/72
-                let scaledWidth=bounds.width*scale,scaledHeight=bounds.height*scale
-                guard scaledWidth.isFinite,scaledHeight.isFinite,scaledWidth>0,scaledHeight>0,scaledWidth<=32000,scaledHeight<=32000 else { throw TwisterError.failed("PDF page is too large to render at this DPI.") }
-                let w=max(1,Int(scaledWidth.rounded())),h=max(1,Int(scaledHeight.rounded()))
-                guard w<=32000,h<=32000,let ctx=CGContext(data:nil,width:w,height:h,bitsPerComponent:8,bytesPerRow:0,space:CGColorSpaceCreateDeviceRGB(),bitmapInfo:CGImageAlphaInfo.premultipliedLast.rawValue) else { throw TwisterError.failed("PDF page is too large to render at this DPI.") }
-                ctx.setFillColor(CGColor(gray:1,alpha:1));ctx.fill(CGRect(x:0,y:0,width:w,height:h));ctx.scaleBy(x:scale,y:scale)
-                ctx.concatenate(ref.getDrawingTransform(.mediaBox,rect:bounds,rotate:Int32(page.rotation)-ref.rotationAngle,preserveAspectRatio:true))
-                ctx.drawPDFPage(ref)
-                for annotation in page.annotations { annotation.draw(with:.mediaBox,in:ctx) }
-                try token.check()
-                guard let image=ctx.makeImage() else { throw TwisterError.failed("A PDF page could not be rendered.") }
+                try token.check();guard let page=pdf.page(at:index) else { throw TwisterError.failed("A PDF page could not be read.") }
+                // A page too large for the requested DPI is rendered smaller
+                // instead, within the size Twister opens as an image.
+                let image=try raster(page,dpi:Double(max(36,min(1200,options.dpi))),budget:exportPixelBudget,annotations:true,token:token)
                 let output=folder.appendingPathComponent(String(format:"Page %03d.%@",index+1,format));try ImageEngine.write(image,to:output,quality:options.quality);outputs.append(output)
                 progress(Double(index+1)/Double(pdf.pageCount),"Rendered page \(index+1) of \(pdf.pageCount)")
             }
@@ -121,12 +113,12 @@ public enum PDFEngine {
                     try token.check();let compressed=PDFDocument()
                     for n in 0..<pdf.pageCount { try autoreleasepool {
                         try token.check();progress(Double(n)/Double(pdf.pageCount),"Compressing PDF · attempt \(attempt+1) · page \(n+1) of \(pdf.pageCount)")
-                        guard let page=pdf.page(at:n) else { return };let bounds=page.bounds(for:.mediaBox)
-                        let thumb=page.thumbnail(of:NSSize(width:bounds.width*dpi/72,height:bounds.height*dpi/72),for:.mediaBox)
-                        guard let cg=thumb.cgImage(forProposedRect:nil,context:nil,hints:nil) else { return }
+                        guard let page=pdf.page(at:n) else { return }
+                        let cg=try raster(page,dpi:dpi,annotations:true,token:token)
                         let bitmap=NSBitmapImageRep(cgImage:cg)
                         guard let data=bitmap.representation(using:.jpeg,properties:[.compressionFactor:quality]),let img=NSImage(data:data),let result=PDFPage(image:img) else { return }
-                        result.setBounds(bounds,for:.mediaBox);compressed.insert(result,at:compressed.pageCount)
+                        // The raster shows the page as displayed, with its rotation applied.
+                        result.setBounds(PDFOfficeCodec.visualBounds(page),for:.mediaBox);compressed.insert(result,at:compressed.pageCount)
                     } }
                     guard compressed.write(to:output) else { throw TwisterError.failed("Could not compress PDF.") }
                     let bytes=(try FileManager.default.attributesOfItem(atPath:output.path)[.size] as? NSNumber)?.int64Value ?? 0
@@ -138,6 +130,42 @@ public enum PDFEngine {
             }
         }
         return outputs
+    }
+
+    /// Pixels of one page rasterized as an intermediate (compression, OCR,
+    /// office and EPUB conversion). A page may declare any size up to 200
+    /// inches square; its raster shrinks to stay within this budget.
+    static let rasterPixelBudget=25_000_000.0
+    /// Pixels of one page exported as an image, the size Twister opens.
+    static let exportPixelBudget=Double(ImageEngine.maximumPixels)
+    static func rasterSize(_ bounds:CGRect,dpi:Double,budget:Double=rasterPixelBudget)->NSSize {
+        let dpi=dpi.isFinite && dpi>0 ? dpi:72
+        let width=max(1,abs(bounds.width).isFinite ? abs(bounds.width)*dpi/72:1),height=max(1,abs(bounds.height).isFinite ? abs(bounds.height)*dpi/72:1)
+        let scale=min(1,(budget/(width*height)).squareRoot(),32_000/width,32_000/height)
+        return NSSize(width:max(1,(width*scale).rounded(.down)),height:max(1,(height*scale).rounded(.down)))
+    }
+    /// Every PDF rasterization goes through here. The page, or `region` of it
+    /// in page space without its rotation, is drawn into a bitmap of exactly
+    /// `rasterSize` pixels on white.
+    static func raster(_ page:PDFPage,region:CGRect?=nil,dpi:Double,budget:Double=rasterPixelBudget,annotations:Bool,token:CancellationToken) throws -> CGImage {
+        try token.check()
+        let bounds=region ?? PDFOfficeCodec.visualBounds(page)
+        guard let ref=page.pageRef,[bounds.minX,bounds.minY,bounds.width,bounds.height].allSatisfy(\.isFinite),bounds.width>0,bounds.height>0 else {
+            throw TwisterError.failed("A PDF page could not be rendered.")
+        }
+        let size=rasterSize(bounds,dpi:dpi,budget:budget),width=Int(size.width),height=Int(size.height)
+        guard let context=CGContext(data:nil,width:width,height:height,bitsPerComponent:8,bytesPerRow:0,space:CGColorSpaceCreateDeviceRGB(),bitmapInfo:CGImageAlphaInfo.premultipliedLast.rawValue) else {
+            throw TwisterError.failed("A PDF page could not be rendered.")
+        }
+        context.setFillColor(CGColor(gray:1,alpha:1));context.fill(CGRect(x:0,y:0,width:width,height:height))
+        context.scaleBy(x:CGFloat(width)/bounds.width,y:CGFloat(height)/bounds.height)
+        if region != nil { context.translateBy(x:-bounds.minX,y:-bounds.minY) }
+        else { context.concatenate(ref.getDrawingTransform(.mediaBox,rect:bounds,rotate:Int32(page.rotation)-ref.rotationAngle,preserveAspectRatio:true)) }
+        context.drawPDFPage(ref)
+        if annotations { for annotation in page.annotations { annotation.draw(with:.mediaBox,in:context) } }
+        try token.check()
+        guard let image=context.makeImage() else { throw TwisterError.failed("A PDF page could not be rendered.") }
+        return image
     }
 
     private static func pageEditedData(_ inputs:[URL],selections:[[Int]],rotations:[Int:Int]=[:],password:String,token:CancellationToken)throws->Data {

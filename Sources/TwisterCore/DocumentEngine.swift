@@ -116,6 +116,7 @@ public enum DocumentEngine {
         let extracted = work.appendingPathComponent(name, isDirectory: true)
         try ArchiveCodec.extract(input, into: extracted, password: options.password, token: token)
         try token.check()
+        try Quarantine.propagate(from: [input], to: [extracted])
         try FileManager.default.moveItem(at: extracted, to: output)
         return [output]
     }
@@ -132,6 +133,16 @@ public enum DocumentEngine {
         return try publish(archive, to: destination(input, format: format, options: options), token: token)
     }
 
+    /// Macros never run, and linked content is never refreshed while a
+    /// document loads. Writer counts never as 0, Calc counts it as 1.
+    static let officeProfileSettings = """
+    <?xml version="1.0" encoding="UTF-8"?><oor:items xmlns:oor="http://openoffice.org/2001/registry">\
+    <item oor:path="/org.openoffice.Office.Common/Security/Scripting"><prop oor:name="MacroSecurityLevel" oor:op="fuse"><value>3</value></prop></item>\
+    <item oor:path="/org.openoffice.Office.Writer/Content/Update"><prop oor:name="Link" oor:op="fuse"><value>0</value></prop></item>\
+    <item oor:path="/org.openoffice.Office.Calc/Content/Update"><prop oor:name="Link" oor:op="fuse"><value>1</value></prop></item>\
+    </oor:items>
+    """
+
     /// Each invocation owns an isolated LibreOffice profile. Headless conversion
     /// therefore cannot reuse or alter a user's open LibreOffice documents.
     static func office(_ input: URL, to format: String, in directory: URL, token: CancellationToken) throws -> URL {
@@ -143,10 +154,7 @@ public enum DocumentEngine {
         defer { try? fm.removeItem(at: profile) }
         let profileUser = profile.appendingPathComponent("user", isDirectory: true)
         try fm.createDirectory(at: profileUser, withIntermediateDirectories: true)
-        let config = """
-        <?xml version="1.0" encoding="UTF-8"?><oor:items xmlns:oor="http://openoffice.org/2001/registry"><item oor:path="/org.openoffice.Office.Common/Security/Scripting"><prop oor:name="MacroSecurityLevel" oor:op="fuse"><value>3</value></prop></item><item oor:path="/org.openoffice.Office.Common/Load"><prop oor:name="UpdateLinkMode" oor:op="fuse"><value>0</value></prop></item></oor:items>
-        """
-        try config.write(to: profileUser.appendingPathComponent("registrymodifications.xcu"), atomically: true, encoding: .utf8)
+        try officeProfileSettings.write(to: profileUser.appendingPathComponent("registrymodifications.xcu"), atomically: true, encoding: .utf8)
         let executable = try Dependencies.executable("soffice")
         var arguments = ["-env:UserInstallation=\(profile.absoluteString)", "--headless", "--nologo", "--nodefault", "--nolockcheck", "--nofirststartwizard", "--norestore"]
         let sourceFormat = normalized(input.pathExtension)
@@ -211,7 +219,7 @@ public enum DocumentEngine {
 
     static func embedHTMLImages(_ html: URL, output: URL? = nil, token: CancellationToken) throws {
         var source = try DocumentText.read(html)
-        let root=html.deletingLastPathComponent().resolvingSymlinksInPath().standardizedFileURL.path
+        let folder=html.deletingLastPathComponent()
         func imageData(_ value:String)->String {
             let data:Data
             if value.lowercased().hasPrefix("data:") {
@@ -222,15 +230,17 @@ public enum DocumentEngine {
                 let asset:URL
                 if let address=URL(string:value),address.scheme != nil {
                     guard address.isFileURL else{return ""};asset=address
-                }else{asset=html.deletingLastPathComponent().appendingPathComponent(decoded)}
-                let resolved=asset.resolvingSymlinksInPath().standardizedFileURL
-                guard resolved.path.hasPrefix(root+"/"),let size=try? resolved.resourceValues(forKeys:[.fileSizeKey,.isRegularFileKey]),size.isRegularFile==true,(size.fileSize ?? Int.max)<=50_000_000,let bytes=try? Data(contentsOf:resolved) else{return ""}
+                }else{asset=folder.appendingPathComponent(decoded)}
+                // Only a file inside the HTML file's own folder is read.
+                guard let contained=PathContainment.resolved(asset,inside:folder),
+                      let size=try? contained.resourceValues(forKeys:[.fileSizeKey,.isRegularFileKey]),size.isRegularFile==true,(size.fileSize ?? Int.max)<=50_000_000,
+                      let bytes=try? Data(contentsOf:contained) else{return ""}
                 data=bytes
             }
             guard let raster=CGImageSourceCreateWithData(data as CFData,nil),let type=CGImageSourceGetType(raster),
                   let properties=CGImageSourceCopyPropertiesAtIndex(raster,0,nil) as? [CFString:Any],
                   let width=properties[kCGImagePropertyPixelWidth] as? Int,let height=properties[kCGImagePropertyPixelHeight] as? Int,
-                  width>0,height>0,Double(width)*Double(height)<=100_000_000,
+                  width>0,height>0,Double(width)*Double(height)<=Double(ImageEngine.maximumPixels),
                   let mime=UTType(type as String)?.preferredMIMEType,mime.hasPrefix("image/"),!mime.contains("svg") else{return ""}
             return "data:\(mime);base64,\(data.base64EncodedString())"
         }
@@ -280,6 +290,18 @@ public enum DocumentEngine {
     private static func checked(_ urls: [URL]) throws -> [URL] { try OutputFiles.validate(urls); return urls }
 }
 
+/// Confines file access to a folder. The candidate and the folder are both
+/// resolved through links and standardized before they are compared.
+enum PathContainment {
+    /// The resolved candidate when it lies strictly inside `root`, else nil.
+    static func resolved(_ candidate: URL, inside root: URL) -> URL? {
+        let base = root.resolvingSymlinksInPath().standardizedFileURL.path
+        let path = candidate.resolvingSymlinksInPath().standardizedFileURL.path
+        guard base.hasPrefix("/"), base != "/", path.hasPrefix(base + "/"), path.count > base.count + 1 else { return nil }
+        return URL(fileURLWithPath: path)
+    }
+}
+
 enum RichTextCodec {
     static func materializeHTML(_ input: URL, in work: URL) throws -> URL {
         let text = try NSAttributedString(url: input, options: [.documentType: NSAttributedString.DocumentType.rtfd], documentAttributes: nil)
@@ -295,7 +317,10 @@ enum RichTextCodec {
             for match in pattern.matches(in: html, range: NSRange(html.startIndex..., in: html)).reversed() {
                 let source = (html as NSString).substring(with: match.range(at: 2))
                 guard let original = URL(string: source) else { continue }
-                let candidate = directory.appendingPathComponent(original.lastPathComponent)
+                // Only a plain file name beside index.html is accepted.
+                let name = original.lastPathComponent
+                guard !name.isEmpty, name != ".", name != "..", !name.contains("/"),
+                      let candidate = PathContainment.resolved(directory.appendingPathComponent(name), inside: directory) else { continue }
                 if FileManager.default.fileExists(atPath: candidate.path), let range = Range(match.range(at: 2), in: html) {
                     html.replaceSubrange(range, with: candidate.absoluteString)
                 }

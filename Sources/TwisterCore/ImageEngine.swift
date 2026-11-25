@@ -9,22 +9,77 @@ import Vision
 public enum ImageEngine {
     private static let imageColorSpace = CGColorSpace(name: CGColorSpace.sRGB)!
     private static let imageContext = CIContext(options: [.cacheIntermediates: false])
-    public static func load(_ url: URL) throws -> CGImage {
-        if let source = CGImageSourceCreateWithURL(url as CFURL, nil),
-           let image = CGImageSourceCreateThumbnailAtIndex(source, 0, [kCGImageSourceCreateThumbnailFromImageAlways:true, kCGImageSourceCreateThumbnailWithTransform:true, kCGImageSourceThumbnailMaxPixelSize:32000] as CFDictionary) { return image }
-        if let image = NSImage(contentsOf: url), let cg = image.cgImage(forProposedRect:nil,context:nil,hints:nil) { return cg }
+    /// About 1 GB of RGBA raster, enough for medium-format camera files. The
+    /// limit is read from the header, so a small, highly compressed file
+    /// cannot make the decoder allocate more.
+    public static let maximumPixels = 250_000_000
+    static func checkPixelBudget(width: Int, height: Int) throws {
+        guard width > 0, height > 0 else { throw TwisterError.invalidInput("This image has no readable dimensions.") }
+        guard width.multipliedReportingOverflow(by: height).partialValue <= maximumPixels, width <= 1_000_000, height <= 1_000_000 else {
+            throw TwisterError.invalidInput("This image is too large to open (\(width) × \(height) pixels). Twister opens images up to 250 megapixels.")
+        }
+    }
+    /// The dimensions an image source declares, or nil when it has none.
+    static func declaredSize(_ source: CGImageSource) -> (Int, Int)? {
+        guard let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any],
+              let width = (properties[kCGImagePropertyPixelWidth] as? NSNumber)?.intValue,
+              let height = (properties[kCGImagePropertyPixelHeight] as? NSNumber)?.intValue else { return nil }
+        return (width, height)
+    }
+    public static func load(_ url: URL, token: CancellationToken = .init()) throws -> CGImage {
+        try decode(url, maximumSide: nil, token: token)
+    }
+    /// A copy whose longer side is at most `maximumSide` pixels, for previews,
+    /// thumbnails and scans. Image I/O reduces large images while decoding.
+    public static func loadPreview(_ url: URL, maximumSide: Int, token: CancellationToken = .init()) throws -> CGImage {
+        try decode(url, maximumSide: max(1, min(32_000, maximumSide)), token: token)
+    }
+    private static func decode(_ url: URL, maximumSide: Int?, token: CancellationToken) throws -> CGImage {
+        try token.check()
+        if let source = CGImageSourceCreateWithURL(url as CFURL, nil), CGImageSourceGetType(source) != nil, CGImageSourceGetCount(source) > 0 {
+            if let size = declaredSize(source) {
+                try checkPixelBudget(width: size.0, height: size.1)
+                if let image = CGImageSourceCreateThumbnailAtIndex(source, 0, [kCGImageSourceCreateThumbnailFromImageAlways:true, kCGImageSourceCreateThumbnailWithTransform:true, kCGImageSourceThumbnailMaxPixelSize:maximumSide ?? 32000] as CFDictionary) { return image }
+            }
+        }
+        if let image = NSImage(contentsOf: url) {
+            let width = image.representations.map(\.pixelsWide).max() ?? 0, height = image.representations.map(\.pixelsHigh).max() ?? 0
+            // Vector representations report no pixel size; their point size is drawn.
+            let pixelWidth = width > 0 ? width : Int(image.size.width.rounded(.up)), pixelHeight = height > 0 ? height : Int(image.size.height.rounded(.up))
+            try checkPixelBudget(width: pixelWidth, height: pixelHeight)
+            let scale = maximumSide.map { min(1, Double($0) / Double(max(pixelWidth, pixelHeight))) } ?? 1
+            return try rasterize(image, width: max(1, Int((Double(pixelWidth) * scale).rounded())), height: max(1, Int((Double(pixelHeight) * scale).rounded())))
+        }
         // FFmpeg handles additional decoders (including animated inputs' first frame).
+        // Its decoders refuse frames above the same pixel limit before allocating them.
         let temp = try OutputFiles.temporaryDirectory(); defer { try? FileManager.default.removeItem(at:temp) }
         let png = temp.appendingPathComponent("decoded.png")
-        try ProcessRunner.run(Dependencies.executable("ffmpeg"), ["-v","error","-i",url.path,"-frames:v","1",png.path])
-        guard let source=CGImageSourceCreateWithURL(png as CFURL,nil),let cg=CGImageSourceCreateImageAtIndex(source,0,nil) else { throw TwisterError.invalidInput("This image could not be decoded.") }
+        try ProcessRunner.run(Dependencies.executable("ffmpeg"), ["-v","error","-max_pixels",String(maximumPixels),"-i",url.path,"-frames:v","1",png.path], token: token, timeout: ProcessRunner.metadataTimeout)
+        guard let source=CGImageSourceCreateWithURL(png as CFURL,nil),let size=declaredSize(source) else { throw TwisterError.invalidInput("This image could not be decoded.") }
+        try checkPixelBudget(width: size.0, height: size.1)
+        let options: [CFString: Any] = maximumSide.map { [kCGImageSourceCreateThumbnailFromImageAlways:true, kCGImageSourceThumbnailMaxPixelSize:$0] } ?? [:]
+        guard let cg = maximumSide == nil ? CGImageSourceCreateImageAtIndex(source,0,nil) : CGImageSourceCreateThumbnailAtIndex(source,0,options as CFDictionary) else { throw TwisterError.invalidInput("This image could not be decoded.") }
         return cg
+    }
+    /// Draws an image into a bitmap of exactly the given pixel size. The
+    /// screen's backing scale is never applied, so a vector image cannot
+    /// produce more pixels than were checked.
+    static func rasterize(_ image: NSImage, width: Int, height: Int) throws -> CGImage {
+        guard let context = CGContext(data: nil, width: width, height: height, bitsPerComponent: 8, bytesPerRow: 0, space: imageColorSpace, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else {
+            throw TwisterError.invalidInput("This image could not be decoded.")
+        }
+        let rect = CGRect(x: 0, y: 0, width: width, height: height)
+        NSGraphicsContext.saveGraphicsState(); defer { NSGraphicsContext.restoreGraphicsState() }
+        NSGraphicsContext.current = NSGraphicsContext(cgContext: context, flipped: false)
+        image.draw(in: rect, from: .zero, operation: .copy, fraction: 1)
+        guard let drawn = context.makeImage() else { throw TwisterError.invalidInput("This image could not be decoded.") }
+        return drawn
     }
 
     public static func convert(_ input: URL, to format: String, options: OperationOptions, token: CancellationToken) throws -> [URL] {
         try token.check()
         if format == "pdf" { return try PDFEngine.create(inputs:[input],options:options,token:token) }
-        let image = try load(input)
+        let image = try load(input, token: token)
         let output=OutputFiles.unique(for:input,extension:format,directory:options.outputDirectory)
         var complete=false;defer { if !complete { try? FileManager.default.removeItem(at:output) } }
         let metadata = options.preserveMetadata ? CGImageSourceCreateWithURL(input as CFURL,nil).map { imageProperties($0,input:input) as CFDictionary } : nil
@@ -83,7 +138,7 @@ public enum ImageEngine {
                     var changes=ImageMetadataOptions();changes.removeAll=true
                     outputs.append(try editMetadata(input,changes:changes,options:options,token:token));continue
                 }
-                var image=try load(input)
+                var image=try load(input, token: token)
                 let transparentFrame = kind == .frameImage && color(options.imageFrame?.backgroundColor ?? options.backgroundColor).alpha < 1
                 let ext = transparentFrame || ["svg","gif"].contains(input.pathExtension.lowercased()) ? "png" : input.pathExtension
                 let suffix: String
@@ -441,11 +496,11 @@ public enum ImageEngine {
     private static func collage(_ inputs: [URL], options: OperationOptions, token: CancellationToken) throws -> [URL] {
         guard let first=inputs.first else { throw TwisterError.invalidInput("Choose images for your collage.") }
         if let settings=options.collage {
-            let images=try inputs.map { input in try token.check();return try load(input) }
+            let images=try inputs.map { input in try token.check();return try load(input, token: token) }
             let output=OutputFiles.unique(for:first,extension:"png",suffix:" - Collage",directory:options.outputDirectory)
             try write(collageImage(images,settings:settings),to:output);return [output]
         }
-        let images=try inputs.map(load), columns=max(1,min(inputs.count,options.collageColumns)),rows=(inputs.count+columns-1)/columns
+        let images=try inputs.map { try load($0, token: token) }, columns=max(1,min(inputs.count,options.collageColumns)),rows=(inputs.count+columns-1)/columns
         let cellWidth=options.width ?? 600,cellHeight=options.height ?? 600,gap=max(0,options.padding)
         let width=columns*cellWidth+(columns+1)*gap,height=rows*cellHeight+(rows+1)*gap
         let ctx=try canvas(width,height);ctx.setFillColor(color(options.backgroundColor));ctx.fill(CGRect(x:0,y:0,width:width,height:height))

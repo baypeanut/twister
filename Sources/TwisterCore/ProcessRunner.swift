@@ -60,7 +60,7 @@ public enum ProcessRunner {
     static func localOnlyArguments(_ executable: URL, _ arguments: [String], environment: [String: String] = ProcessInfo.processInfo.environment) -> [String] {
         func isTool(_ name: String) -> Bool {
             if executable.lastPathComponent == name { return true }
-            guard let override = environment["TWISTER_" + name.uppercased()], !override.isEmpty else { return false }
+            guard let override = Dependencies.override(name, environment: environment) else { return false }
             return URL(fileURLWithPath: override).standardizedFileURL.path == executable.standardizedFileURL.path
         }
         let option = "-protocol_whitelist", restriction = [option, localProtocols]
@@ -194,11 +194,25 @@ public enum ProcessRunner {
 }
 
 public enum Dependencies {
-    public static func executable(_ name: String) throws -> URL {
+    /// `TWISTER_` executable overrides serve development and the command-line
+    /// tool. A packaged app never takes its tools from the environment.
+    public static var honorsOverrides: Bool {
+        #if DEBUG
+        return true
+        #else
+        return Bundle.main.bundleURL.pathExtension != "app"
+        #endif
+    }
+    public static func override(_ name: String, environment: [String: String] = ProcessInfo.processInfo.environment) -> String? {
+        guard honorsOverrides, let value = environment["TWISTER_" + name.uppercased()], !value.isEmpty else { return nil }
+        return value
+    }
+    /// Where a tool would run from, without verifying it. Readiness checks
+    /// use this; `executable` verifies tools that setup installed.
+    public static func locate(_ name: String) throws -> URL {
         let fm = FileManager.default
-        let variable = "TWISTER_" + name.uppercased()
         var paths: [String] = []
-        if let override = ProcessInfo.processInfo.environment[variable] { paths.append(override) }
+        if let override = override(name) { paths.append(override) }
         if let resource = Bundle.main.resourceURL {
             paths.append(resource.appendingPathComponent("Tools/\(name)").path)
             if name == "exiftool" { paths.append(resource.appendingPathComponent("Tools/ExifTool/exiftool").path) }
@@ -222,6 +236,16 @@ public enum Dependencies {
             return fm.isExecutableFile(atPath:resolved.path) && values?.isRegularFile == true && (values?.fileSize ?? 0)>0
         }) else { throw TwisterError.missingDependency(name) }
         return URL(fileURLWithPath: found)
+    }
+    /// The tool to run. A tool from Twister's own tool folder must still match
+    /// its pinned hash or signature; that is checked once per session and
+    /// again whenever the file changes.
+    public static func executable(_ name: String) throws -> URL {
+        let url = try locate(name)
+        if url.resolvingSymlinksInPath().standardizedFileURL.path.hasPrefix(ExternalToolSetup.root.resolvingSymlinksInPath().standardizedFileURL.path + "/") {
+            try ExternalToolSetup.verifyInstalled(url, tool: name)
+        }
+        return url
     }
 }
 

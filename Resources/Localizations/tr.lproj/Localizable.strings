@@ -91,6 +91,7 @@
 "32-BIT INTEGER" = "32 BİT TAM SAYI";
 "32-bit float" = "32 bit kayan nokta";
 "32-bit integer" = "32 bit tam sayı";
+"A DOWNLOADED FILE COULD NOT BE VERIFIED. NOTHING WAS SAVED." = "İNDİRİLEN BİR DOSYA DOĞRULANAMADI. HİÇBİR ŞEY KAYDEDİLMEDİ.";
 "A FEW SMALL PREFERENCES. A SMOOTHER EVERYDAY." = "BİRKAÇ KÜÇÜK TERCİH. DAHA AKICI BİR GÜN.";
 "A FOLDER CANNOT BE MOVED INSIDE ITSELF." = "BİR KLASÖR KENDİ İÇİNE TAŞINAMAZ.";
 "A FRESH FILE IS ON ITS WAY." = "YENİ DOSYAN HAZIRLANIYOR.";
@@ -105,6 +106,7 @@
 "A NEW FORM.\nIN A TAP." = "TEK DOKUNUŞ.\nYENİ BİR BİÇİM.";
 "A PLACE FOR FRESH FILES." = "YENİ DOSYALAR İÇİN BİR YER.";
 "A PRESET KEEPS AN OPERATION WITH ITS OPTIONS. SAVE ONE FROM A TOOL OR FROM FORMATS, THEN RUN IT ON ANY FILES IT FITS, FROM FINDER OR WITH TWISTER-CLI." = "ÖN AYAR, BİR İŞLEMİ SEÇENEKLERİYLE BİRLİKTE SAKLAR. BİR ARAÇTAN VEYA BİÇİMLER BÖLÜMÜNDEN KAYDET; SONRA UYDUĞU DOSYALARDA, FİNDER'DAN YA DA TWİSTER-CLİ İLE ÇALIŞTIR.";
+"A downloaded file could not be verified. Nothing was saved." = "İndirilen bir dosya doğrulanamadı. Hiçbir şey kaydedilmedi.";
 "A few small preferences. A smoother everyday." = "Birkaç küçük tercih. Daha akıcı bir gün.";
 "A folder cannot be moved inside itself." = "Bir klasör kendi içine taşınamaz.";
 "A fresh Twister is ready." = "Yeni Twister hazır.";
@@ -149,6 +151,7 @@
 "ALLOW TWISTER IN MACOS LOGIN ITEMS." = "MACOS GİRİŞ ÖĞELERİ BÖLÜMÜNDEN TWİSTER'YE İZİN VER.";
 "ALREADY AVAILABLE ON YOUR COMPUTER" = "BİLGİSAYARINDA ZATEN HAZIR";
 "ALWAYS SAVE BESIDE ORIGINALS" = "HER ZAMAN ORİJİNALLERİN YANINA KAYDET";
+"AN ARCHIVE LINK POINTS OUTSIDE THE EXTRACTION FOLDER." = "BİR ARŞİV BAĞLANTISI ÇIKARMA KLASÖRÜNÜN DIŞINI GÖSTERİYOR.";
 "AN UPDATE IS AVAILABLE." = "BİR GÜNCELLEME VAR.";
 "ANNOTATE" = "İŞARETLE";
 "ANNOTATE IMAGE" = "GÖRSELİ İŞARETLE";
@@ -213,6 +216,7 @@
 "Always save beside originals" = "Her zaman orijinallerin yanına kaydet";
 "Always save to %@" = "Her zaman %@ klasörüne kaydet";
 "Always save to %lld" = "Her zaman %lld klasörüne kaydet";
+"An archive link points outside the extraction folder." = "Bir arşiv bağlantısı çıkarma klasörünün dışını gösteriyor.";
 "An update is available." = "Bir güncelleme var.";
 "Annotate" = "İşaretle";
 "Annotate Image" = "Görseli İşaretle";
@@ -513,6 +517,8 @@
 "Could not complete this task" = "Bu işlem tamamlanamadı";
 "Could not copy the selected file paths." = "Seçilen dosyaların yolları kopyalanamadı.";
 "Could not copy the selected files." = "Seçilen dosyalar kopyalanamadı.";
+"Could not keep the download safety label on %@." = "%@ üzerindeki indirme güvenlik etiketi korunamadı.";
+"Could not keep the download safety label on %lld." = "%lld üzerindeki indirme güvenlik etiketi korunamadı.";
 "Cover style" = "Kaplama stili";
 "Create Collage" = "Kolaj Oluştur";
 "Create PDF" = "PDF Oluştur";
@@ -936,8 +942,8 @@
 "LET’S MAKE SOMETHING OF IT." = "HADİ YENİ BİR ŞEY YAPALIM.";
 "LET’S TRY THAT AGAIN." = "BİR DAHA DENEYELİM.";
 "LIBRARY" = "KİTAPLIK";
-"LIBREOFFICE 26.8.1 ENABLES OFFICE DOCUMENT CONVERSIONS. A 285 MB DOWNLOAD; ABOUT 1 GB INSTALLED. MPL 2.0 AND ITS INCLUDED THIRD-PARTY LICENSES." = "LİBREOFFİCE 26.8.1, OFFİCE BELGELERİNİ DÖNÜŞTÜRMEYİ SAĞLAR. İNDİRME 285 MB; KURULUM YAKLAŞIK 1 GB. MPL 2.0 VE İÇERDİĞİ ÜÇÜNCÜ TARAF LİSANSLARI GEÇERLİDİR.";
 "LIBREOFFICE 26.8.1 ENABLES OFFICE DOCUMENT CONVERSIONS. APPROXIMATELY 360 MB TO DOWNLOAD. MPL 2.0 AND ITS INCLUDED THIRD-PARTY LICENSES." = "LİBREOFFİCE 26.8.1, OFFİCE BELGELERİNİ DÖNÜŞTÜRMEYİ SAĞLAR. İNDİRME YAKLAŞIK 360 MB. MPL 2.0 VE İÇERDİĞİ ÜÇÜNCÜ TARAF LİSANSLARI GEÇERLİDİR.";
+"LIBREOFFICE 26.8.3 ENABLES OFFICE DOCUMENT CONVERSIONS. A 286 MB DOWNLOAD; ABOUT 1 GB INSTALLED. MPL 2.0 AND ITS INCLUDED THIRD-PARTY LICENSES." = "LİBREOFFİCE 26.8.3, OFFİCE BELGELERİNİ DÖNÜŞTÜRMEYİ SAĞLAR. İNDİRME 286 MB; KURULUM YAKLAŞIK 1 GB. MPL 2.0 VE İÇERDİĞİ ÜÇÜNCÜ TARAF LİSANSLARI GEÇERLİDİR.";
 "LIGHT" = "AÇIK";
 "LIGHTING" = "IŞIK";
 "LINE" = "ÇİZGİ";
@@ -962,8 +968,8 @@
 "Let’s make something of it." = "Hadi yeni bir şey yapalım.";
 "Let’s try that again." = "Bir daha deneyelim.";
 "Library" = "Kitaplık";
-"LibreOffice 26.8.1 enables Office document conversions. A 285 MB download; about 1 GB installed. MPL 2.0 and its included third-party licenses." = "LibreOffice 26.8.1, Office belgelerini dönüştürmeyi sağlar. İndirme 285 MB; kurulum yaklaşık 1 GB. MPL 2.0 ve içerdiği üçüncü taraf lisansları geçerlidir.";
 "LibreOffice 26.8.1 enables Office document conversions. Approximately 360 MB to download. MPL 2.0 and its included third-party licenses." = "LibreOffice 26.8.1, Office belgelerini dönüştürmeyi sağlar. İndirme yaklaşık 360 MB. MPL 2.0 ve içerdiği üçüncü taraf lisansları geçerlidir.";
+"LibreOffice 26.8.3 enables Office document conversions. A 286 MB download; about 1 GB installed. MPL 2.0 and its included third-party licenses." = "LibreOffice 26.8.3, Office belgelerini dönüştürmeyi sağlar. İndirme 286 MB; kurulum yaklaşık 1 GB. MPL 2.0 ve içerdiği üçüncü taraf lisansları geçerlidir.";
 "Light" = "Açık";
 "Lighting" = "Işık";
 "Line" = "Çizgi";
@@ -1727,8 +1733,13 @@
 "TEXT OR CALLOUT" = "METİN VEYA AÇIKLAMA";
 "TEXT SIZE" = "METİN BOYUTU";
 "TEXTURE" = "DOKU";
+"THE ARCHIVE CONTAINS A SYMBOLIC LINK LOOP." = "ARŞİV DÖNGÜSEL BİR SEMBOLİK BAĞLANTI İÇERİYOR.";
+"THE DOWNLOAD CONNECTION COULD NOT BE PREPARED." = "İNDİRME BAĞLANTISI HAZIRLANAMADI.";
 "THE DOWNLOADED COPY WAS REMOVED. A COPY FOUND ELSEWHERE ON YOUR COMPUTER IS STILL USED." = "İNDİRİLEN KOPYA KALDIRILDI. BİLGİSAYARINDA BAŞKA BİR YERDE BULUNAN KOPYA KULLANILMAYA DEVAM EDİYOR.";
 "THE DOWNLOADED TOOLS ARE INCOMPLETE. PLEASE TRY SETUP AGAIN." = "İNDİRİLEN ARAÇLAR EKSİK. KURULUMU TEKRAR DENE.";
+"THE LINK DID NOT RETURN A SUPPORTED IMAGE." = "BAĞLANTI DESTEKLENEN BİR GÖRÜNTÜ DÖNDÜRMEDİ.";
+"THE LINK DID NOT RETURN A SUPPORTED MEDIA FILE." = "BAĞLANTI DESTEKLENEN BİR MEDYA DOSYASI DÖNDÜRMEDİ.";
+"THE OFFICE TOOLS ARE NOT SIGNED BY THEIR PUBLISHER. NOTHING WAS INSTALLED OR OPENED." = "OFİS ARAÇLARI YAYINCILARI TARAFINDAN İMZALANMAMIŞ. HİÇBİR ŞEY KURULMADI VEYA AÇILMADI.";
 "THE OUTPUT FOLDER IS NOT WRITABLE. CHOOSE ANOTHER FOLDER, OR SAVE BESIDE THE ORIGINALS." = "KAYIT KLASÖRÜNE YAZILAMIYOR. BAŞKA BİR KLASÖR SEÇ VEYA ORİJİNALLERİN YANINA KAYDET.";
 "THE PRESET IS REMOVED. FILES IT MADE STAY WHERE THEY ARE." = "ÖN AYAR KALDIRILIR. OLUŞTURDUĞU DOSYALAR YERİNDE KALIR.";
 "THE SAME CONVERSION AND TOOL CATALOG AS MACOS." = "MACOS İLE AYNI DÖNÜŞTÜRME VE ARAÇ SEÇENEKLERİ.";
@@ -1743,6 +1754,7 @@
 "THIS FILE HAS MOVED OR WAS DELETED." = "BU DOSYA TAŞINMIŞ VEYA SİLİNMİŞ.";
 "THIS FORMAT CAN BE IMPORTED. CHOOSE AN OUTPUT FORMAT IN THE SIDEBAR TO CONFIGURE ITS DEFAULTS." = "BU BİÇİM İÇE AKTARILABİLİR. VARSAYILANLARI AYARLAMAK İÇİN KENAR ÇUBUĞUNDAN BİR ÇIKTI BİÇİMİ SEÇ.";
 "THIS FORMAT USES ITS ORIGINAL DOCUMENT STRUCTURE. NO EXPORT DEFAULTS ARE NEEDED." = "BU BİÇİM ORİJİNAL BELGE YAPISINI KULLANIR. DIŞA AKTARMA TERCİHİ GEREKMEZ.";
+"THIS IMAGE HAS NO READABLE DIMENSIONS." = "BU GÖRÜNTÜNÜN OKUNABİLİR BOYUTLARI YOK.";
 "THIS IMAGE IS TOO LARGE TO PASTE. CHOOSE THE IMAGE FILE INSTEAD." = "BU GÖRSEL YAPIŞTIRILAMAYACAK KADAR BÜYÜK. GÖRSEL DOSYASINI SEÇ.";
 "THIS OUTPUT FORMAT HAS NO ADJUSTABLE CONVERSION DEFAULTS." = "BU ÇIKTI BİÇİMİNİN AYARLANABİLİR DÖNÜŞTÜRME TERCİHİ YOK.";
 "THIS PRESET DOES NOT FIT THE SELECTED FILES." = "BU ÖN AYAR SEÇİLİ DOSYALARA UYMUYOR.";
@@ -1774,6 +1786,7 @@
 "TWISTER CANNOT CONVERT THESE FILES TOGETHER." = "TWİSTER BU DOSYALARI BİRLİKTE DÖNÜŞTÜREMİYOR.";
 "TWISTER CHECKS ONCE AN HOUR WHILE IT’S RUNNING. YOU CHOOSE WHEN TO DOWNLOAD AND INSTALL." = "TWİSTER ÇALIŞIRKEN SAATTE BİR DENETLER. İNDİRME VE KURULUM ZAMANINI SEN SEÇERSİN.";
 "TWISTER CONVERTS, EDITS, AND ORGANIZES FILES. EVERYTHING RUNS ON YOUR MAC." = "TWİSTER DOSYALARI DÖNÜŞTÜRÜR, DÜZENLER VE ORGANİZE EDER. HER ŞEY MAC’İNDE ÇALIŞIR.";
+"TWISTER DOWNLOADS ONLY FROM PUBLIC INTERNET ADDRESSES, NOT FROM THIS MAC OR THE LOCAL NETWORK." = "TWİSTER YALNIZCA HERKESE AÇIK İNTERNET ADRESLERİNDEN İNDİRİR; BU MAC'TEN VEYA YEREL AĞDAN İNDİRMEZ.";
 "TWISTER IS PROCESSING FILES. CLICK TO VIEW PROGRESS." = "TWİSTER DOSYALARI İŞLİYOR. İLERLEMEYİ GÖRMEK İÇİN TIKLA.";
 "TWISTER IS READY" = "TWİSTER HAZIR";
 "TWISTER SAVES RESULTS BESIDE THE ORIGINALS. ALLOW A FOLDER ONCE TO INCLUDE EVERY FOLDER INSIDE IT." = "TWİSTER SONUÇLARI ORİJİNALLERİN YANINA KAYDEDER. BİR KLASÖRE VERİLEN İZİN, İÇİNDEKİ KLASÖRLERİ DE KAPSAR.";
@@ -1794,8 +1807,19 @@
 "Text or callout" = "Metin veya açıklama";
 "Text size" = "Metin boyutu";
 "Texture" = "Doku";
+"The archive contains a symbolic link loop." = "Arşiv döngüsel bir sembolik bağlantı içeriyor.";
+"The archive expands beyond the %@ safety limit." = "Arşiv açıldığında %@ güvenlik sınırını aşıyor.";
+"The archive expands beyond the %lld safety limit." = "Arşiv açıldığında %lld güvenlik sınırını aşıyor.";
+"The archive has too many entries (%@ limit)." = "Arşivde çok fazla öğe var (sınır: %@).";
+"The archive has too many entries (%lld limit)." = "Arşivde çok fazla öğe var (sınır: %lld).";
+"The download connection could not be prepared." = "İndirme bağlantısı hazırlanamadı.";
 "The downloaded copy was removed. A copy found elsewhere on your computer is still used." = "İndirilen kopya kaldırıldı. Bilgisayarında başka bir yerde bulunan kopya kullanılmaya devam ediyor.";
 "The downloaded tools are incomplete. Please try setup again." = "İndirilen araçlar eksik. Kurulumu tekrar dene.";
+"The installed %@ no longer matches the verified download. Open tool setup and download it again." = "Kurulu %@ artık doğrulanmış indirmeyle eşleşmiyor. Araç kurulumunu aç ve yeniden indir.";
+"The installed %lld no longer matches the verified download. Open tool setup and download it again." = "Kurulu %lld artık doğrulanmış indirmeyle eşleşmiyor. Araç kurulumunu aç ve yeniden indir.";
+"The link did not return a supported image." = "Bağlantı desteklenen bir görüntü döndürmedi.";
+"The link did not return a supported media file." = "Bağlantı desteklenen bir medya dosyası döndürmedi.";
+"The office tools are not signed by their publisher. Nothing was installed or opened." = "Ofis araçları yayıncıları tarafından imzalanmamış. Hiçbir şey kurulmadı veya açılmadı.";
 "The output folder is not writable. Choose another folder, or save beside the originals." = "Kayıt klasörüne yazılamıyor. Başka bir klasör seç veya orijinallerin yanına kaydet.";
 "The preset is removed. Files it made stay where they are." = "Ön ayar kaldırılır. Oluşturduğu dosyalar yerinde kalır.";
 "The presets file could not be read and was kept as %@." = "Ön ayar dosyası okunamadı ve %@ adıyla saklandı.";
@@ -1815,6 +1839,11 @@
 "This file has moved or was deleted." = "Bu dosya taşınmış veya silinmiş.";
 "This format can be imported. Choose an output format in the sidebar to configure its defaults." = "Bu biçim içe aktarılabilir. Varsayılanları ayarlamak için kenar çubuğundan bir çıktı biçimi seç.";
 "This format uses its original document structure. No export defaults are needed." = "Bu biçim orijinal belge yapısını kullanır. Dışa aktarma tercihi gerekmez.";
+"This image has no readable dimensions." = "Bu görüntünün okunabilir boyutları yok.";
+"This image is too large to open (%@ × %@ pixels). Twister opens images up to 250 megapixels." = "Bu görüntü açılamayacak kadar büyük (%@ × %@ piksel). Twister en fazla 250 megapiksellik görüntüleri açar.";
+"This image is too large to open (%@ × %lld pixels). Twister opens images up to 250 megapixels." = "Bu görüntü açılamayacak kadar büyük (%@ × %lld piksel). Twister en fazla 250 megapiksellik görüntüleri açar.";
+"This image is too large to open (%lld × %@ pixels). Twister opens images up to 250 megapixels." = "Bu görüntü açılamayacak kadar büyük (%lld × %@ piksel). Twister en fazla 250 megapiksellik görüntüleri açar.";
+"This image is too large to open (%lld × %lld pixels). Twister opens images up to 250 megapixels." = "Bu görüntü açılamayacak kadar büyük (%lld × %lld piksel). Twister en fazla 250 megapiksellik görüntüleri açar.";
 "This image is too large to paste. Choose the image file instead." = "Bu görsel yapıştırılamayacak kadar büyük. Görsel dosyasını seç.";
 "This output format has no adjustable conversion defaults." = "Bu çıktı biçiminin ayarlanabilir dönüştürme tercihi yok.";
 "This preset does not fit the selected files." = "Bu ön ayar seçili dosyalara uymuyor.";
@@ -1851,6 +1880,7 @@
 "Twister cannot convert these files together." = "Twister bu dosyaları birlikte dönüştüremiyor.";
 "Twister checks once an hour while it’s running. You choose when to download and install." = "Twister çalışırken saatte bir denetler. İndirme ve kurulum zamanını sen seçersin.";
 "Twister converts, edits, and organizes files. Everything runs on your Mac." = "Twister dosyaları dönüştürür, düzenler ve organize eder. Her şey Mac’inde çalışır.";
+"Twister downloads only from public internet addresses, not from this Mac or the local network." = "Twister yalnızca herkese açık internet adreslerinden indirir; bu Mac'ten veya yerel ağdan indirmez.";
 "Twister is processing files. Click to view progress." = "Twister dosyaları işliyor. İlerlemeyi görmek için tıkla.";
 "Twister saves results beside the originals. Allow a folder once to include every folder inside it." = "Twister sonuçları orijinallerin yanına kaydeder. Bir klasöre verilen izin, içindeki klasörleri de kapsar.";
 "UNDO" = "GERİ AL";

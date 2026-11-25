@@ -21,20 +21,30 @@ twister_load_signing_configuration() {
   case "$twister_signing_mode" in
     ad-hoc)
       if [[ "$twister_signing_identity" != "-" ]]; then print -u2 "A certificate identity requires explicit local, apple-development, or developer-id signing mode."; return 1; fi
-      twister_signing_flags=(--force --sign - --options 0 --timestamp=none)
+      twister_signing_flags=(--force --sign - --options runtime --timestamp=none)
       ;;
     local|apple-development|developer-id)
       if [[ ! "$twister_signing_identity" =~ '^[0-9A-Fa-f]{40}$' ]]; then print -u2 "Stable signing requires the exact 40-hex certificate SHA-1, not a certificate name."; return 1; fi
       twister_signing_identity=${twister_signing_identity:u}
-      twister_signing_flags=(--force --sign "$twister_signing_identity")
+      # Every mode uses the hardened runtime, so no build accepts injected
+      # libraries or debugger attachment.
+      twister_signing_flags=(--force --sign "$twister_signing_identity" --options runtime)
       if [[ "$twister_signing_mode" != developer-id ]]; then
-        twister_signing_flags+=(--options 0 --timestamp=none)
+        twister_signing_flags+=(--timestamp=none)
       else
-        twister_signing_flags+=(--options runtime --timestamp)
+        twister_signing_flags+=(--timestamp)
       fi
       ;;
     *) print -u2 "Signing Mode must be ad-hoc, local, apple-development, or developer-id."; return 1 ;;
   esac
+  # Ad-hoc and self-signed code has no Team ID, so library validation cannot
+  # match the app to its own embedded updater framework. build-app.sh drops
+  # this for builds without updates, which embed no framework. Injection
+  # through dyld environment variables stays blocked by the hardened runtime.
+  twister_app_entitlements=()
+  if [[ "$twister_signing_mode" == ad-hoc || "$twister_signing_mode" == local ]]; then
+    twister_app_entitlements=(--entitlements "$PWD/Configuration/LocalSigning.entitlements")
+  fi
   if [[ -n "${TWISTER_NOTARY_PROFILE:-}" && "$twister_signing_mode" != developer-id ]]; then
     print -u2 "Notarization requires developer-id signing mode."; return 1
   fi
@@ -74,4 +84,15 @@ twister_verify_signing_identity() {
       print -u2 "apple-development mode requires an Apple-issued Mac Development certificate."; return 1
     }
   fi
+}
+
+# Fails unless each code item is signed with the hardened runtime.
+twister_require_hardened_runtime() {
+  local code flags
+  for code in "$@"; do
+    flags=$(codesign --display --verbose=1 "$code" 2>&1 | sed -n 's/.*flags=\(0x[0-9a-f]*\).*/\1/p' | head -1)
+    if [[ -z "$flags" ]] || (( (flags & 0x10000) == 0 )); then
+      print -u2 "Missing hardened runtime: $code"; return 1
+    fi
+  done
 }

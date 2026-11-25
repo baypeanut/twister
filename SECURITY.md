@@ -11,7 +11,10 @@ For sensitive reports, use the repository's private vulnerability reporting feat
 - File exports are staged before publication and avoid replacing originals.
 - Archive extraction rejects traversal, unsafe links, special files and oversized archives.
 - Native media subprocesses receive argument arrays and restrict nested input protocols.
-- Downloaded runtimes are pinned to HTTPS URLs and SHA-256 hashes.
+- Downloaded runtimes are pinned to HTTPS URLs and SHA-256 hashes, and installed tools are verified again before use.
+- Files extracted or converted from a quarantined input keep its quarantine, including read-only entries, and web downloads are quarantined, so Gatekeeper still assesses them. Files that helper tools create for their own use are not quarantined.
+- Link downloads refuse this Mac and local network addresses unless the user allows them. Every connection of a download, including redirects and media addresses found inside pages, goes through a loopback proxy that resolves the destination once, refuses addresses that are not public and connects to the address it checked.
+- Images are opened up to 250 megapixels, checked from their headers before decoding; previews, thumbnails and PDF page rasters are reduced to a fixed pixel budget instead.
 - Update feeds and archives require signature verification. The default Twister channel is disabled until independent release trust is configured.
 - Preferences, imported clipboard files, runtime storage and credential namespaces are separate from other applications.
 

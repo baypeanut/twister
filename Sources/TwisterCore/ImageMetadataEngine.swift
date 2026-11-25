@@ -192,7 +192,7 @@ public enum ImageMetadataEngine {
     }
     private static func run(_ args:[String],token:CancellationToken) throws -> ProcessResult {
         var paths:[URL]=[]
-        if let override=ProcessInfo.processInfo.environment["TWISTER_EXIFTOOL"] { paths.append(URL(fileURLWithPath:override)) }
+        if let override=Dependencies.override("exiftool") { paths.append(URL(fileURLWithPath:override)) }
         if let resource=Bundle.main.resourceURL { paths.append(resource.appendingPathComponent("Tools/ExifTool/exiftool")) }
         #if DEBUG
         let root=URL(fileURLWithPath:#filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()

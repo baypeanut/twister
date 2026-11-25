@@ -104,6 +104,20 @@ public struct Preset:Identifiable,Sendable {
         return options
     }
     public func applies(to inputs:[URL])->Bool { operation.applies(to:inputs) }
+    /// A preset from a file keeps its operation and settings only. Where it
+    /// saves, and files it would read from this Mac, stay the user's choice.
+    public var imported:Preset {
+        var preset=self
+        if case .folder = preset.destination { preset.destination=nil }
+        var options=preset.options
+        options.visualizationImage=nil
+        options.imageFrame?.backgroundImage=nil
+        if options.imageFrame?.backdrop == .image { options.imageFrame?.backdrop = .solid }
+        options.collage?.backgroundImage=nil
+        options.imageAnnotations.removeAll { $0.imageURL != nil }
+        preset.options=options
+        return preset
+    }
 
     /// The request this preset makes for the files. `fallback` is the caller's
     /// own destination and is used when the preset does not name one.
@@ -203,6 +217,7 @@ public struct PresetLibrary {
     }
     /// Adds presets from an exported file or a single preset object. A name
     /// that is taken gets a number instead of replacing the saved preset.
+    /// Imported presets save where the user chooses and name no local files.
     @discardableResult public mutating func importPresets(from data:Data) throws -> [Preset] {
         guard let object=try? JSONSerialization.jsonObject(with:data) else { throw PresetError.unreadable("The file is not valid JSON.") }
         let entries:[Any]
@@ -212,7 +227,7 @@ public struct PresetLibrary {
         guard !entries.isEmpty else { throw PresetError.unreadable("The file has no presets.") }
         // Nothing is added unless every entry can be read.
         var imported:[Preset]=[]
-        for var preset in try entries.map(Preset.init(json:)) {
+        for var preset in try entries.map({ try Preset(json:$0).imported }) {
             preset.name=availableName(preset.name)
             imported.append(try add(preset))
         }

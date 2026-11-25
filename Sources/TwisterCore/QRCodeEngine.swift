@@ -31,14 +31,13 @@ public enum QRCodeEngine {
                     for pageIndex in 0..<document.pageCount {
                         try token.check()
                         guard let page=document.page(at:pageIndex) else { continue }
-                        let box=page.bounds(for:.mediaBox),scale=min(3,4096/max(box.width,box.height))
-                        let thumbnail=page.thumbnail(of:NSSize(width:max(1,box.width*scale),height:max(1,box.height*scale)),for:.mediaBox)
-                        guard let image=thumbnail.cgImage(forProposedRect:nil,context:nil,hints:nil) else { throw TwisterError.failed("Could not render PDF page \(pageIndex+1).") }
+                        let box=PDFOfficeCodec.visualBounds(page),scale=min(3,4096/max(1,box.width,box.height))
+                        guard let image=try? PDFEngine.raster(page,dpi:72*scale,annotations:true,token:token) else { try token.check();throw TwisterError.failed("Could not render PDF page \(pageIndex+1).") }
                         report.results += try scanImage(image,input:input,page:pageIndex+1,token:token)
                         progress((Double(index)+Double(pageIndex+1)/Double(max(1,document.pageCount)))/Double(max(1,inputs.count)),"\(input.lastPathComponent), page \(pageIndex+1)")
                     }
                 } else {
-                    report.results += try scanImage(ImageEngine.load(input),input:input,page:nil,token:token)
+                    report.results += try scanImage(ImageEngine.loadPreview(input,maximumSide:8192,token:token),input:input,page:nil,token:token)
                 }
             } catch {
                 try token.check()

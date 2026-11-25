@@ -91,6 +91,7 @@
 "32-BIT INTEGER" = "32-BIT INTEGER";
 "32-bit float" = "32-bit float";
 "32-bit integer" = "32-bit integer";
+"A DOWNLOADED FILE COULD NOT BE VERIFIED. NOTHING WAS SAVED." = "A DOWNLOADED FILE COULD NOT BE VERIFIED. NOTHING WAS SAVED.";
 "A FEW SMALL PREFERENCES. A SMOOTHER EVERYDAY." = "A FEW SMALL PREFERENCES. A SMOOTHER EVERYDAY.";
 "A FOLDER CANNOT BE MOVED INSIDE ITSELF." = "A FOLDER CANNOT BE MOVED INSIDE ITSELF.";
 "A FRESH FILE IS ON ITS WAY." = "A FRESH FILE IS ON ITS WAY.";
@@ -105,6 +106,7 @@
 "A NEW FORM.\nIN A TAP." = "A NEW FORM.\nIN A TAP.";
 "A PLACE FOR FRESH FILES." = "A PLACE FOR FRESH FILES.";
 "A PRESET KEEPS AN OPERATION WITH ITS OPTIONS. SAVE ONE FROM A TOOL OR FROM FORMATS, THEN RUN IT ON ANY FILES IT FITS, FROM FINDER OR WITH TWISTER-CLI." = "A PRESET KEEPS AN OPERATION WITH ITS OPTIONS. SAVE ONE FROM A TOOL OR FROM FORMATS, THEN RUN IT ON ANY FILES IT FITS, FROM FINDER OR WITH TWISTER-CLI.";
+"A downloaded file could not be verified. Nothing was saved." = "A downloaded file could not be verified. Nothing was saved.";
 "A few small preferences. A smoother everyday." = "A few small preferences. A smoother everyday.";
 "A folder cannot be moved inside itself." = "A folder cannot be moved inside itself.";
 "A fresh Twister is ready." = "A fresh Twister is ready.";
@@ -149,6 +151,7 @@
 "ALLOW TWISTER IN MACOS LOGIN ITEMS." = "ALLOW TWISTER IN MACOS LOGIN ITEMS.";
 "ALREADY AVAILABLE ON YOUR COMPUTER" = "ALREADY AVAILABLE ON YOUR COMPUTER";
 "ALWAYS SAVE BESIDE ORIGINALS" = "ALWAYS SAVE BESIDE ORIGINALS";
+"AN ARCHIVE LINK POINTS OUTSIDE THE EXTRACTION FOLDER." = "AN ARCHIVE LINK POINTS OUTSIDE THE EXTRACTION FOLDER.";
 "AN UPDATE IS AVAILABLE." = "AN UPDATE IS AVAILABLE.";
 "ANNOTATE" = "ANNOTATE";
 "ANNOTATE IMAGE" = "ANNOTATE IMAGE";
@@ -213,6 +216,7 @@
 "Always save beside originals" = "Always save beside originals";
 "Always save to %@" = "Always save to %@";
 "Always save to %lld" = "Always save to %lld";
+"An archive link points outside the extraction folder." = "An archive link points outside the extraction folder.";
 "An update is available." = "An update is available.";
 "Annotate" = "Annotate";
 "Annotate Image" = "Annotate Image";
@@ -513,6 +517,8 @@
 "Could not complete this task" = "Could not complete this task";
 "Could not copy the selected file paths." = "Could not copy the selected file paths.";
 "Could not copy the selected files." = "Could not copy the selected files.";
+"Could not keep the download safety label on %@." = "Could not keep the download safety label on %@.";
+"Could not keep the download safety label on %lld." = "Could not keep the download safety label on %lld.";
 "Cover style" = "Cover style";
 "Create Collage" = "Create Collage";
 "Create PDF" = "Create PDF";
@@ -936,8 +942,8 @@
 "LET’S MAKE SOMETHING OF IT." = "LET’S MAKE SOMETHING OF IT.";
 "LET’S TRY THAT AGAIN." = "LET’S TRY THAT AGAIN.";
 "LIBRARY" = "LIBRARY";
-"LIBREOFFICE 26.8.1 ENABLES OFFICE DOCUMENT CONVERSIONS. A 285 MB DOWNLOAD; ABOUT 1 GB INSTALLED. MPL 2.0 AND ITS INCLUDED THIRD-PARTY LICENSES." = "LIBREOFFICE 26.8.1 ENABLES OFFICE DOCUMENT CONVERSIONS. A 285 MB DOWNLOAD; ABOUT 1 GB INSTALLED. MPL 2.0 AND ITS INCLUDED THIRD-PARTY LICENSES.";
 "LIBREOFFICE 26.8.1 ENABLES OFFICE DOCUMENT CONVERSIONS. APPROXIMATELY 360 MB TO DOWNLOAD. MPL 2.0 AND ITS INCLUDED THIRD-PARTY LICENSES." = "LIBREOFFICE 26.8.1 ENABLES OFFICE DOCUMENT CONVERSIONS. APPROXIMATELY 360 MB TO DOWNLOAD. MPL 2.0 AND ITS INCLUDED THIRD-PARTY LICENSES.";
+"LIBREOFFICE 26.8.3 ENABLES OFFICE DOCUMENT CONVERSIONS. A 286 MB DOWNLOAD; ABOUT 1 GB INSTALLED. MPL 2.0 AND ITS INCLUDED THIRD-PARTY LICENSES." = "LIBREOFFICE 26.8.3 ENABLES OFFICE DOCUMENT CONVERSIONS. A 286 MB DOWNLOAD; ABOUT 1 GB INSTALLED. MPL 2.0 AND ITS INCLUDED THIRD-PARTY LICENSES.";
 "LIGHT" = "LIGHT";
 "LIGHTING" = "LIGHTING";
 "LINE" = "LINE";
@@ -962,8 +968,8 @@
 "Let’s make something of it." = "Let’s make something of it.";
 "Let’s try that again." = "Let’s try that again.";
 "Library" = "Library";
-"LibreOffice 26.8.1 enables Office document conversions. A 285 MB download; about 1 GB installed. MPL 2.0 and its included third-party licenses." = "LibreOffice 26.8.1 enables Office document conversions. A 285 MB download; about 1 GB installed. MPL 2.0 and its included third-party licenses.";
 "LibreOffice 26.8.1 enables Office document conversions. Approximately 360 MB to download. MPL 2.0 and its included third-party licenses." = "LibreOffice 26.8.1 enables Office document conversions. Approximately 360 MB to download. MPL 2.0 and its included third-party licenses.";
+"LibreOffice 26.8.3 enables Office document conversions. A 286 MB download; about 1 GB installed. MPL 2.0 and its included third-party licenses." = "LibreOffice 26.8.3 enables Office document conversions. A 286 MB download; about 1 GB installed. MPL 2.0 and its included third-party licenses.";
 "Light" = "Light";
 "Lighting" = "Lighting";
 "Line" = "Line";
@@ -1727,8 +1733,13 @@
 "TEXT OR CALLOUT" = "TEXT OR CALLOUT";
 "TEXT SIZE" = "TEXT SIZE";
 "TEXTURE" = "TEXTURE";
+"THE ARCHIVE CONTAINS A SYMBOLIC LINK LOOP." = "THE ARCHIVE CONTAINS A SYMBOLIC LINK LOOP.";
+"THE DOWNLOAD CONNECTION COULD NOT BE PREPARED." = "THE DOWNLOAD CONNECTION COULD NOT BE PREPARED.";
 "THE DOWNLOADED COPY WAS REMOVED. A COPY FOUND ELSEWHERE ON YOUR COMPUTER IS STILL USED." = "THE DOWNLOADED COPY WAS REMOVED. A COPY FOUND ELSEWHERE ON YOUR COMPUTER IS STILL USED.";
 "THE DOWNLOADED TOOLS ARE INCOMPLETE. PLEASE TRY SETUP AGAIN." = "THE DOWNLOADED TOOLS ARE INCOMPLETE. PLEASE TRY SETUP AGAIN.";
+"THE LINK DID NOT RETURN A SUPPORTED IMAGE." = "THE LINK DID NOT RETURN A SUPPORTED IMAGE.";
+"THE LINK DID NOT RETURN A SUPPORTED MEDIA FILE." = "THE LINK DID NOT RETURN A SUPPORTED MEDIA FILE.";
+"THE OFFICE TOOLS ARE NOT SIGNED BY THEIR PUBLISHER. NOTHING WAS INSTALLED OR OPENED." = "THE OFFICE TOOLS ARE NOT SIGNED BY THEIR PUBLISHER. NOTHING WAS INSTALLED OR OPENED.";
 "THE OUTPUT FOLDER IS NOT WRITABLE. CHOOSE ANOTHER FOLDER, OR SAVE BESIDE THE ORIGINALS." = "THE OUTPUT FOLDER IS NOT WRITABLE. CHOOSE ANOTHER FOLDER, OR SAVE BESIDE THE ORIGINALS.";
 "THE PRESET IS REMOVED. FILES IT MADE STAY WHERE THEY ARE." = "THE PRESET IS REMOVED. FILES IT MADE STAY WHERE THEY ARE.";
 "THE SAME CONVERSION AND TOOL CATALOG AS MACOS." = "THE SAME CONVERSION AND TOOL CATALOG AS MACOS.";
@@ -1743,6 +1754,7 @@
 "THIS FILE HAS MOVED OR WAS DELETED." = "THIS FILE HAS MOVED OR WAS DELETED.";
 "THIS FORMAT CAN BE IMPORTED. CHOOSE AN OUTPUT FORMAT IN THE SIDEBAR TO CONFIGURE ITS DEFAULTS." = "THIS FORMAT CAN BE IMPORTED. CHOOSE AN OUTPUT FORMAT IN THE SIDEBAR TO CONFIGURE ITS DEFAULTS.";
 "THIS FORMAT USES ITS ORIGINAL DOCUMENT STRUCTURE. NO EXPORT DEFAULTS ARE NEEDED." = "THIS FORMAT USES ITS ORIGINAL DOCUMENT STRUCTURE. NO EXPORT DEFAULTS ARE NEEDED.";
+"THIS IMAGE HAS NO READABLE DIMENSIONS." = "THIS IMAGE HAS NO READABLE DIMENSIONS.";
 "THIS IMAGE IS TOO LARGE TO PASTE. CHOOSE THE IMAGE FILE INSTEAD." = "THIS IMAGE IS TOO LARGE TO PASTE. CHOOSE THE IMAGE FILE INSTEAD.";
 "THIS OUTPUT FORMAT HAS NO ADJUSTABLE CONVERSION DEFAULTS." = "THIS OUTPUT FORMAT HAS NO ADJUSTABLE CONVERSION DEFAULTS.";
 "THIS PRESET DOES NOT FIT THE SELECTED FILES." = "THIS PRESET DOES NOT FIT THE SELECTED FILES.";
@@ -1774,6 +1786,7 @@
 "TWISTER CANNOT CONVERT THESE FILES TOGETHER." = "TWISTER CANNOT CONVERT THESE FILES TOGETHER.";
 "TWISTER CHECKS ONCE AN HOUR WHILE IT’S RUNNING. YOU CHOOSE WHEN TO DOWNLOAD AND INSTALL." = "TWISTER CHECKS ONCE AN HOUR WHILE IT’S RUNNING. YOU CHOOSE WHEN TO DOWNLOAD AND INSTALL.";
 "TWISTER CONVERTS, EDITS, AND ORGANIZES FILES. EVERYTHING RUNS ON YOUR MAC." = "TWISTER CONVERTS, EDITS, AND ORGANIZES FILES. EVERYTHING RUNS ON YOUR MAC.";
+"TWISTER DOWNLOADS ONLY FROM PUBLIC INTERNET ADDRESSES, NOT FROM THIS MAC OR THE LOCAL NETWORK." = "TWISTER DOWNLOADS ONLY FROM PUBLIC INTERNET ADDRESSES, NOT FROM THIS MAC OR THE LOCAL NETWORK.";
 "TWISTER IS PROCESSING FILES. CLICK TO VIEW PROGRESS." = "TWISTER IS PROCESSING FILES. CLICK TO VIEW PROGRESS.";
 "TWISTER IS READY" = "TWISTER IS READY";
 "TWISTER SAVES RESULTS BESIDE THE ORIGINALS. ALLOW A FOLDER ONCE TO INCLUDE EVERY FOLDER INSIDE IT." = "TWISTER SAVES RESULTS BESIDE THE ORIGINALS. ALLOW A FOLDER ONCE TO INCLUDE EVERY FOLDER INSIDE IT.";
@@ -1794,8 +1807,19 @@
 "Text or callout" = "Text or callout";
 "Text size" = "Text size";
 "Texture" = "Texture";
+"The archive contains a symbolic link loop." = "The archive contains a symbolic link loop.";
+"The archive expands beyond the %@ safety limit." = "The archive expands beyond the %@ safety limit.";
+"The archive expands beyond the %lld safety limit." = "The archive expands beyond the %lld safety limit.";
+"The archive has too many entries (%@ limit)." = "The archive has too many entries (%@ limit).";
+"The archive has too many entries (%lld limit)." = "The archive has too many entries (%lld limit).";
+"The download connection could not be prepared." = "The download connection could not be prepared.";
 "The downloaded copy was removed. A copy found elsewhere on your computer is still used." = "The downloaded copy was removed. A copy found elsewhere on your computer is still used.";
 "The downloaded tools are incomplete. Please try setup again." = "The downloaded tools are incomplete. Please try setup again.";
+"The installed %@ no longer matches the verified download. Open tool setup and download it again." = "The installed %@ no longer matches the verified download. Open tool setup and download it again.";
+"The installed %lld no longer matches the verified download. Open tool setup and download it again." = "The installed %lld no longer matches the verified download. Open tool setup and download it again.";
+"The link did not return a supported image." = "The link did not return a supported image.";
+"The link did not return a supported media file." = "The link did not return a supported media file.";
+"The office tools are not signed by their publisher. Nothing was installed or opened." = "The office tools are not signed by their publisher. Nothing was installed or opened.";
 "The output folder is not writable. Choose another folder, or save beside the originals." = "The output folder is not writable. Choose another folder, or save beside the originals.";
 "The preset is removed. Files it made stay where they are." = "The preset is removed. Files it made stay where they are.";
 "The presets file could not be read and was kept as %@." = "The presets file could not be read and was kept as %@.";
@@ -1815,6 +1839,11 @@
 "This file has moved or was deleted." = "This file has moved or was deleted.";
 "This format can be imported. Choose an output format in the sidebar to configure its defaults." = "This format can be imported. Choose an output format in the sidebar to configure its defaults.";
 "This format uses its original document structure. No export defaults are needed." = "This format uses its original document structure. No export defaults are needed.";
+"This image has no readable dimensions." = "This image has no readable dimensions.";
+"This image is too large to open (%@ × %@ pixels). Twister opens images up to 250 megapixels." = "This image is too large to open (%@ × %@ pixels). Twister opens images up to 250 megapixels.";
+"This image is too large to open (%@ × %lld pixels). Twister opens images up to 250 megapixels." = "This image is too large to open (%@ × %lld pixels). Twister opens images up to 250 megapixels.";
+"This image is too large to open (%lld × %@ pixels). Twister opens images up to 250 megapixels." = "This image is too large to open (%lld × %@ pixels). Twister opens images up to 250 megapixels.";
+"This image is too large to open (%lld × %lld pixels). Twister opens images up to 250 megapixels." = "This image is too large to open (%lld × %lld pixels). Twister opens images up to 250 megapixels.";
 "This image is too large to paste. Choose the image file instead." = "This image is too large to paste. Choose the image file instead.";
 "This output format has no adjustable conversion defaults." = "This output format has no adjustable conversion defaults.";
 "This preset does not fit the selected files." = "This preset does not fit the selected files.";
@@ -1851,6 +1880,7 @@
 "Twister cannot convert these files together." = "Twister cannot convert these files together.";
 "Twister checks once an hour while it’s running. You choose when to download and install." = "Twister checks once an hour while it’s running. You choose when to download and install.";
 "Twister converts, edits, and organizes files. Everything runs on your Mac." = "Twister converts, edits, and organizes files. Everything runs on your Mac.";
+"Twister downloads only from public internet addresses, not from this Mac or the local network." = "Twister downloads only from public internet addresses, not from this Mac or the local network.";
 "Twister is processing files. Click to view progress." = "Twister is processing files. Click to view progress.";
 "Twister saves results beside the originals. Allow a folder once to include every folder inside it." = "Twister saves results beside the originals. Allow a folder once to include every folder inside it.";
 "UNDO" = "UNDO";

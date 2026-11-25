@@ -1,4 +1,6 @@
 import Foundation
+import Darwin
+import ImageIO
 import UniformTypeIdentifiers
 
 public enum WebMediaKind:String,Codable,Sendable { case image,video,audio }
@@ -23,21 +25,47 @@ public struct WebMediaInfo:Sendable {
 }
 
 public enum WebDownloadEngine {
-    public static func link(_ text:String) throws -> URL {
+    /// `allowLocalNetwork` is the user's own override; without it a link to
+    /// this Mac or the local network is refused before any request is made.
+    public static func link(_ text:String,allowLocalNetwork:Bool=false) throws -> URL {
         let value=text.trimmingCharacters(in:.whitespacesAndNewlines)
         guard value.utf8.count<=16_384,!value.unicodeScalars.contains(where:{CharacterSet.whitespacesAndNewlines.contains($0) || CharacterSet.controlCharacters.contains($0)}),
               let url=URL(string:value),let scheme=url.scheme?.lowercased(),["http","https"].contains(scheme),
               let host=url.host,!host.isEmpty,url.user==nil,url.password==nil else {
             throw TwisterError.invalidInput("Paste one complete http:// or https:// media link.")
         }
+        guard allowLocalNetwork || !NetworkAddress.isLocal(host:host) else { throw localNetworkRefusal }
         return url
     }
-    public static func inspect(_ url:URL,token:CancellationToken = .init()) async throws -> WebMediaInfo {
-        let url=try link(url.absoluteString);try token.check()
-        let session=URLSession(configuration:.ephemeral)
+    static let localNetworkRefusal=TwisterError.invalidInput("Twister downloads only from public internet addresses, not from this Mac or the local network.")
+    /// The link, after its host name also resolved only to public addresses.
+    static func publicLink(_ url:URL,allowLocalNetwork:Bool) async throws -> URL {
+        let url=try link(url.absoluteString,allowLocalNetwork:allowLocalNetwork)
+        guard !allowLocalNetwork,let host=url.host else { return url }
+        let local=await Task.detached { NetworkAddress.resolvesToLocal(host:host) }.value
+        guard !local else { throw localNetworkRefusal }
+        return url
+    }
+    /// Every connection of one inspection or download goes through its own
+    /// local proxy, which refuses addresses that are not public.
+    static func withProxy<T>(allowLocalNetwork:Bool,_ body:(WebDownloadProxy) async throws -> T) async throws -> T {
+        let proxy=try WebDownloadProxy.start(.init(allowLocalNetwork:allowLocalNetwork))
+        defer { proxy.stop() }
+        do { return try await body(proxy) }
+        catch TwisterError.cancelled { throw TwisterError.cancelled }
+        catch is CancellationError { throw CancellationError() }
+        catch { throw proxy.refused ? localNetworkRefusal:error }
+    }
+    public static func inspect(_ url:URL,token:CancellationToken = .init(),allowLocalNetwork:Bool=false) async throws -> WebMediaInfo {
+        let url=try await publicLink(url,allowLocalNetwork:allowLocalNetwork);try token.check()
+        return try await withProxy(allowLocalNetwork:allowLocalNetwork) { proxy in try await inspect(url,token:token,allowLocalNetwork:allowLocalNetwork,proxy:proxy) }
+    }
+    private static func inspect(_ url:URL,token:CancellationToken,allowLocalNetwork:Bool,proxy:WebDownloadProxy) async throws -> WebMediaInfo {
+        let redirects=RedirectPolicy(allowLocalNetwork:allowLocalNetwork)
+        let session=URLSession(configuration:proxy.sessionConfiguration(),delegate:redirects,delegateQueue:nil)
         defer { session.invalidateAndCancel() }
         if WebMediaDragPayload.isInstagramPhotoPost(url) {
-            let args=try baseArguments(photoPost:true)+["--ignore-no-formats-error","--skip-download","--dump-single-json","--no-progress","--",url.absoluteString]
+            let args=try baseArguments(photoPost:true,proxy:proxy)+["--ignore-no-formats-error","--skip-download","--dump-single-json","--no-progress","--",url.absoluteString]
             let data=try await Task.detached { try WebDownloadProcess.run(Dependencies.executable("yt-dlp"),args,token:token,timeout:100) }.value
             try token.check();try Task.checkCancellation()
             return try InstagramPhotos.parse(data,url:url)
@@ -59,7 +87,10 @@ public enum WebDownloadEngine {
             return WebMediaInfo(url:url,title:cleanFilename(response.suggestedFilename ?? url.lastPathComponent,mime:response.mimeType),kind:kind,site:url.host ?? "Web",duration:nil,heights:[],direct:true,filename:response.suggestedFilename,byteCount:response.expectedContentLength>0 ? response.expectedContentLength:nil)
         }
         try Task.checkCancellation();try token.check()
-        let args=try baseArguments()+["--skip-download","--dump-single-json","--no-progress","--",url.absoluteString]
+        // The extractor follows redirects itself; do not hand it a link the
+        // direct request was already refused for.
+        guard !redirects.refused,!proxy.refused else { throw localNetworkRefusal }
+        let args=try baseArguments(proxy:proxy)+["--skip-download","--dump-single-json","--no-progress","--",url.absoluteString]
         let data=try await Task.detached { try WebDownloadProcess.run(Dependencies.executable("yt-dlp"),args,token:token,timeout:100) }.value
         try Task.checkCancellation();try token.check()
         return try parseMetadata(data,url:url)
@@ -82,8 +113,8 @@ public enum WebDownloadEngine {
     }
 
     public static func download(_ info:WebMediaInfo,mode:WebDownloadMode,maximumHeight:Int?,destination:URL,selectedPhotos:Set<Int>? = nil,
-                                token:CancellationToken = .init(),progress:@escaping ProgressHandler) async throws -> [URL] {
-        _=try link(info.url.absoluteString)
+                                token:CancellationToken = .init(),allowLocalNetwork:Bool=false,progress:@escaping ProgressHandler) async throws -> [URL] {
+        _=try link(info.url.absoluteString,allowLocalNetwork:allowLocalNetwork)
         guard destination.isFileURL,info.modes.contains(mode) else { throw TwisterError.invalidInput("Choose an available media type and a local destination folder.") }
         if let maximumHeight { guard (2...16_384).contains(maximumHeight) else { throw TwisterError.invalidInput("Choose a valid video quality.") } }
         try token.check();try Task.checkCancellation()
@@ -91,12 +122,15 @@ public enum WebDownloadEngine {
         defer { transaction.cleanUp() }
         let results:[URL]
         if !info.photos.isEmpty {
-            results=try await InstagramPhotos.download(info,selected:selectedPhotos,directory:area.directory,token:token,progress:progress)
+            results=try await InstagramPhotos.download(info,selected:selectedPhotos,directory:area.directory,token:token,allowLocalNetwork:allowLocalNetwork,progress:progress)
         } else if info.direct {
-            results=try await downloadDirect(info,mode:mode,directory:area.directory,token:token,progress:progress)
+            results=try await downloadDirect(info,mode:mode,directory:area.directory,token:token,allowLocalNetwork:allowLocalNetwork,progress:progress)
         } else {
-            let arguments=try downloadArguments(info,mode:mode,maximumHeight:maximumHeight,directory:area.directory)
-            let data=try await Task.detached { try WebDownloadProcess.run(Dependencies.executable("yt-dlp"),arguments,token:token,timeout:21_600,progress:progress) }.value
+            _=try await publicLink(info.url,allowLocalNetwork:allowLocalNetwork)
+            let data=try await withProxy(allowLocalNetwork:allowLocalNetwork) { proxy in
+                let arguments=try downloadArguments(info,mode:mode,maximumHeight:maximumHeight,directory:area.directory,proxy:proxy)
+                return try await Task.detached { try WebDownloadProcess.run(Dependencies.executable("yt-dlp"),arguments,token:token,timeout:21_600,progress:progress) }.value
+            }
             results=String(decoding:data,as:UTF8.self).split(separator:"\n").compactMap { line in
                 guard line.hasPrefix("TWISTER_FILE:"),let encoded=String(line.dropFirst("TWISTER_FILE:".count)).data(using:.utf8),
                       let path=(try? JSONSerialization.jsonObject(with:encoded,options:.fragmentsAllowed)) as? String else { return nil }
@@ -104,16 +138,33 @@ public enum WebDownloadEngine {
             }
         }
         try Task.checkCancellation();try token.check()
+        try stagedFiles(results,in:area.directory)
         if mode == .video,let maximumHeight {
             try await Task.detached {
                 try enforceVideoHeight(results,maximum:maximumHeight,directory:area.directory,token:token,progress:progress)
             }.value
         }
+        // Direct and photo downloads were labelled when they arrived.
+        if info.photos.isEmpty && !info.direct { try Quarantine.markDownloaded(results,data:info.url,origin:info.url) }
         progress(OperationProgress.indeterminate,"Finishing your file…")
         try transaction.record(results,in:area)
         let output=try transaction.publish(token:token)
         progress(1,"Saved to \(destination.lastPathComponent)")
         return output
+    }
+
+    /// Every reported file must be a regular file of this download's own
+    /// staging folder before anything replaces or publishes it.
+    static func stagedFiles(_ files:[URL],in directory:URL) throws {
+        let base=directory.standardizedFileURL.resolvingSymlinksInPath().path
+        for file in files {
+            var info=stat()
+            let path=file.standardizedFileURL.path
+            let parent=file.standardizedFileURL.deletingLastPathComponent().resolvingSymlinksInPath().path
+            guard parent==base || parent.hasPrefix(base+"/"),lstat(path,&info)==0,info.st_mode & S_IFMT == S_IFREG else {
+                throw TwisterError.failed("A downloaded file could not be verified. Nothing was saved.")
+            }
+        }
     }
 
     // Some sites omit dimensions or report stale values for their direct formats.
@@ -137,15 +188,16 @@ public enum WebDownloadEngine {
         }
     }
 
-    static func baseArguments(photoPost:Bool=false) throws -> [String] {
+    static func baseArguments(photoPost:Bool=false,proxy:WebDownloadProxy) throws -> [String] {
         ["--ignore-config","--no-plugin-dirs","--no-update","--no-cache-dir","--no-remote-components",
+         "--proxy",proxy.address,
          "--no-js-runtimes","--js-runtimes","deno:\(try Dependencies.executable("deno").path)",
          "--ffmpeg-location",try Dependencies.executable("ffmpeg").deletingLastPathComponent().path,
          "--socket-timeout","20","--retries","2","--extractor-retries","1","--no-colors"] +
         (photoPost ? ["--yes-playlist","--playlist-end","51"]:["--no-playlist","--playlist-items","1"])
     }
-    static func downloadArguments(_ info:WebMediaInfo,mode:WebDownloadMode,maximumHeight:Int?,directory:URL) throws -> [String] {
-        var args=try baseArguments()+["--no-simulate","--no-overwrites","--windows-filenames","--trim-filenames","180",
+    static func downloadArguments(_ info:WebMediaInfo,mode:WebDownloadMode,maximumHeight:Int?,directory:URL,proxy:WebDownloadProxy) throws -> [String] {
+        var args=try baseArguments(proxy:proxy)+["--no-simulate","--no-overwrites","--windows-filenames","--trim-filenames","180",
              "--downloader","native","--newline","--progress","--progress-template","download:TWISTER_PROGRESS:%(progress._percent_str)s",
              "--print","before_dl:TWISTER_STAGE:Preparing media…","--print","post_process:TWISTER_STAGE:Finishing media…",
              "--output",directory.appendingPathComponent("%(title).120B [%(id).40B].%(ext)s").path,
@@ -160,10 +212,37 @@ public enum WebDownloadEngine {
         return args+["--",info.url.absoluteString]
     }
 
-    static func downloadDirect(_ info:WebMediaInfo,mode:WebDownloadMode,directory:URL,token:CancellationToken,
+    static func downloadDirect(_ info:WebMediaInfo,mode:WebDownloadMode,directory:URL,token:CancellationToken,allowLocalNetwork:Bool=false,
                                        progress:@escaping ProgressHandler) async throws -> [URL] {
-        let delegate=TransferDelegate(token:token,progress:progress)
-        let configuration=URLSessionConfiguration.ephemeral;configuration.timeoutIntervalForRequest=45;configuration.timeoutIntervalForResource=21_600
+        _=try await publicLink(info.url,allowLocalNetwork:allowLocalNetwork)
+        let (temporary,response)=try await withProxy(allowLocalNetwork:allowLocalNetwork) { proxy in
+            try await transfer(info.url,token:token,allowLocalNetwork:allowLocalNetwork,proxy:proxy,progress:progress)
+        }
+        defer { try? FileManager.default.removeItem(at:temporary) }
+        try token.check();try Task.checkCancellation()
+        guard let http=response as? HTTPURLResponse,(200...299).contains(http.statusCode),
+              directKind(mime:response.mimeType,extension:info.url.pathExtension) != nil else { throw TwisterError.failed("The link no longer returns a media file. Copy its current media or share link and try again.") }
+        let name=cleanFilename(response.suggestedFilename ?? info.filename ?? info.title,mime:response.mimeType)
+        let received=directory.appendingPathComponent(".download-"+UUID().uuidString)
+        try FileManager.default.moveItem(at:temporary,to:received)
+        try OutputFiles.validate([received])
+        try Quarantine.markDownloaded([received],data:response.url ?? info.url,origin:info.url)
+        // The name comes from the server; the extension comes from the content.
+        let detected:String
+        do { detected=try await Task.detached { try detectedExtension(of:received,kind:info.kind,proposed:(name as NSString).pathExtension,token:token) }.value }
+        catch { try? FileManager.default.removeItem(at:received);throw error }
+        let raw=OutputFiles.unique(for:directory.appendingPathComponent(name),extension:detected,directory:directory)
+        try FileManager.default.moveItem(at:received,to:raw)
+        if mode == .audioMP3,raw.pathExtension.lowercased() != "mp3" {
+            var options=OperationOptions();options.outputDirectory=directory
+            return try await Task.detached { try ConversionEngine.run(.init(inputs:[raw],operation:.convert("mp3"),options:options),token:token,progress:{ value,_ in progress(value,"Converting downloaded audio…") }) }.value
+        }
+        return [raw]
+    }
+
+    private static func transfer(_ url:URL,token:CancellationToken,allowLocalNetwork:Bool,proxy:WebDownloadProxy,progress:@escaping ProgressHandler) async throws -> (URL,URLResponse) {
+        let delegate=TransferDelegate(token:token,allowLocalNetwork:allowLocalNetwork,progress:progress)
+        let configuration=proxy.sessionConfiguration();configuration.timeoutIntervalForRequest=45;configuration.timeoutIntervalForResource=21_600
         let session=URLSession(configuration:configuration,delegate:delegate,delegateQueue:nil)
         let watchdog=Task.detached {
             while !Task.isCancelled {
@@ -175,24 +254,36 @@ public enum WebDownloadEngine {
         // The async convenience download API installs an internal download delegate
         // and suppresses didWriteData, even with a task delegate. Use the real
         // delegate lifecycle so progress arrives while the transfer is running.
-        let (temporary,response)=try await withTaskCancellationHandler {
-            try await delegate.download(info.url,session:session)
+        return try await withTaskCancellationHandler {
+            try await delegate.download(url,session:session)
         } onCancel:{ delegate.cancel() }
-        defer { try? FileManager.default.removeItem(at:temporary) }
-        try token.check();try Task.checkCancellation()
-        guard let http=response as? HTTPURLResponse,(200...299).contains(http.statusCode),
-              directKind(mime:response.mimeType,extension:info.url.pathExtension) != nil else { throw TwisterError.failed("The link no longer returns a media file. Copy its current media or share link and try again.") }
-        let name=cleanFilename(response.suggestedFilename ?? info.filename ?? info.title,mime:response.mimeType)
-        let raw=directory.appendingPathComponent(name)
-        try FileManager.default.moveItem(at:temporary,to:raw)
-        try OutputFiles.validate([raw])
-        if info.kind == .image { _=try ImageEngine.load(raw) }
-        else { _=try await Task.detached { try MediaEngine.inspect(raw,token:token) }.value }
-        if mode == .audioMP3,raw.pathExtension.lowercased() != "mp3" {
-            var options=OperationOptions();options.outputDirectory=directory
-            return try await Task.detached { try ConversionEngine.run(.init(inputs:[raw],operation:.convert("mp3"),options:options),token:token,progress:{ value,_ in progress(value,"Converting downloaded audio…") }) }.value
+    }
+
+    /// The file extension for what the downloaded bytes actually are. The
+    /// proposed extension is kept when it names the same format.
+    static func detectedExtension(of file:URL,kind:WebMediaKind,proposed:String,token:CancellationToken) throws -> String {
+        let proposed=proposed.lowercased()
+        if kind == .image {
+            _=try ImageEngine.loadPreview(file,maximumSide:1024,token:token)
+            if let source=CGImageSourceCreateWithURL(file as CFURL,nil),let type=CGImageSourceGetType(source) as String?,
+               let utType=UTType(type),let preferred=utType.preferredFilenameExtension?.lowercased() {
+                let same=utType.tags[.filenameExtension]?.map{$0.lowercased()}.contains(proposed) == true
+                let ext=same ? proposed:(preferred=="jpeg" ? "jpg":preferred)
+                if ["jpg","jpeg","png","webp","heic","heif","avif","bmp","tif","tiff","gif"].contains(ext) { return ext }
+            }
+            if let head=try? FileHandle(forReadingFrom:file).read(upToCount:4096),
+               String(decoding:head,as:UTF8.self).range(of:"<svg",options:.caseInsensitive) != nil { return "svg" }
+            throw TwisterError.failed("The link did not return a supported image.")
         }
-        return [raw]
+        let formats=Set(try MediaEngine.inspect(file,token:token).format.lowercased().split(separator:",").map(String.init))
+        let families:[(Set<String>,[String])]=[
+            (["mp4","mov","m4a"],kind == .audio ? ["m4a","mp4","m4v","mov"]:["mp4","mov","m4v","m4a"]),
+            (["matroska","webm"],["mkv","webm"]),(["mp3"],["mp3"]),(["wav"],["wav"]),(["flac"],["flac"]),
+            (["ogg"],["ogg","opus"]),(["aac"],["aac"]),(["aiff"],["aiff"]),(["gif"],["gif"])]
+        guard let family=families.first(where:{!$0.0.isDisjoint(with:formats)}) else {
+            throw TwisterError.failed("The link did not return a supported media file.")
+        }
+        return family.1.contains(proposed) ? proposed:family.1[0]
     }
 
     public static func directKind(mime:String?,extension ext:String)->WebMediaKind? {
@@ -228,9 +319,26 @@ public enum WebDownloadEngine {
         return "The site could not provide this media. Try a fresh public share link or a direct media URL."
     }
 
+    /// Refuses a redirect that leaves the public internet, and remembers it.
+    final class RedirectPolicy:NSObject,URLSessionTaskDelegate,@unchecked Sendable {
+        let allowLocalNetwork:Bool
+        private let lock=NSLock();private var wasRefused=false
+        init(allowLocalNetwork:Bool) { self.allowLocalNetwork=allowLocalNetwork }
+        var refused:Bool { lock.lock();defer { lock.unlock() };return wasRefused }
+        func permits(_ url:URL?)->Bool {
+            guard let url,let checked=try? WebDownloadEngine.link(url.absoluteString,allowLocalNetwork:allowLocalNetwork),let host=checked.host else { return false }
+            return allowLocalNetwork || !NetworkAddress.resolvesToLocal(host:host)
+        }
+        func urlSession(_ session:URLSession,task:URLSessionTask,willPerformHTTPRedirection response:HTTPURLResponse,newRequest request:URLRequest,completionHandler:@escaping(URLRequest?)->Void) {
+            let allowed=permits(request.url)
+            if !allowed { lock.lock();wasRefused=true;lock.unlock() }
+            completionHandler(allowed ? request:nil)
+        }
+    }
+
     private final class TransferDelegate:NSObject,URLSessionDownloadDelegate,@unchecked Sendable {
-        let token:CancellationToken,progress:ProgressHandler
-        init(token:CancellationToken,progress:@escaping ProgressHandler) { self.token=token;self.progress=progress }
+        let token:CancellationToken,progress:ProgressHandler,redirects:RedirectPolicy
+        init(token:CancellationToken,allowLocalNetwork:Bool,progress:@escaping ProgressHandler) { self.token=token;self.progress=progress;redirects=RedirectPolicy(allowLocalNetwork:allowLocalNetwork) }
         private let transferLock=NSLock()
         private var cancelled=false
         private var task:URLSessionDownloadTask?
@@ -279,7 +387,7 @@ public enum WebDownloadEngine {
             progress(totalBytesExpectedToWrite>0 ? fraction:OperationProgress.indeterminate,"Downloading · \(ByteCountFormatter.string(fromByteCount:totalBytesWritten,countStyle:.file))")
         }
         func urlSession(_ session:URLSession,task:URLSessionTask,willPerformHTTPRedirection response:HTTPURLResponse,newRequest request:URLRequest,completionHandler:@escaping(URLRequest?)->Void) {
-            completionHandler(request.url.flatMap{try? WebDownloadEngine.link($0.absoluteString)} == nil ? nil:request)
+            redirects.urlSession(session,task:task,willPerformHTTPRedirection:response,newRequest:request,completionHandler:completionHandler)
         }
     }
 }

@@ -18,7 +18,7 @@ import TwisterCore
                           detail: "FFmpeg and ffprobe enable media conversion and previews. About a 45 MB download; 105 MB installed. FFmpeg uses a GPL license.",
                           button: "Download Media Tools", id: "SetupMedia")
                     group(.office, "Office tools",
-                          detail: "LibreOffice 26.8.1 enables Office document conversions. A 285 MB download; about 1 GB installed. MPL 2.0 and its included third-party licenses.",
+                          detail: "LibreOffice 26.8.3 enables Office document conversions. A 286 MB download; about 1 GB installed. MPL 2.0 and its included third-party licenses.",
                           button: "Download Office Tools", id: "SetupOffice")
                     if AppFeatures.webDownloads {
                         group(.web, "Web download tools",

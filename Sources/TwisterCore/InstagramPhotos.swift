@@ -44,7 +44,7 @@ enum InstagramPhotos {
         return WebMediaInfo(url:url,title:photos.count==1 ? "Instagram photo":"Instagram photos",kind:.image,site:"Instagram",duration:nil,heights:[],direct:false,filename:nil,byteCount:nil,photos:photos,skippedVideoCount:videos)
     }
 
-    static func download(_ info:WebMediaInfo,selected:Set<Int>?,directory:URL,token:CancellationToken,progress:@escaping ProgressHandler) async throws -> [URL] {
+    static func download(_ info:WebMediaInfo,selected:Set<Int>?,directory:URL,token:CancellationToken,allowLocalNetwork:Bool=false,progress:@escaping ProgressHandler) async throws -> [URL] {
         let ids=Set(info.photos.map(\.id)),selection=selected ?? ids
         guard !selection.isEmpty,selection.isSubset(of:ids) else { throw TwisterError.invalidInput("Select at least one photo from this post.") }
         let photos=info.photos.filter{selection.contains($0.id)}
@@ -57,7 +57,7 @@ enum InstagramPhotos {
             let itemDirectory=directory.appendingPathComponent("item-\(photo.id)",isDirectory:true)
             try FileManager.default.createDirectory(at:itemDirectory,withIntermediateDirectories:false)
             let item=WebMediaInfo(url:photo.url,title:"Photo \(photo.id)",kind:.image,site:"Instagram",duration:nil,heights:[],direct:true,filename:nil,byteCount:nil)
-            let raw=try await WebDownloadEngine.downloadDirect(item,mode:.original,directory:itemDirectory,token:token) { fraction,_ in
+            let raw=try await WebDownloadEngine.downloadDirect(item,mode:.original,directory:itemDirectory,token:token,allowLocalNetwork:allowLocalNetwork) { fraction,_ in
                 progress(fraction.isFinite && fraction>=0 ? (Double(index)+min(1,fraction))/Double(photos.count):OperationProgress.indeterminate,"Photo \(index+1) of \(photos.count)…")
             }
             guard raw.count==1,let source=raw.first else { throw TwisterError.failed("A photo could not be downloaded.") }

@@ -75,11 +75,11 @@ enum AppFeatures {
         let current=revision,token=inspectionToken
         info=nil;completed=[];error=nil;inspecting=false
         let url:URL
-        do { url=try WebDownloadEngine.link(linkText) } catch { self.error=error.localizedDescription;return }
+        do { url=try WebDownloadEngine.link(linkText,allowLocalNetwork:WebDownloadGate.allowsLocalNetwork(in:.standard)) } catch { self.error=error.localizedDescription;return }
         inspecting=true
         inspection=Task { [weak self] in
             do {
-                let found=try await WebDownloadEngine.inspect(url,token:token)
+                let found=try await WebDownloadEngine.inspect(url,token:token,allowLocalNetwork:WebDownloadGate.allowsLocalNetwork(in:.standard))
                 guard let self,self.revision==current,!Task.isCancelled else { return }
                 self.info=found;self.maximumHeight=0;self.selectedPhotos=Set(found.photos.map(\.id))
                 if found.kind == .image { self.linkText=found.url.absoluteString }
@@ -109,7 +109,7 @@ enum AppFeatures {
         Task { [state] in
             defer { downloading=false;state.finishJob() }
             do {
-                let files=try await WebDownloadEngine.download(info,mode:mode,maximumHeight:maximum,destination:folder,selectedPhotos:selection,token:token) { [weak state] fraction,label in
+                let files=try await WebDownloadEngine.download(info,mode:mode,maximumHeight:maximum,destination:folder,selectedPhotos:selection,token:token,allowLocalNetwork:WebDownloadGate.allowsLocalNetwork(in:.standard)) { [weak state] fraction,label in
                     Task { @MainActor in state?.receiveProgress(fraction,label:label,token:token) }
                 }
                 state.stopProgressUpdates();state.outputs=files;state.inputs=files;state.progress=1;completed=files

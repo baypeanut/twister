@@ -54,7 +54,7 @@ enum EPUBCodec {
 
     static func unpackToHTML(_ input: URL, in work: URL, token: CancellationToken) throws -> URL {
         let root = work.appendingPathComponent("EPUB contents", isDirectory: true)
-        try ArchiveCodec.extract(input, into: root, token: token)
+        try ArchiveCodec.extract(input, into: root, token: token, limits: .document)
         let container = root.appendingPathComponent("META-INF/container.xml")
         let xml = try XMLDocument(contentsOf: container, options: [.nodeLoadExternalEntitiesNever])
         guard let opfPath = try xml.nodes(forXPath: "//*[local-name()='rootfile']/@full-path").first?.stringValue else {

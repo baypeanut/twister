@@ -14,14 +14,15 @@ enum WebDownloadProcess {
         posix_spawn_file_actions_adddup2(&actions,output.fileHandleForWriting.fileDescriptor,STDOUT_FILENO)
         posix_spawn_file_actions_adddup2(&actions,errors.fileHandleForWriting.fileDescriptor,STDERR_FILENO)
         posix_spawn_file_actions_addopen(&actions,STDIN_FILENO,"/dev/null",O_RDONLY,0)
-        posix_spawn_file_actions_addclose(&actions,output.fileHandleForReading.fileDescriptor)
-        posix_spawn_file_actions_addclose(&actions,errors.fileHandleForReading.fileDescriptor)
-        posix_spawn_file_actions_addclose(&actions,output.fileHandleForWriting.fileDescriptor)
-        posix_spawn_file_actions_addclose(&actions,errors.fileHandleForWriting.fileDescriptor)
-        posix_spawnattr_setflags(&attributes,Int16(POSIX_SPAWN_SETPGROUP))
+        // As in ProcessRunner: only the three standard streams are inherited,
+        // and the child starts with default signal handling.
+        var defaults=sigset_t(),mask=sigset_t()
+        sigfillset(&defaults);sigemptyset(&mask)
+        posix_spawnattr_setsigdefault(&attributes,&defaults);posix_spawnattr_setsigmask(&attributes,&mask)
+        posix_spawnattr_setflags(&attributes,Int16(POSIX_SPAWN_SETPGROUP | POSIX_SPAWN_CLOEXEC_DEFAULT | POSIX_SPAWN_SETSIGDEF | POSIX_SPAWN_SETSIGMASK))
         posix_spawnattr_setpgroup(&attributes,0)
         let args=([executable.path]+arguments).map{strdup($0)}+[nil]
-        let environment=ProcessInfo.processInfo.environment.map{strdup("\($0.key)=\($0.value)")}+[nil]
+        let environment=childEnvironment(ProcessInfo.processInfo.environment).map{strdup("\($0.key)=\($0.value)")}+[nil]
         defer { for p in args { free(p) };for p in environment { free(p) } }
         var pid:pid_t=0
         let status=args.withUnsafeBufferPointer { argv in environment.withUnsafeBufferPointer { env in
@@ -45,7 +46,13 @@ enum WebDownloadProcess {
         while true {
             let waited=waitpid(pid,&waitStatus,WNOHANG)
             if waited==pid { break }
-            if waited<0 { if errno==EINTR { continue };throw TwisterError.failed("The download process stopped unexpectedly.") }
+            if waited<0 {
+                if errno==EINTR { continue }
+                // The child can no longer be waited for; stop its whole group.
+                kill(-pid,SIGKILL)
+                if group.wait(timeout:.now()+2) == .timedOut { kill(-pid,SIGKILL) }
+                throw TwisterError.failed("The download process stopped unexpectedly.")
+            }
             if token.isCancelled || Date()>deadline || capture.overflow {
                 if stoppingAt==nil { timedOut=Date()>deadline;stoppingAt=Date();kill(-pid,SIGTERM) }
                 else if Date().timeIntervalSince(stoppingAt!)>1 { kill(-pid,SIGKILL) }
@@ -60,6 +67,15 @@ enum WebDownloadProcess {
         if capture.overflow { throw TwisterError.failed("The site returned too much metadata. Try an individual media link.") }
         guard waitStatus==0 else { throw TwisterError.failed(WebDownloadEngine.friendlyError(capture.errorText)) }
         return capture.output
+    }
+
+    /// The extractor is given its proxy as an argument. Proxy settings from
+    /// the environment, including exceptions such as NO_PROXY, never apply.
+    static func childEnvironment(_ environment:[String:String]) -> [String:String] {
+        environment.filter { key,_ in
+            let name=key.lowercased()
+            return !(name.hasSuffix("_proxy") || name == "proxy" || name.hasPrefix("proxy_"))
+        }
     }
 
     private final class Capture:@unchecked Sendable {

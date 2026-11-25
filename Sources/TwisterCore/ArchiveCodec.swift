@@ -10,7 +10,11 @@ enum ArchiveCodec {
     struct ExtractionLimits {
         var maximumEntries=100_000
         var maximumBytes:Int64=20*1024*1024*1024
+        /// Documents stored as ZIP packages (EPUB, DOCX) are read whole.
+        static let document=ExtractionLimits(maximumEntries:10_000,maximumBytes:500*1024*1024)
     }
+    /// Links to links are followed at most this many times, like the kernel's limit.
+    private static let maximumLinkDepth=32
     static func extract(_ input: URL, into root: URL, password: String = "", token: CancellationToken, limits:ExtractionLimits=ExtractionLimits()) throws {
         let a = try api.get()
         guard let reader = a.readNew() else { throw TwisterError.failed("Could not initialize the archive reader.") }
@@ -44,7 +48,7 @@ enum ArchiveCodec {
                 if ["tgz", "gzip"].contains(input.pathExtension.lowercased()) && name.isEmpty { name = "data" }
             }
             entries += 1
-            guard entries<=limits.maximumEntries else {throw TwisterError.invalidInput("The archive has too many entries (100,000 limit).")}
+            guard entries<=limits.maximumEntries else {throw TwisterError.invalidInput("The archive has too many entries (\(limits.maximumEntries.formatted()) limit).")}
             let destination = try safeURL(name, inside: root)
             if destination.standardizedFileURL == root.standardizedFileURL {
                 _ = a.readSkip(reader)
@@ -83,7 +87,7 @@ enum ArchiveCodec {
                     let count = buffer.withUnsafeMutableBytes { a.readData(reader, $0.baseAddress, $0.count) }
                     if count == 0 { break }
                     guard count > 0 else { throw a.failure(reader) }
-                    guard Int64(count)<=limits.maximumBytes-expandedBytes else {throw TwisterError.invalidInput("The archive expands beyond the 20 GB safety limit.")}
+                    guard Int64(count)<=limits.maximumBytes-expandedBytes else {throw TwisterError.invalidInput("The archive expands beyond the \(ByteCountFormatter.string(fromByteCount:limits.maximumBytes,countStyle:.binary)) safety limit.")}
                     expandedBytes += Int64(count)
                     try file.write(contentsOf: Data(buffer[0..<count]))
                 }
@@ -119,10 +123,42 @@ enum ArchiveCodec {
             try fm.createDirectory(at: link.destination.deletingLastPathComponent(), withIntermediateDirectories: true)
             try fm.createSymbolicLink(atPath: link.destination.path, withDestinationPath: link.target)
         }
-        // A chain of individually relative links must also stay inside the root.
+        // A chain of individually relative links must also stay inside the
+        // root, including through links that only exist now.
         for link in links where !link.hard {
-            guard contains(link.destination.resolvingSymlinksInPath(), root: root) else {
-                throw TwisterError.invalidInput("An archive link points outside the extraction folder.")
+            try token.check()
+            try validateResolvedTarget(link.target, at: link.destination, root: root)
+        }
+    }
+
+    /// Reads every entry without writing anything, for parsers that unpack a
+    /// package in memory. Throws when the package exceeds the limits.
+    static func checkLimits(_ input: URL, limits: ExtractionLimits, token: CancellationToken) throws {
+        let a = try api.get()
+        guard let reader = a.readNew() else { throw TwisterError.failed("Could not initialize the archive reader.") }
+        defer { _ = a.readFree(reader) }
+        try a.check(a.readSupportFilters(reader), handle: reader)
+        try a.check(a.readSupportFormats(reader), handle: reader)
+        try a.check(input.path.withCString { a.readOpen(reader, $0, 128 * 1024) }, handle: reader)
+        var entries = 0, expandedBytes: Int64 = 0
+        var buffer = [UInt8](repeating: 0, count: 128 * 1024)
+        while true {
+            try token.check()
+            var entry: OpaquePointer?
+            let status = a.readNext(reader, &entry)
+            if status == 1 { return }
+            try a.check(status, handle: reader)
+            entries += 1
+            guard entries <= limits.maximumEntries else { throw TwisterError.invalidInput("The archive has too many entries (\(limits.maximumEntries.formatted()) limit).") }
+            while true {
+                try token.check()
+                let count = buffer.withUnsafeMutableBytes { a.readData(reader, $0.baseAddress, $0.count) }
+                if count == 0 { break }
+                guard count > 0 else { throw a.failure(reader) }
+                expandedBytes += Int64(count)
+                guard expandedBytes <= limits.maximumBytes else {
+                    throw TwisterError.invalidInput("The archive expands beyond the \(ByteCountFormatter.string(fromByteCount: limits.maximumBytes, countStyle: .binary)) safety limit.")
+                }
             }
         }
     }
@@ -171,6 +207,7 @@ enum ArchiveCodec {
             case .typeSymbolicLink:
                 let target = try fm.destinationOfSymbolicLink(atPath: item.path)
                 try validateSymbolicTarget(target, at: item, root: root)
+                try validateResolvedTarget(target, at: item, root: root)
                 a.entrySetType(entry, 0o120000); a.entrySetSize(entry, 0)
                 target.withCString { a.entrySetSymlink(entry, $0) }
             case .typeRegular:
@@ -239,6 +276,47 @@ enum ArchiveCodec {
               contains(destination.deletingLastPathComponent().appendingPathComponent(target).standardizedFileURL, root: root) else {
             throw TwisterError.invalidInput("An archive link points outside the extraction folder.")
         }
+    }
+
+    /// Follows the target one component at a time on disk, as the kernel
+    /// will. A lexical check alone misses a target such as `B/B/../..` where
+    /// `B` links to its own folder. A missing component ends the walk; the
+    /// rest of the target may then only descend.
+    static func validateResolvedTarget(_ target: String, at destination: URL, root: URL) throws {
+        let base = root.standardizedFileURL.path
+        let parent = destination.deletingLastPathComponent().standardizedFileURL.path
+        guard parent == base || parent.hasPrefix(base + "/") else {
+            throw TwisterError.invalidInput("An archive link points outside the extraction folder.")
+        }
+        let start = parent.dropFirst(base.count).split(separator: "/").map(String.init)
+        var depth = 0
+        _ = try resolve(target, from: start, root: root, depth: &depth)
+    }
+    private static func resolve(_ target: String, from start: [String], root: URL, depth: inout Int) throws -> [String] {
+        let escape = TwisterError.invalidInput("An archive link points outside the extraction folder.")
+        guard !target.hasPrefix("/"), !target.contains("\0") else { throw escape }
+        let parts = target.split(separator: "/", omittingEmptySubsequences: true).map(String.init)
+        var path = start
+        for (index, part) in parts.enumerated() {
+            if part == "." { continue }
+            if part == ".." {
+                guard !path.isEmpty else { throw escape }
+                path.removeLast(); continue
+            }
+            let candidate = path + [part]
+            var info = stat()
+            guard lstat(root.appendingPathComponent(candidate.joined(separator: "/")).path, &info) == 0 else {
+                guard !parts[(index + 1)...].contains("..") else { throw escape }
+                return candidate + parts[(index + 1)...].filter { $0 != "." }
+            }
+            if info.st_mode & S_IFMT == S_IFLNK {
+                depth += 1
+                guard depth <= maximumLinkDepth else { throw TwisterError.invalidInput("The archive contains a symbolic link loop.") }
+                let next = try FileManager.default.destinationOfSymbolicLink(atPath: root.appendingPathComponent(candidate.joined(separator: "/")).path)
+                path = try resolve(next, from: path, root: root, depth: &depth)
+            } else { path = candidate }
+        }
+        return path
     }
 
     /// libarchive ships with macOS and supports ZIP, TAR, gzip and RAR without
