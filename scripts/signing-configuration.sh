@@ -55,6 +55,9 @@ twister_load_signing_configuration() {
 twister_require_release_signing() {
   local scope=${1:-release}
   if [[ "$twister_signing_mode" == apple-development || "$twister_signing_mode" == developer-id ]]; then return 0; fi
+  # Community releases authenticate the feed and archive with Ed25519. They
+  # deliberately make no claim of Apple verification or notarization.
+  if [[ "$scope" == community-release && "$twister_signing_mode" == ad-hoc && "${TWISTER_COMMUNITY_RELEASE:-}" == 1 ]]; then return 0; fi
   # The release integration fixture uses an isolated, validated loopback feed.
   # Publishing never accepts this exception, even when its flag is inherited.
   if [[ "$scope" == local-test && "${TWISTER_ALLOW_AD_HOC_TEST_RELEASE:-}" == 1 ]]; then return 0; fi

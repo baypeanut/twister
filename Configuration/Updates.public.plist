@@ -3,7 +3,15 @@
 <plist version="1.0">
 <dict>
 	<key>Enabled</key>
-	<false/>
+	<true/>
+	<key>PublicRepository</key>
+	<string>baypeanut/twister</string>
+	<key>FeedURL</key>
+	<string>https://github.com/baypeanut/twister/releases/latest/download/appcast.xml</string>
+	<key>PublicEDKey</key>
+	<string>8VKGopgtaGljRwdhBvWz+k34OlwMuQNnS0Zloyq7org=</string>
+	<key>AutomaticChecks</key>
+	<true/>
 	<key>ExternalTools</key>
 	<true/>
 </dict>

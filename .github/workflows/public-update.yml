@@ -1,23 +1,81 @@
-name: Twister release configuration
+name: Publish Twister
 on:
-  workflow_dispatch:
+  push:
+    tags: ['v*']
 permissions:
   contents: read
+# Never cancel a release between uploading its assets and publishing its feed.
+concurrency:
+  group: twister-stable-release
+  cancel-in-progress: false
 jobs:
-  configuration:
+  preflight:
     runs-on: ubuntu-24.04
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      build: ${{ steps.version.outputs.build }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Require a version from main
+        run: git merge-base --is-ancestor HEAD origin/main
+      - name: Validate immutable, increasing version
+        id: version
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          gh api --paginate --slurp repos/baypeanut/twister/releases > "$RUNNER_TEMP/releases.json"
+          python3 scripts/release-version.py "$RELEASE_TAG" "$RUNNER_TEMP/releases.json" >> "$GITHUB_OUTPUT"
+  checks:
+    needs: preflight
+    uses: ./.github/workflows/source.yml
+  publish:
+    needs: [preflight, checks]
+    runs-on: macos-15
+    timeout-minutes: 25
+    permissions:
+      contents: write
+    env:
+      TWISTER_APP_VERSION: ${{ needs.preflight.outputs.version }}
+      TWISTER_BUILD_NUMBER: ${{ needs.preflight.outputs.build }}
+      TWISTER_RELEASE_TAG: ${{ github.ref_name }}
+      TWISTER_SIGNING_MODE: ad-hoc
+      TWISTER_COMMUNITY_RELEASE: '1'
+      TWISTER_UPDATE_KEY_FILE: ${{ runner.temp }}/twister-signing.key
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
-      - name: Refuse unconfigured release updates
+      - name: Prepare Sparkle signing key
+        env:
+          UPDATE_KEY: ${{ secrets.TWISTER_UPDATE_PRIVATE_KEY }}
         run: |
-          python3 - <<'PYCODE'
-          import plistlib
-          from pathlib import Path
-          info = plistlib.loads(Path('Configuration/Updates.public.plist').read_bytes())
-          if info.get('Enabled', True) is False:
-              print('::notice::Twister updates are disabled until an independent signing key and feed are configured.')
-              raise SystemExit(0)
-          assert info.get('PublicRepository') == 'baypeanut/twister'
-          PYCODE
+          test -n "$UPDATE_KEY" || { echo 'Missing TWISTER_UPDATE_PRIVATE_KEY repository secret'; exit 1; }
+          umask 077
+          printf '%s' "$UPDATE_KEY" > "$TWISTER_UPDATE_KEY_FILE"
+      - name: Build and sign the community release
+        run: |
+          swift package resolve
+          scripts/prepare-public-release.sh "$TWISTER_APP_VERSION" "$TWISTER_BUILD_NUMBER"
+      - name: Verify packaged native workflows
+        run: |
+          if ! command -v ffmpeg >/dev/null || ! command -v ffprobe >/dev/null; then
+            HOMEBREW_NO_AUTO_UPDATE=1 brew install ffmpeg
+          fi
+          app="build/public-$TWISTER_APP_VERSION-$TWISTER_BUILD_NUMBER/Twister.app/Contents/MacOS/Twister"
+          python3 scripts/test-native-ui.py --app "$app" --output build/release-native-ui
+          python3 scripts/test-workflows.py --app "$app" --output build/release-workflows
+      - name: Publish only after all assets are uploaded
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 scripts/release-notes.py "$TWISTER_APP_VERSION" > "$RUNNER_TEMP/release-notes.md"
+          gh release create "$TWISTER_RELEASE_TAG" --verify-tag --draft --title "Twister $TWISTER_APP_VERSION" --notes-file "$RUNNER_TEMP/release-notes.md"
+          gh release upload "$TWISTER_RELEASE_TAG" "build/public-upload-$TWISTER_APP_VERSION-$TWISTER_BUILD_NUMBER/"*
+          gh release edit "$TWISTER_RELEASE_TAG" --draft=false --latest
+      - name: Remove temporary signing key
+        if: always()
+        run: rm -f -- "$TWISTER_UPDATE_KEY_FILE"

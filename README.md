@@ -52,9 +52,19 @@ Both are off until you turn them on in **Settings → General**:
 - **Web downloads** save media from public links and install their own tools.
 - **Window arrangement** still works but is no longer being extended.
 
-Web downloads and optional tool setup need a network connection; everything else works offline.
+Web downloads, optional tool setup and update checks need a network connection. File processing works offline.
 
 ## Install
+
+Download **[Twister-macOS-arm64.zip](https://github.com/baypeanut/twister/releases/latest/download/Twister-macOS-arm64.zip)**, unzip it, and move **Twister.app** to Applications.
+
+This community build is not Apple-notarized. macOS may block its first launch. After trying to open it, use **System Settings → Privacy & Security → Open Anyway** if you trust the download.
+
+Twister checks for new releases while running and shows an update in the workspace and menu bar. Choose **Update…** when you are ready. Active tasks finish before a restart, and your settings, presets and installed tools stay in place. **Settings → Updates** includes manual checks and an automatic-checks toggle. No GitHub account is needed.
+
+If you have an older local build without updates, install the release once manually. Future updates arrive in the app.
+
+### Build from source
 
 You need Xcode with Swift 6, Python 3 and Node.js 22 or later.
 
@@ -147,7 +157,7 @@ Presets are shared with the app and stored in `~/Library/Application Support/Twi
 | [Getting started](docs/guide/getting-started.md) | [Contributing](CONTRIBUTING.md) |
 | [Images](docs/guide/images.md) | [Dependencies](docs/dependencies.md) |
 | [PDFs](docs/guide/pdfs.md) | [Native verification](docs/testing/UI-AUDIT.md) |
-| [Audio and video](docs/guide/media.md) | |
+| [Audio and video](docs/guide/media.md) | [Publishing releases](docs/releases.md) |
 | [Documents](docs/guide/documents.md) | |
 | [Archives](docs/guide/archives.md) | |
 | [Library and Float](docs/guide/library.md) | |

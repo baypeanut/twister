@@ -49,6 +49,10 @@ def apply_configuration(info_path, configuration_path, environ=None):
             raise ValueError("PublicEDKey must be a base64-encoded 32-byte Ed25519 public key")
         info["SUFeedURL"] = feed
         info["SUPublicEDKey"] = key
+        info["SUEnableAutomaticChecks"] = configuration.get("AutomaticChecks", True) is True
+        info["SURequireSignedFeed"] = True
+        info["SUVerifyUpdateBeforeExtraction"] = True
+        info["TwisterExternalTools"] = configuration.get("ExternalTools", True) is True
         if configuration.get("GitHubOnly", False) is True:
             match = re.fullmatch(r"/([A-Za-z0-9][A-Za-z0-9-]{0,38})/([A-Za-z0-9_.-]{1,100})/releases/latest/download/appcast\.xml", address.path)
             if address.hostname != "github.com" or address.scheme != "https" or address.query or not match:

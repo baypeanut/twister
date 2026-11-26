@@ -26,7 +26,7 @@ class UpdateConfigurationTests(unittest.TestCase):
             return plistlib.loads(bundle.read_bytes())
 
     def test_default_configs_disable_all_inherited_upstream_trust(self):
-        for path in ("Configuration/Updates.plist", "Configuration/Updates.public.plist"):
+        for path in ("Configuration/Updates.plist",):
             configuration = plistlib.loads((ROOT / path).read_bytes())
             self.assertIs(configuration.get("Enabled"), False)
             inherited = {"SUPublicEDKey": "upstream-key", "SUFeedURL": "https://example.com/upstream",
@@ -37,6 +37,13 @@ class UpdateConfigurationTests(unittest.TestCase):
                 self.assertNotIn(key, result)
             self.assertIs(result["SUEnableAutomaticChecks"], False)
             self.assertIs(result["TwisterExternalTools"], True)
+
+    def test_public_release_enables_verified_automatic_checks(self):
+        configuration = plistlib.loads((ROOT / "Configuration/Updates.public.plist").read_bytes())
+        result = self.apply(configuration, {"SUEnableAutomaticChecks": False})
+        for key in ("SUEnableAutomaticChecks", "SURequireSignedFeed", "SUVerifyUpdateBeforeExtraction", "TwisterExternalTools"):
+            self.assertIs(result[key], True)
+        self.assertEqual(result["TwisterPublicUpdateRepository"], "baypeanut/twister")
 
     def test_missing_config_cannot_preserve_an_inherited_signing_key(self):
         result = self.apply(None, {"SUPublicEDKey": base64.b64encode(b"x" * 32).decode(),

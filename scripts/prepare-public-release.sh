@@ -12,7 +12,11 @@ if [[ "$(plutil -extract Enabled raw -o - "$TWISTER_UPDATE_CONFIG" 2>/dev/null |
 fi
 source scripts/signing-configuration.sh
 twister_load_signing_configuration
-twister_require_release_signing release
+scope=release
+if [[ "${TWISTER_COMMUNITY_RELEASE:-}" == 1 ]]; then scope=community-release; fi
+twister_require_release_signing "$scope"
+tag=${TWISTER_RELEASE_TAG:-v$1}
+if [[ "$tag" != "v$1" ]]; then print -u2 'The release tag must match the app version.'; exit 1; fi
 feed_directory="$PWD/build/public-feed-$1-$2"
 mkdir -p "$feed_directory"
 archive="$feed_directory/Twister-macOS-arm64-$1-$2.zip"
@@ -24,8 +28,9 @@ python3 scripts/archive-app.py "$TWISTER_APP_OUTPUT" "$archive"
 key_options=(--account "${TWISTER_UPDATE_KEY_ACCOUNT:-app.twister.desktop}")
 if [[ -n "${TWISTER_UPDATE_KEY_FILE:-}" ]]; then key_options=(--ed-key-file "$TWISTER_UPDATE_KEY_FILE"); fi
 sparkle="$PWD/.build/artifacts/sparkle/Sparkle/bin"
-prefix="https://github.com/baypeanut/twister/releases/download/v$1-$2/"
-"$sparkle/generate_appcast" "${key_options[@]}" --download-url-prefix "$prefix" "$feed_directory"
+prefix="https://github.com/baypeanut/twister/releases/download/$tag/"
+if [[ -f "docs/releases/$1.md" ]]; then cp "docs/releases/$1.md" "${archive:r}.md"; fi
+"$sparkle/generate_appcast" "${key_options[@]}" --maximum-deltas 0 --embed-release-notes --download-url-prefix "$prefix" "$feed_directory"
 "$sparkle/sign_update" "${key_options[@]}" --verify "$feed_directory/appcast.xml"
 python3 scripts/validate-update-feed.py "$feed_directory/appcast.xml" "$2"
 upload_directory="$PWD/build/public-upload-$1-$2"
@@ -33,4 +38,5 @@ mkdir -p "$upload_directory"
 cp "$archive" "$upload_directory/${archive:t}"
 cp "$archive" "$upload_directory/Twister-macOS-arm64.zip"
 cp "$feed_directory/appcast.xml" "$upload_directory/appcast.xml"
+(cd "$upload_directory"; shasum -a 256 *.zip appcast.xml > SHA256SUMS)
 print "Signed public archive and feed: $feed_directory"
