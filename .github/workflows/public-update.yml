@@ -44,7 +44,6 @@ jobs:
       TWISTER_RELEASE_TAG: ${{ github.ref_name }}
       TWISTER_SIGNING_MODE: ad-hoc
       TWISTER_COMMUNITY_RELEASE: '1'
-      TWISTER_UPDATE_KEY_FILE: ${{ runner.temp }}/twister-signing.key
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -55,7 +54,8 @@ jobs:
         run: |
           test -n "$UPDATE_KEY" || { echo 'Missing TWISTER_UPDATE_PRIVATE_KEY repository secret'; exit 1; }
           umask 077
-          printf '%s' "$UPDATE_KEY" > "$TWISTER_UPDATE_KEY_FILE"
+          printf '%s' "$UPDATE_KEY" > "$RUNNER_TEMP/twister-signing.key"
+          echo "TWISTER_UPDATE_KEY_FILE=$RUNNER_TEMP/twister-signing.key" >> "$GITHUB_ENV"
       - name: Build and sign the community release
         run: |
           swift package resolve
@@ -78,4 +78,4 @@ jobs:
           gh release edit "$TWISTER_RELEASE_TAG" --draft=false --latest
       - name: Remove temporary signing key
         if: always()
-        run: rm -f -- "$TWISTER_UPDATE_KEY_FILE"
+        run: rm -f -- "$RUNNER_TEMP/twister-signing.key"
