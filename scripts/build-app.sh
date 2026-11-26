@@ -2,6 +2,8 @@
 set -euo pipefail
 cd "${0:A:h:h}"
 configuration=${1:-release}
+# Resource notices must be generated from the verified tool, including on a fresh runner.
+scripts/setup-exiftool.sh >/dev/null
 python3 scripts/setup-resources.py
 source scripts/signing-configuration.sh
 source scripts/tool-pins.sh
@@ -89,8 +91,7 @@ for component in "${twister_bundled_tools[@]}"; do
   twister_verify_tool "$component" "$application/Contents/Resources/Tools/$component" || exit 1
 done
 fi
-# A fresh copy from the verified archive; an earlier copy is never reused.
-scripts/setup-exiftool.sh >/dev/null
+# A fresh copy from the archive verified before resource generation.
 rm -rf -- "$application/Contents/Resources/Tools/ExifTool"
 ditto Tools/ExifTool "$application/Contents/Resources/Tools/ExifTool"
 # TWISTER_BUNDLED_OFFICE=0 leaves LibreOffice out of a build with bundled
